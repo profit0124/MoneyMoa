@@ -8,18 +8,18 @@
 import Foundation
 
 // MARK: - YearMonth Type
-struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
-    let year: Int
-    let month: Int
+public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
+    public let year: Int
+    public let month: Int
     
-    static func < (lhs: YearMonth, rhs: YearMonth) -> Bool {
+    static public func < (lhs: YearMonth, rhs: YearMonth) -> Bool {
         if lhs.year != rhs.year {
             return lhs.year < rhs.year
         }
         return lhs.month < rhs.month
     }
     
-    static var current: YearMonth {
+    static public var current: YearMonth {
         let date = Date()
         let calendar = Calendar.current
         return YearMonth(
@@ -28,7 +28,7 @@ struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
         )
     }
     
-    func previousMonth() -> YearMonth {
+    public func previousMonth() -> YearMonth {
         if month > 1 {
             return YearMonth(year: year, month: month - 1)
         } else {
@@ -36,7 +36,7 @@ struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
         }
     }
     
-    func nextMonth() -> YearMonth {
+    public func nextMonth() -> YearMonth {
         if month < 12 {
             return YearMonth(year: year, month: month + 1)
         } else {
@@ -46,14 +46,14 @@ struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
 }
 
 // MARK: - Transaction Type Enum
-enum TransactionType: String, Codable, CaseIterable, Sendable {
+public enum TransactionType: String, Codable, CaseIterable, Sendable {
     case income = "income"
     case fixedExpense = "fixedExpense"
     case variableExpense = "variableExpense"
 }
 
 // MARK: - Payment Method Type
-enum PaymentMethodKind: String, Codable, CaseIterable, Sendable {
+public enum PaymentMethodKind: String, Codable, CaseIterable, Sendable {
     case cash = "cash"
     case transfer = "transfer"
     case credit = "credit"

@@ -9,15 +9,15 @@ import Foundation
 
 // MARK: - Category DTO
 
-struct CategoryDTO: Sendable, Hashable, Identifiable {
-    let id: UUID
-    let name: String
-    let transactionType: TransactionType
-    let isActive: Bool
-    let orderIndex: Int
-    let subCategories: [SubCategoryDTO]
+public struct CategoryDTO: Sendable, Hashable, Identifiable {
+    public let id: UUID
+    public let name: String
+    public let transactionType: TransactionType
+    public let isActive: Bool
+    public let orderIndex: Int
+    public let subCategories: [SubCategoryDTO]
     
-    init(
+    public init(
         id: UUID = UUID(),
         name: String,
         transactionType: TransactionType,
@@ -36,15 +36,15 @@ struct CategoryDTO: Sendable, Hashable, Identifiable {
 
 // MARK: - SubCategory DTO
 
-struct SubCategoryDTO: Sendable, Hashable, Identifiable {
-    let id: UUID
-    let name: String
-    let transactionType: TransactionType
-    let isActive: Bool
-    let orderIndex: Int
-    let categoryId: UUID
+public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
+    public let id: UUID
+    public let name: String
+    public let transactionType: TransactionType
+    public let isActive: Bool
+    public let orderIndex: Int
+    public let categoryId: UUID
     
-    init(
+    public init(
         id: UUID = UUID(),
         name: String,
         transactionType: TransactionType,
@@ -64,7 +64,7 @@ struct SubCategoryDTO: Sendable, Hashable, Identifiable {
 // MARK: - for Sorting
 
 extension CategoryDTO: Comparable {
-    static func < (lhs: CategoryDTO, rhs: CategoryDTO) -> Bool {
+    static public func < (lhs: CategoryDTO, rhs: CategoryDTO) -> Bool {
         // 먼저 orderIndex로 정렬, 같으면 이름으로 정렬
         if lhs.orderIndex != rhs.orderIndex {
             return lhs.orderIndex < rhs.orderIndex
@@ -74,7 +74,7 @@ extension CategoryDTO: Comparable {
 }
 
 extension SubCategoryDTO: Comparable {
-    static func < (lhs: SubCategoryDTO, rhs: SubCategoryDTO) -> Bool {
+    static public func < (lhs: SubCategoryDTO, rhs: SubCategoryDTO) -> Bool {
         // 먼저 orderIndex로 정렬, 같으면 이름으로 정렬
         if lhs.orderIndex != rhs.orderIndex {
             return lhs.orderIndex < rhs.orderIndex
