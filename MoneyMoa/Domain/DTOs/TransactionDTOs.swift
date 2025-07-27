@@ -13,6 +13,7 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
     public let id: UUID
     public let amount: Decimal
     public let date: Date
+    public let place: String?  // 거래 장소/대상 (맥도날드, 친구들과 더치페이, 어머니 용돈 등)
     public let memo: String?
     public let transactionType: TransactionType
     public let isFavorite: Bool
@@ -23,6 +24,7 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         id: UUID = UUID(),
         amount: Decimal,
         date: Date = Date(),
+        place: String? = nil,
         memo: String? = nil,
         transactionType: TransactionType,
         isFavorite: Bool = false,
@@ -32,6 +34,7 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         self.id = id
         self.amount = amount
         self.date = date
+        self.place = place
         self.memo = memo
         self.transactionType = transactionType
         self.isFavorite = isFavorite
