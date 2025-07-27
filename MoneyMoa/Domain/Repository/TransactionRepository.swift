@@ -29,6 +29,11 @@ public protocol TransactionRepository {
     /// - Returns: 해당 기간의 거래 내역 목록
     func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [TransactionDTO]
     
+    /// 특정 월의 거래 내역 조회 (월별 보기)
+    /// - Parameter yearMonth: 조회할 년월
+    /// - Returns: 해당 월의 거래 내역 목록
+    func fetchTransactions(for yearMonth: YearMonth) async throws -> [TransactionDTO]
+    
     /// 특정 서브카테고리의 거래 내역 조회
     /// - Parameter subCategoryId: 서브카테고리 ID
     /// - Returns: 해당 서브카테고리의 거래 내역 목록
@@ -62,12 +67,22 @@ public protocol TransactionRepository {
     /// - Returns: 거래 유형별 금액 합계 목록 (정렬 가능)
     func getTotalAmountByType(from startDate: Date, to endDate: Date) async throws -> [(TransactionType, Decimal)]
     
+    /// 특정 월의 거래 유형별 합계
+    /// - Parameter yearMonth: 조회할 년월
+    /// - Returns: 거래 유형별 금액 합계 목록
+    func getTotalAmountByType(for yearMonth: YearMonth) async throws -> [(TransactionType, Decimal)]
+    
     /// 특정 기간의 서브카테고리별 합계
     /// - Parameters:
     ///   - startDate: 시작 날짜
     ///   - endDate: 종료 날짜
     /// - Returns: 서브카테고리별 금액 합계 목록
     func getTotalAmountBySubCategory(from startDate: Date, to endDate: Date) async throws -> [(SubCategoryDTO, Decimal)]
+    
+    /// 특정 월의 서브카테고리별 합계
+    /// - Parameter yearMonth: 조회할 년월
+    /// - Returns: 서브카테고리별 금액 합계 목록
+    func getTotalAmountBySubCategory(for yearMonth: YearMonth) async throws -> [(SubCategoryDTO, Decimal)]
     
     /// 특정 기간의 일별 합계 (차트용)
     /// - Parameters:
@@ -76,6 +91,13 @@ public protocol TransactionRepository {
     ///   - type: 거래 유형 (nil이면 전체)
     /// - Returns: 일별 금액 합계 목록
     func getDailyTotals(from startDate: Date, to endDate: Date, type: TransactionType?) async throws -> [(Date, Decimal)]
+    
+    /// 특정 월의 일별 합계 (차트용)
+    /// - Parameters:
+    ///   - yearMonth: 조회할 년월
+    ///   - type: 거래 유형 (nil이면 전체)
+    /// - Returns: 일별 금액 합계 목록
+    func getDailyTotals(for yearMonth: YearMonth, type: TransactionType?) async throws -> [(Date, Decimal)]
     
     // MARK: - 생성/수정 (Create/Update Operations)
     
