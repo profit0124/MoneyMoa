@@ -17,7 +17,11 @@ final class Transaction {
     var date: Date
     var memo: String?
     var isFavorite: Bool
-    var transactionType: TransactionType
+    var transactionTypeRawValue: String
+    var transactionType: TransactionType {
+        get { TransactionType(rawValue: transactionTypeRawValue) ?? .variableExpense }
+        set { transactionTypeRawValue = newValue.rawValue }
+    }
     
     @Relationship var subCategory: SubCategory
     @Relationship var paymentMethod: PaymentMethod
@@ -36,7 +40,7 @@ final class Transaction {
         self.amount = amount
         self.date = date
         self.memo = memo
-        self.transactionType = transactionType
+        self.transactionTypeRawValue = transactionType.rawValue
         self.isFavorite = isFavorite
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
