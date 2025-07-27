@@ -72,7 +72,7 @@ public class CategoryRepositoryImpl: CategoryRepository {
     public func fetchCategoriesByType(_ type: TransactionType) async throws -> [CategoryDTO] {
         try await database.withModelContext { context in
             let predicate = #Predicate<Category> { category in
-                category.transactionType == type
+                category.transactionTypeRawValue == type.rawValue
             }
             let descriptor = FetchDescriptor<Category>(
                 predicate: predicate,
@@ -97,9 +97,10 @@ public class CategoryRepositoryImpl: CategoryRepository {
     }
     
     public func updateCategory(_ category: CategoryDTO) async throws {
+        let id = category.id
         try await database.withModelContext { context in
             // 기존 카테고리 조회
-            let predicate = #Predicate<Category> { $0.id == category.id }
+            let predicate = #Predicate<Category> { $0.id == id }
             let descriptor = FetchDescriptor<Category>(predicate: predicate)
             
             guard let existingCategory = try context.fetch(descriptor).first else {
@@ -177,12 +178,12 @@ public class CategoryRepositoryImpl: CategoryRepository {
             if let excludingId = excludingId {
                 predicate = #Predicate<Category> { category in
                     category.name == name && 
-                    category.transactionType == type &&
+                    category.transactionTypeRawValue == type.rawValue &&
                     category.id != excludingId
                 }
             } else {
                 predicate = #Predicate<Category> { category in
-                    category.name == name && category.transactionType == type
+                    category.name == name && category.transactionTypeRawValue == type.rawValue
                 }
             }
             

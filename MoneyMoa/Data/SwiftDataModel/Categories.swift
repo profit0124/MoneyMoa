@@ -15,7 +15,11 @@ final class Category {
     @Attribute(.unique) var id: UUID
     var name: String
     var orderIndex: Int
-    var transactionType: TransactionType
+    var transactionTypeRawValue: String
+    var transactionType: TransactionType {
+        get { TransactionType(rawValue: transactionTypeRawValue) ?? .variableExpense }
+        set { transactionTypeRawValue = newValue.rawValue }
+    }
     
     var isActive: Bool
     
@@ -25,7 +29,7 @@ final class Category {
     init(id: UUID = UUID(), name: String, transactionType: TransactionType, orderIndex: Int = 0, isActive: Bool = true) {
         self.id = id
         self.name = name
-        self.transactionType = transactionType
+        self.transactionTypeRawValue = transactionType.rawValue
         self.orderIndex = orderIndex
         self.isActive = isActive
     }
@@ -37,7 +41,11 @@ final class Category {
 final class SubCategory {
     @Attribute(.unique) var id: UUID
     var name: String
-    var transactionType: TransactionType
+    var transactionTypeRawValue: String
+    var transactionType: TransactionType {
+        get { TransactionType(rawValue: transactionTypeRawValue) ?? .variableExpense }
+        set { transactionTypeRawValue = newValue.rawValue }
+    }
     var orderIndex: Int
     
     var isActive: Bool
@@ -57,7 +65,7 @@ final class SubCategory {
     ) {
         self.id = id
         self.name = name
-        self.transactionType = transactionType
+        self.transactionTypeRawValue = transactionType.rawValue
         self.orderIndex = orderIndex
         self.category = category
         self.isActive = isActive
@@ -71,7 +79,7 @@ extension Category {
     /// Category를 CategoryDTO로 변환 (서브카테고리 포함)
     public func toDTO(includeSubCategories: Bool = false) -> CategoryDTO {
         let subCategoryDTOs: [SubCategoryDTO] = includeSubCategories ?
-            self.subCategories.map { $0.toDTO() } : []
+        self.subCategories.toDTOs() : []
         
         return CategoryDTO(
             id: self.id,
@@ -110,7 +118,7 @@ extension Collection where Element == Category {
 extension Collection where Element == SubCategory {
     /// SubCategory 배열을 SubCategoryDTO 배열로 변환
     func toDTOs() -> [SubCategoryDTO] {
-        return self.map { $0.toDTO() }
+        return self.map { $0.toDTO() }.sorted(by: { $0.orderIndex < $1.orderIndex })
     }
 }
 

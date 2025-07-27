@@ -74,7 +74,7 @@ public class SubCategoryRepositoryImpl: SubCategoryRepository {
     public func fetchSubCategoriesByType(_ type: TransactionType) async throws -> [SubCategoryDTO] {
         try await database.withModelContext { context in
             let predicate = #Predicate<SubCategory> { subCategory in
-                subCategory.transactionType == type
+                subCategory.transactionTypeRawValue == type.rawValue
             }
             let descriptor = FetchDescriptor<SubCategory>(
                 predicate: predicate,
@@ -89,9 +89,10 @@ public class SubCategoryRepositoryImpl: SubCategoryRepository {
     // MARK: - 생성/수정 (Create/Update Operations)
     
     public func insertSubCategory(_ subCategory: SubCategoryDTO) async throws {
+        let categoryId = subCategory.categoryId
         try await database.withModelContext { context in
             // 상위 카테고리 조회 (반드시 필요)
-            let categoryPredicate = #Predicate<Category> { $0.id == subCategory.categoryId }
+            let categoryPredicate = #Predicate<Category> { $0.id == categoryId }
             let categoryDescriptor = FetchDescriptor<Category>(predicate: categoryPredicate)
             guard let parentCategory = try context.fetch(categoryDescriptor).first else {
                 throw RepositoryError.categoryNotFound
@@ -106,9 +107,11 @@ public class SubCategoryRepositoryImpl: SubCategoryRepository {
     }
     
     public func updateSubCategory(_ subCategory: SubCategoryDTO) async throws {
+        let id = subCategory.id
+        let categoryId = subCategory.categoryId
         try await database.withModelContext { context in
             // 기존 서브카테고리 조회
-            let predicate = #Predicate<SubCategory> { $0.id == subCategory.id }
+            let predicate = #Predicate<SubCategory> { $0.id == id }
             let descriptor = FetchDescriptor<SubCategory>(predicate: predicate)
             
             guard let existingSubCategory = try context.fetch(descriptor).first else {
@@ -116,8 +119,8 @@ public class SubCategoryRepositoryImpl: SubCategoryRepository {
             }
             
             // 카테고리가 변경되었다면 새 카테고리 확인
-            if existingSubCategory.category.id != subCategory.categoryId {
-                let categoryPredicate = #Predicate<Category> { $0.id == subCategory.categoryId }
+            if existingSubCategory.category.id != categoryId {
+                let categoryPredicate = #Predicate<Category> { $0.id == categoryId }
                 let categoryDescriptor = FetchDescriptor<Category>(predicate: categoryPredicate)
                 guard let newParentCategory = try context.fetch(categoryDescriptor).first else {
                     throw RepositoryError.categoryNotFound
