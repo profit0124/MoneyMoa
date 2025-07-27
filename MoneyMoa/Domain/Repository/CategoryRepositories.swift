@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 // MARK: - Category Repository Protocol
 
 public protocol CategoryRepository {
@@ -22,6 +21,11 @@ public protocol CategoryRepository {
     /// - Parameter id: 카테고리 ID
     /// - Returns: 해당 카테고리 또는 nil
     func fetchCategory(id: UUID) async throws -> CategoryDTO?
+    
+    /// 특정 카테고리 조회 (서브카테고리 포함)
+    /// - Parameter id: 카테고리 ID
+    /// - Returns: 해당 카테고리와 서브카테고리들 또는 nil
+    func fetchCategoryWithSubCategories(id: UUID) async throws -> CategoryDTO?
     
     /// 활성 카테고리만 조회 (UI 표시용)
     /// - Returns: 활성 상태인 카테고리 목록

@@ -59,3 +59,12 @@ public enum PaymentMethodKind: String, Codable, CaseIterable, Sendable {
     case credit = "credit"
     case debit = "debit"
 }
+
+// MARK: - Repository Errors
+public enum RepositoryError: Error, Sendable {
+    case categoryNotFound
+    case subCategoryNotFound
+    case cannotDeleteActiveCategory
+    case cannotDeleteActiveSubCategory
+    case databaseError(Error)
+}
