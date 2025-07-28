@@ -63,10 +63,23 @@ public protocol BudgetRepository {
     
     // MARK: - 예산 수정 (Budget Updates)
     
-    /// 특정 월의 카테고리별 예산 수정
+    /// 특정 월의 예산 전체 정보 수정
+    /// - Parameters:
+    ///   - month: 수정할 년월
+    ///   - budget: 수정할 예산 정보
+    func updateBudget(for month: YearMonth, budget: BudgetDTO) async throws
+    
+    /// 특정 월의 예산 총 금액만 수정
+    /// - Parameters:
+    ///   - month: 수정할 년월
+    ///   - totalAmount: 새로운 총 예산 금액
+    func updateBudgetTotalAmount(for month: YearMonth, totalAmount: Decimal) async throws
+    
+    /// 특정 월의 카테고리별 예산 수정 (총 예산 금액은 유지)
     /// - Parameters:
     ///   - month: 수정할 년월
     ///   - categoryBudgets: 수정할 카테고리별 예산 목록
+    /// - Note: categoryBudgets 합이 totalAmount를 초과하면 에러 발생
     func updateCategoryBudgets(for month: YearMonth, categoryBudgets: [CategoryBudgetDTO]) async throws
     
     /// 특정 카테고리의 예산 수정 (해당 월만)
@@ -74,5 +87,6 @@ public protocol BudgetRepository {
     ///   - categoryId: 카테고리 ID
     ///   - amount: 새로운 예산 금액
     ///   - month: 수정할 년월
+    /// - Note: 수정 후 categoryBudgets 합이 totalAmount를 초과하면 에러 발생
     func updateCategoryBudget(categoryId: UUID, amount: Decimal, for month: YearMonth) async throws
 }

@@ -82,7 +82,12 @@ public enum RepositoryError: Error, Sendable {
     case subCategoryNotFound
     case transactionNotFound
     case paymentMethodNotFound
+    case budgetTemplateNotFound
+    case budgetNotFound
+    case categoryBudgetNotFound
+    case categoryBudgetsExceedTotalAmount
     case cannotDeleteActiveCategory
     case cannotDeleteActiveSubCategory
     case databaseError(Error)
+    case custom(String)
 }
