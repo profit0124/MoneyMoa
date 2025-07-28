@@ -88,6 +88,7 @@ public enum RepositoryError: Error, Sendable {
     case categoryBudgetsExceedTotalAmount
     case cannotDeleteActiveCategory
     case cannotDeleteActiveSubCategory
+    case cannotDeleteActivePaymentMethod
     case databaseError(Error)
     case custom(String)
 }
