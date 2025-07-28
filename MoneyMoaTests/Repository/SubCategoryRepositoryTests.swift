@@ -33,12 +33,9 @@ final class SubCategoryRepositoryTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func createParentCategory(id: UUID, name: String, type: TransactionType) async throws {
+        let categoryDTO = TestDataFactory.createCategory(id: id, name: name, type: type)
         try await database.withModelContext { context in
-            let category = CategoryModel(
-                id: id,
-                name: name,
-                transactionType: type
-            )
+            let category = categoryDTO.toModel()
             context.insert(category)
             try context.save()
         }
@@ -53,8 +50,11 @@ final class SubCategoryRepositoryTests: XCTestCase {
         let categoryId2 = UUID()
         
         try await database.withModelContext { context in
-            let category1 = CategoryModel(id: categoryId1, name: "식비", transactionType: .variableExpense)
-            let category2 = CategoryModel(id: categoryId2, name: "급여", transactionType: .income)
+            let categoryDTO1 = TestDataFactory.createCategory(id: categoryId1, name: "식비", type: .variableExpense)
+            let categoryDTO2 = TestDataFactory.createCategory(id: categoryId2, name: "급여", type: .income)
+            
+            let category1 = categoryDTO1.toModel()
+            let category2 = categoryDTO2.toModel()
             
             context.insert(category1)
             context.insert(category2)
@@ -81,8 +81,8 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 테스트 서브카테고리들 생성
         try await setupParentCategory()
         
-        let subCategory1 = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, orderIndex: 1, categoryId: parentCategoryId)
-        let subCategory2 = SubCategoryDTO(name: "마트", transactionType: .variableExpense, orderIndex: 0, categoryId: parentCategoryId)
+        let subCategory1 = TestDataFactory.createSubCategory(categoryId: parentCategoryId, orderIndex: 1) // 기본값: name="외식비", type=.variableExpense
+        let subCategory2 = TestDataFactory.createSubCategory(name: "마트", categoryId: parentCategoryId) // 기본값: orderIndex=0
         
         try await repository.insertSubCategory(subCategory1)
         try await repository.insertSubCategory(subCategory2)
@@ -100,7 +100,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 테스트 서브카테고리 생성
         try await setupParentCategory()
         
-        let originalSubCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let originalSubCategory = TestDataFactory.createSubCategory(categoryId: parentCategoryId) // 기본값: name="외식비", type=.variableExpense
         try await repository.insertSubCategory(originalSubCategory)
         
         // When: 특정 서브카테고리 조회
@@ -129,10 +129,10 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 두 개의 카테고리와 각각의 서브카테고리들 생성
         let (categoryId1, categoryId2) = try await createParentCategories()
         
-        let subCategory1 = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: categoryId1)
-        let subCategory2 = SubCategoryDTO(name: "마트", transactionType: .variableExpense, categoryId: categoryId1)
-        let subCategory3 = SubCategoryDTO(name: "본급", transactionType: .income, categoryId: categoryId2)
-        let inactiveSubCategory = SubCategoryDTO(name: "비활성", transactionType: .variableExpense, isActive: false, categoryId: categoryId1)
+        let subCategory1 = TestDataFactory.createSubCategory(categoryId: categoryId1) // 기본값: name="외식비", type=.variableExpense
+        let subCategory2 = TestDataFactory.createSubCategory(name: "마트", categoryId: categoryId1) // 기본값: type=.variableExpense
+        let subCategory3 = TestDataFactory.createSubCategory(name: "본급", categoryId: categoryId2, type: .income)
+        let inactiveSubCategory = TestDataFactory.createSubCategory(name: "비활성", categoryId: categoryId1, type: .variableExpense, isActive: false)
         
         try await repository.insertSubCategory(subCategory1)
         try await repository.insertSubCategory(subCategory2)
@@ -152,8 +152,8 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 활성/비활성 서브카테고리들 생성
         try await setupParentCategory()
         
-        let activeSubCategory = SubCategoryDTO(name: "활성서브카테고리", transactionType: .variableExpense, isActive: true, categoryId: parentCategoryId)
-        let inactiveSubCategory = SubCategoryDTO(name: "비활성서브카테고리", transactionType: .variableExpense, isActive: false, categoryId: parentCategoryId)
+        let activeSubCategory = TestDataFactory.createSubCategory(name: "활성서브카테고리", categoryId: parentCategoryId, type: .variableExpense, isActive: true)
+        let inactiveSubCategory = TestDataFactory.createSubCategory(name: "비활성서브카테고리", categoryId: parentCategoryId, type: .variableExpense, isActive: false)
         
         try await repository.insertSubCategory(activeSubCategory)
         try await repository.insertSubCategory(inactiveSubCategory)
@@ -171,9 +171,9 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 다양한 유형의 서브카테고리들 생성
         let (categoryId1, categoryId2) = try await createParentCategories()
         
-        let expenseSubCategory1 = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: categoryId1)
-        let expenseSubCategory2 = SubCategoryDTO(name: "마트", transactionType: .variableExpense, categoryId: categoryId1)
-        let incomeSubCategory = SubCategoryDTO(name: "본급", transactionType: .income, categoryId: categoryId2)
+        let expenseSubCategory1 = TestDataFactory.createSubCategory(name: "외식비", categoryId: categoryId1, type: .variableExpense)
+        let expenseSubCategory2 = TestDataFactory.createSubCategory(name: "마트", categoryId: categoryId1, type: .variableExpense)
+        let incomeSubCategory = TestDataFactory.createSubCategory(name: "본급", categoryId: categoryId2, type: .income)
         
         try await repository.insertSubCategory(expenseSubCategory1)
         try await repository.insertSubCategory(expenseSubCategory2)
@@ -193,7 +193,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 새로운 서브카테고리 DTO
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         
         // When: 서브카테고리 삽입
         try await repository.insertSubCategory(subCategory)
@@ -209,7 +209,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
     func testInsertSubCategory_NonExistingParentCategory() async throws {
         // Given: 존재하지 않는 상위 카테고리 ID
         let nonExistingCategoryId = UUID()
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: nonExistingCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: nonExistingCategoryId, type: .variableExpense)
         
         // When & Then: 에러 발생
         do {
@@ -229,7 +229,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 기존 서브카테고리 생성
         try await setupParentCategory()
         
-        let originalSubCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let originalSubCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         try await repository.insertSubCategory(originalSubCategory)
         
         // When: 서브카테고리 정보 수정
@@ -252,7 +252,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
     
     func testUpdateSubCategory_NonExistingSubCategory() async throws {
         // Given: 존재하지 않는 서브카테고리 ID
-        let nonExistingSubCategory = SubCategoryDTO(name: "존재하지않음", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let nonExistingSubCategory = TestDataFactory.createSubCategory(name: "존재하지않음", categoryId: parentCategoryId, type: .variableExpense)
         
         // When & Then: 에러 발생
         do {
@@ -274,7 +274,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 활성 서브카테고리 생성
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, isActive: true, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, isActive: true)
         try await repository.insertSubCategory(subCategory)
         
         // When: 서브카테고리 비활성화
@@ -307,7 +307,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 비활성 서브카테고리 생성
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, isActive: false, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, isActive: false)
         try await repository.insertSubCategory(subCategory)
         
         // When: 서브카테고리 활성화
@@ -324,7 +324,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 비활성 서브카테고리 생성
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, isActive: false, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, isActive: false)
         try await repository.insertSubCategory(subCategory)
         
         // When: 서브카테고리 삭제
@@ -339,7 +339,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 활성 서브카테고리 생성
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, isActive: true, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, isActive: true)
         try await repository.insertSubCategory(subCategory)
         
         // When & Then: 에러 발생
@@ -366,7 +366,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 기존 서브카테고리 생성
         try await setupParentCategory()
         
-        let existingSubCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let existingSubCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         try await repository.insertSubCategory(existingSubCategory)
         
         // When: 다른 이름으로 검증
@@ -380,7 +380,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 기존 서브카테고리 생성
         try await setupParentCategory()
         
-        let existingSubCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let existingSubCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         try await repository.insertSubCategory(existingSubCategory)
         
         // When: 같은 카테고리 내에서 동일한 이름으로 검증
@@ -394,7 +394,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 기존 서브카테고리 생성
         try await setupParentCategory()
         
-        let existingSubCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let existingSubCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         try await repository.insertSubCategory(existingSubCategory)
         
         // When: 자기 자신을 제외하고 검증 (수정 시나리오)
@@ -408,24 +408,25 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 서브카테고리와 거래 내역 생성
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         try await repository.insertSubCategory(subCategory)
         
         // 데이터베이스에 직접 거래 내역 추가
         try await database.withModelContext { context in
             let subCategoryModel = try context.fetch(FetchDescriptor<SubCategoryModel>()).first!
             
-            let paymentMethod = PaymentMethodModel(name: "현금", kind: .cash)
+            let paymentMethodDTO = TestDataFactory.createPaymentMethod(name: "현금", kind: .cash)
+            let paymentMethod = paymentMethodDTO.toModel()
             context.insert(paymentMethod)
             
-            let transaction = TransactionModel(
+            let transactionDTO = TestDataFactory.createTransaction(
                 amount: 10000,
-                date: Date(),
                 memo: "점심식사",
                 transactionType: .fixedExpense,
-                subCategory: subCategoryModel,
-                paymentMethod: paymentMethod
+                subCategory: subCategoryModel.toDTO(),
+                paymentMethod: paymentMethodDTO
             )
+            let transaction = transactionDTO.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethod)
             context.insert(transaction)
             try context.save()
         }
@@ -441,7 +442,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
         // Given: 상위 카테고리 설정 및 서브카테고리만 생성 (거래 없음)
         try await setupParentCategory()
         
-        let subCategory = SubCategoryDTO(name: "외식비", transactionType: .variableExpense, categoryId: parentCategoryId)
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: parentCategoryId, type: .variableExpense)
         try await repository.insertSubCategory(subCategory)
         
         // When: 거래 내역 존재 여부 확인
