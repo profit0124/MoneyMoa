@@ -140,4 +140,64 @@ struct TestDataFactory {
         }
         return endOfMonth
     }
+    
+    // MARK: - Budget Factory Methods
+        
+    static func createBudgetTemplate(
+        id: UUID = UUID(),
+        totalAmount: Decimal = 1000000,
+        categoryBudgetTemplates: [CategoryBudgetTemplateDTO] = []
+    ) -> BudgetTemplateDTO {
+        BudgetTemplateDTO(
+            id: id,
+            totalAmount: totalAmount,
+            categoryBudgetTemplates: categoryBudgetTemplates
+        )
+    }
+    
+    static func createCategoryBudgetTemplate(
+        id: UUID = UUID(),
+        amount: Decimal = 300000,
+        categoryID: UUID,
+        categoryName: String = "식비",
+        budgetTemplateId: UUID
+    ) -> CategoryBudgetTemplateDTO {
+        CategoryBudgetTemplateDTO(
+            id: id,
+            amount: amount,
+            categoryID: categoryID,
+            categoryName: categoryName,
+            budgetTemplateId: budgetTemplateId
+        )
+    }
+    
+    static func createBudget(
+        id: UUID = UUID(),
+        month: YearMonth = YearMonth.current,
+        totalAmount: Decimal = 1000000,
+        categoryBudgets: [CategoryBudgetDTO] = []
+    ) -> BudgetDTO {
+        BudgetDTO(
+            id: id,
+            month: month,
+            totalAmount: totalAmount,
+            categoryBudgets: categoryBudgets
+        )
+    }
+    
+    static func createCategoryBudget(
+        id: UUID = UUID(),
+        amount: Decimal = 300000,
+        categoryID: UUID,
+        categoryName: String = "식비",
+        budgetId: UUID
+    ) -> CategoryBudgetDTO {
+        CategoryBudgetDTO(
+            id: id,
+            amount: amount,
+            categoryID: categoryID,
+            categoryName: categoryName,
+            budgetId: budgetId
+        )
+    }
 }
