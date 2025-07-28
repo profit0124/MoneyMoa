@@ -39,9 +39,9 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchCategories_WithData() async throws {
         // Given: 테스트 카테고리들 생성
-        let category1 = CategoryDTO(name: "식비", transactionType: .variableExpense, orderIndex: 1)
-        let category2 = CategoryDTO(name: "교통비", transactionType: .variableExpense, orderIndex: 0)
-        let category3 = CategoryDTO(name: "급여", transactionType: .income, orderIndex: 0)
+        let category1 = TestDataFactory.createCategory(orderIndex: 1) // 기본값: name="식비", type=.variableExpense
+        let category2 = TestDataFactory.createCategory(name: "교통비") // 기본값: orderIndex=0
+        let category3 = TestDataFactory.createCategory(name: "급여", type: .income) // 기본값: orderIndex=0
         
         try await repository.insertCategory(category1)
         try await repository.insertCategory(category2)
@@ -59,7 +59,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchCategory_ExistingId() async throws {
         // Given: 테스트 카테고리 생성
-        let originalCategory = CategoryDTO(name: "식비", transactionType: .variableExpense, orderIndex: 0)
+        let originalCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense, orderIndex: 0)
         try await repository.insertCategory(originalCategory)
         
         // When: 특정 카테고리 조회
@@ -86,18 +86,14 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchCategoryWithSubCategories() async throws {
         // Given: 카테고리와 서브카테고리 생성
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense, orderIndex: 0)
+        let category = TestDataFactory.createCategory() // 모든 기본값 사용
         try await repository.insertCategory(category)
         
         // SubCategoryModel는 별도 Repository에서 처리되므로 직접 데이터베이스에 추가
         try await database.withModelContext { context in
             let categoryModel = try context.fetch(FetchDescriptor<CategoryModel>()).first!
-            let subCategory = SubCategoryModel(
-                name: "외식비",
-                transactionType: .variableExpense,
-                orderIndex: 0,
-                category: categoryModel
-            )
+            let subCategoryDTO = TestDataFactory.createSubCategory(categoryId: categoryModel.id) // 기본값: name="외식비"
+            let subCategory = subCategoryDTO.toModel(parentCategory: categoryModel)
             context.insert(subCategory)
             try context.save()
         }
@@ -113,8 +109,8 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchActiveCategories() async throws {
         // Given: 활성/비활성 카테고리들 생성
-        let activeCategory = CategoryDTO(name: "활성카테고리", transactionType: .variableExpense, isActive: true)
-        let inactiveCategory = CategoryDTO(name: "비활성카테고리", transactionType: .variableExpense, isActive: false)
+        let activeCategory = TestDataFactory.createCategory(name: "활성카테고리", type: .variableExpense, isActive: true)
+        let inactiveCategory = TestDataFactory.createCategory(name: "비활성카테고리", type: .variableExpense, isActive: false)
         
         try await repository.insertCategory(activeCategory)
         try await repository.insertCategory(inactiveCategory)
@@ -130,10 +126,10 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchCategoriesByType() async throws {
         // Given: 다양한 유형의 카테고리들 생성
-        let incomeCategory = CategoryDTO(name: "급여", transactionType: .income)
-        let expenseCategory1 = CategoryDTO(name: "식비", transactionType: .variableExpense)
-        let expenseCategory2 = CategoryDTO(name: "교통비", transactionType: .variableExpense)
-        let fixedExpenseCategory = CategoryDTO(name: "월세", transactionType: .fixedExpense)
+        let incomeCategory = TestDataFactory.createCategory(name: "급여", type: .income)
+        let expenseCategory1 = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+        let expenseCategory2 = TestDataFactory.createCategory(name: "교통비", type: .variableExpense)
+        let fixedExpenseCategory = TestDataFactory.createCategory(name: "월세", type: .fixedExpense)
         
         try await repository.insertCategory(incomeCategory)
         try await repository.insertCategory(expenseCategory1)
@@ -152,7 +148,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testInsertCategory_Success() async throws {
         // Given: 새로운 카테고리 DTO
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense, orderIndex: 0)
+        let category = TestDataFactory.createCategory() // 모든 기본값 사용
         
         // When: 카테고리 삽입
         try await repository.insertCategory(category)
@@ -166,7 +162,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testUpdateCategory_Success() async throws {
         // Given: 기존 카테고리 생성
-        let originalCategory = CategoryDTO(name: "식비", transactionType: .variableExpense, orderIndex: 0)
+        let originalCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense, orderIndex: 0)
         try await repository.insertCategory(originalCategory)
         
         // When: 카테고리 정보 수정
@@ -188,7 +184,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testUpdateCategory_NonExistingCategory() async throws {
         // Given: 존재하지 않는 카테고리 ID
-        let nonExistingCategory = CategoryDTO(name: "존재하지않음", transactionType: .variableExpense)
+        let nonExistingCategory = TestDataFactory.createCategory(name: "존재하지않음", type: .variableExpense)
         
         // When & Then: 에러 발생
         do {
@@ -208,7 +204,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testDeactivateCategory_Success() async throws {
         // Given: 활성 카테고리 생성
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense, isActive: true)
+        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: true)
         try await repository.insertCategory(category)
         
         // When: 카테고리 비활성화
@@ -239,7 +235,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testActivateCategory_Success() async throws {
         // Given: 비활성 카테고리 생성
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense, isActive: false)
+        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: false)
         try await repository.insertCategory(category)
         
         // When: 카테고리 활성화
@@ -272,7 +268,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testDeleteCategory_InactiveCategory_Success() async throws {
         // Given: 비활성 카테고리 생성
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense, isActive: false)
+        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: false)
         try await repository.insertCategory(category)
         
         // When: 카테고리 삭제
@@ -285,7 +281,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testDeleteCategory_ActiveCategory_ThrowsError() async throws {
         // Given: 활성 카테고리 생성
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense, isActive: true)
+        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: true)
         try await repository.insertCategory(category)
         
         // When & Then: 에러 발생
@@ -328,7 +324,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_AvailableName() async throws {
         // Given: 기존 카테고리 생성
-        let existingCategory = CategoryDTO(name: "식비", transactionType: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 다른 이름으로 검증
@@ -340,7 +336,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_DuplicateName() async throws {
         // Given: 기존 카테고리 생성
-        let existingCategory = CategoryDTO(name: "식비", transactionType: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 동일한 이름으로 검증
@@ -352,7 +348,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_DuplicateNameButDifferentType() async throws {
         // Given: 기존 카테고리 생성 (변동지출)
-        let existingCategory = CategoryDTO(name: "용돈", transactionType: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "용돈", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 동일한 이름이지만 다른 유형으로 검증 (수입)
@@ -364,7 +360,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_ExcludingSelf() async throws {
         // Given: 기존 카테고리 생성
-        let existingCategory = CategoryDTO(name: "식비", transactionType: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 자기 자신을 제외하고 검증 (수정 시나리오)
@@ -376,31 +372,26 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testHasTransactions_WithTransactions() async throws {
         // Given: 카테고리, 서브카테고리, 거래 내역 생성
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense)
+        let category = TestDataFactory.createCategory() // 기본값: name="식비", type=.variableExpense
         try await repository.insertCategory(category)
         
         // 데이터베이스에 직접 서브카테고리와 거래 내역 추가
         try await database.withModelContext { context in
             let categoryModel = try context.fetch(FetchDescriptor<CategoryModel>()).first!
-            let subCategory = SubCategoryModel(
-                name: "외식비",
-                transactionType: .variableExpense,
-                orderIndex: 0,
-                category: categoryModel
-            )
+            let subCategoryDTO = TestDataFactory.createSubCategory(categoryId: categoryModel.id) // 기본값: name="외식비"
+            let subCategory = subCategoryDTO.toModel(parentCategory: categoryModel)
             context.insert(subCategory)
             
-            let paymentMethod = PaymentMethodModel(name: "현금", kind: .cash)
+            let paymentMethodDTO = TestDataFactory.createPaymentMethod(name: "현금", kind: .cash)
+            let paymentMethod = paymentMethodDTO.toModel()
             context.insert(paymentMethod)
             
-            let transaction = TransactionModel(
-                amount: 10000,
-                date: Date(),
-                memo: "점심식사",
-                transactionType: .variableExpense,
-                subCategory: subCategory,
-                paymentMethod: paymentMethod
+            let transactionDTO = TestDataFactory.createTransaction(
+                memo: "점심식사", // 기본값: amount=10000
+                subCategory: subCategoryDTO,
+                paymentMethod: paymentMethodDTO
             )
+            let transaction = transactionDTO.toModel(subCategory: subCategory, paymentMethod: paymentMethod)
             context.insert(transaction)
             try context.save()
         }
@@ -414,7 +405,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testHasTransactions_WithoutTransactions() async throws {
         // Given: 카테고리만 생성 (서브카테고리 없음)
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense)
+        let category = TestDataFactory.createCategory() // 기본값: name="식비", type=.variableExpense
         try await repository.insertCategory(category)
         
         // When: 거래 내역 존재 여부 확인
@@ -426,17 +417,13 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testHasTransactions_WithSubCategoryModelButNoTransactions() async throws {
         // Given: 카테고리와 서브카테고리 생성 (거래 없음)
-        let category = CategoryDTO(name: "식비", transactionType: .variableExpense)
+        let category = TestDataFactory.createCategory() // 기본값: name="식비", type=.variableExpense
         try await repository.insertCategory(category)
         
         try await database.withModelContext { context in
             let categoryModel = try context.fetch(FetchDescriptor<CategoryModel>()).first!
-            let subCategory = SubCategoryModel(
-                name: "외식비",
-                transactionType: .variableExpense,
-                orderIndex: 0,
-                category: categoryModel
-            )
+            let subCategoryDTO = TestDataFactory.createSubCategory(categoryId: categoryModel.id) // 기본값: name="외식비"
+            let subCategory = subCategoryDTO.toModel(parentCategory: categoryModel)
             context.insert(subCategory)
             try context.save()
         }
