@@ -1,0 +1,203 @@
+//
+//  TestDataFactory.swift
+//  MoneyMoaTests
+//
+//  Created by Sooik Kim on 7/28/25.
+//
+
+import Foundation
+@testable import MoneyMoa
+
+// MARK: - Test Data Factory
+
+struct TestDataFactory {
+    
+    // MARK: - Category Factory Methods
+    
+    static func createCategory(
+        id: UUID = UUID(),
+        name: String = "식비",
+        type: TransactionType = .variableExpense,
+        isActive: Bool = true,
+        orderIndex: Int = 0
+    ) -> CategoryDTO {
+        CategoryDTO(
+            id: id,
+            name: name,
+            transactionType: type,
+            isActive: isActive,
+            orderIndex: orderIndex
+        )
+    }
+    
+    static func createCategories() -> [CategoryDTO] {
+        [
+            createCategory(name: "식비", type: .variableExpense, orderIndex: 0),
+            createCategory(name: "교통비", type: .variableExpense, orderIndex: 1),
+            createCategory(name: "급여", type: .income, orderIndex: 0),
+            createCategory(name: "월세", type: .fixedExpense, orderIndex: 0)
+        ]
+    }
+    
+    // MARK: - SubCategory Factory Methods
+    
+    static func createSubCategory(
+        id: UUID = UUID(),
+        name: String = "외식비",
+        categoryId: UUID,
+        type: TransactionType = .variableExpense,
+        isActive: Bool = true,
+        orderIndex: Int = 0
+    ) -> SubCategoryDTO {
+        SubCategoryDTO(
+            id: id,
+            name: name,
+            transactionType: type,
+            isActive: isActive,
+            orderIndex: orderIndex,
+            categoryId: categoryId
+        )
+    }
+    
+    static func createSubCategories(for categoryId: UUID) -> [SubCategoryDTO] {
+        [
+            createSubCategory(name: "외식비", categoryId: categoryId, orderIndex: 0),
+            createSubCategory(name: "마트", categoryId: categoryId, orderIndex: 1),
+            createSubCategory(name: "배달음식", categoryId: categoryId, orderIndex: 2)
+        ]
+    }
+    
+    // MARK: - PaymentMethod Factory Methods
+    
+    static func createPaymentMethod(
+        id: UUID = UUID(),
+        name: String = "신용카드",
+        kind: PaymentMethodKind = .credit,
+        isActive: Bool = true,
+        orderIndex: Int = 0
+    ) -> PaymentMethodDTO {
+        PaymentMethodDTO(
+            id: id,
+            name: name,
+            kind: kind,
+            orderIndex: orderIndex,
+            isActive: isActive
+        )
+    }
+    
+    static func createPaymentMethods() -> [PaymentMethodDTO] {
+        [
+            createPaymentMethod(name: "신용카드", kind: .credit, orderIndex: 0),
+            createPaymentMethod(name: "체크카드", kind: .debit, orderIndex: 1),
+            createPaymentMethod(name: "현금", kind: .cash, orderIndex: 2),
+            createPaymentMethod(name: "계좌이체", kind: .transfer, orderIndex: 3)
+        ]
+    }
+    
+    // MARK: - Transaction Factory Methods
+    
+    static func createTransaction(
+        id: UUID = UUID(),
+        amount: Decimal = 10000,
+        date: Date = Date(),
+        place: String? = "맥도날드",
+        memo: String? = "점심식사",
+        transactionType: TransactionType = .variableExpense,
+        isFavorite: Bool = false,
+        subCategory: SubCategoryDTO,
+        paymentMethod: PaymentMethodDTO
+    ) -> TransactionDTO {
+        TransactionDTO(
+            id: id,
+            amount: amount,
+            date: date,
+            place: place,
+            memo: memo,
+            transactionType: transactionType,
+            isFavorite: isFavorite,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+    }
+    
+    // MARK: - Date Utilities
+    
+    static func dateFromDaysAgo(_ days: Int) -> Date {
+        Calendar.current.date(byAdding: .day, value: -days, to: Date()) ?? Date()
+    }
+    
+    static func startOfMonth(for date: Date = Date()) -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month], from: date)
+        return calendar.date(from: components) ?? date
+    }
+    
+    static func endOfMonth(for date: Date = Date()) -> Date {
+        let calendar = Calendar.current
+        guard let startOfMonth = calendar.dateInterval(of: .month, for: date)?.start,
+              let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, second: -1), to: startOfMonth) else {
+            return date
+        }
+        return endOfMonth
+    }
+    
+    // MARK: - Budget Factory Methods
+        
+    static func createBudgetTemplate(
+        id: UUID = UUID(),
+        totalAmount: Decimal = 1000000,
+        categoryBudgetTemplates: [CategoryBudgetTemplateDTO] = []
+    ) -> BudgetTemplateDTO {
+        BudgetTemplateDTO(
+            id: id,
+            totalAmount: totalAmount,
+            categoryBudgetTemplates: categoryBudgetTemplates
+        )
+    }
+    
+    static func createCategoryBudgetTemplate(
+        id: UUID = UUID(),
+        amount: Decimal = 300000,
+        categoryID: UUID,
+        categoryName: String = "식비",
+        budgetTemplateId: UUID
+    ) -> CategoryBudgetTemplateDTO {
+        CategoryBudgetTemplateDTO(
+            id: id,
+            amount: amount,
+            categoryID: categoryID,
+            categoryName: categoryName,
+            budgetTemplateId: budgetTemplateId
+        )
+    }
+    
+    static func createBudget(
+        id: UUID = UUID(),
+        month: YearMonth = YearMonth.current,
+        totalAmount: Decimal = 1000000,
+        categoryBudgets: [CategoryBudgetDTO] = []
+    ) -> BudgetDTO {
+        BudgetDTO(
+            id: id,
+            month: month,
+            totalAmount: totalAmount,
+            categoryBudgets: categoryBudgets
+        )
+    }
+    
+    static func createCategoryBudget(
+        id: UUID = UUID(),
+        amount: Decimal = 300000,
+        categoryID: UUID,
+        categoryName: String = "식비",
+        budgetId: UUID
+    ) -> CategoryBudgetDTO {
+        CategoryBudgetDTO(
+            id: id,
+            amount: amount,
+            categoryID: categoryID,
+            categoryName: categoryName,
+            budgetId: budgetId
+        )
+    }
+}

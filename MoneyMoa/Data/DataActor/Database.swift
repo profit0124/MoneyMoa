@@ -13,8 +13,8 @@ enum DatabaseError: Error {
 }
 
 @ModelActor
-actor Database {
-    init(isStoredInMemoryOnly: Bool = false) throws {
+public actor Database {
+    public init(isStoredInMemoryOnly: Bool = false) throws {
         let scheme = Schema([
             Category.self,
             SubCategory.self,
