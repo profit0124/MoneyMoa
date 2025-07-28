@@ -90,7 +90,7 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func fetchBudget(for month: YearMonth) async throws -> BudgetDTO? {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> { $0.month == month }
+            let predicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let budget = try context.fetch(descriptor).first else {
@@ -103,7 +103,7 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func fetchBudgetWithCategories(for month: YearMonth) async throws -> BudgetDTO? {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> { $0.month == month }
+            let predicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let budget = try context.fetch(descriptor).first else {
@@ -174,7 +174,10 @@ public class BudgetRepositoryImpl: BudgetRepository {
     public func fetchRecentBudgets(months: Int = 12) async throws -> [BudgetDTO] {
         try await database.withModelContext { context in
             var descriptor = FetchDescriptor<Budget>(
-                sortBy: [SortDescriptor(\.month, order: .reverse)]
+                sortBy: [
+                    SortDescriptor(\.month.year, order: .reverse),
+                    SortDescriptor(\.month.month, order: .reverse)
+                ]
             )
             descriptor.fetchLimit = months
             
@@ -188,7 +191,7 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func updateBudget(for month: YearMonth, budget: BudgetDTO) async throws {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> { $0.month == month }
+            let predicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let existingBudget = try context.fetch(descriptor).first else {
@@ -221,7 +224,7 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func updateBudgetTotalAmount(for month: YearMonth, totalAmount: Decimal) async throws {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> { $0.month == month }
+            let predicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let budget = try context.fetch(descriptor).first else {
@@ -241,7 +244,7 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func updateCategoryBudgets(for month: YearMonth, categoryBudgets: [CategoryBudgetDTO]) async throws {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> { $0.month == month }
+            let predicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let budget = try context.fetch(descriptor).first else {
@@ -271,7 +274,7 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func updateCategoryBudget(categoryId: UUID, amount: Decimal, for month: YearMonth) async throws {
         try await database.withModelContext { context in
-            let budgetPredicate = #Predicate<Budget> { $0.month == month }
+            let budgetPredicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
             let budgetDescriptor = FetchDescriptor<Budget>(predicate: budgetPredicate)
             
             guard let budget = try context.fetch(budgetDescriptor).first else {
