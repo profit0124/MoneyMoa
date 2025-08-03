@@ -43,16 +43,10 @@ extension Decimal {
             return "1억+"
         }
         
-        // 1만 이상
+        // 1만 이상 (99,999,999 이하)
         if absoluteValue >= 10_000 {
             let tenThousands = absoluteValue / 10_000
-            let ten = Decimal(10)
-            var multiplied = tenThousands * ten
-            var rounded = Decimal()
-            NSDecimalRound(&rounded, &multiplied, 0, .plain)
-            rounded = rounded / ten // 소수점 1자리까지
-            
-            let intValue = Int(truncating: rounded as NSDecimalNumber)
+            let intValue = Int(truncating: tenThousands as NSDecimalNumber)
             return "\(intValue)만"
         }
         
