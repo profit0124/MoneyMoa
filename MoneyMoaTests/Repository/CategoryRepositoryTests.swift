@@ -40,8 +40,8 @@ final class CategoryRepositoryTests: XCTestCase {
     func testFetchCategories_WithData() async throws {
         // Given: 테스트 카테고리들 생성
         let category1 = TestDataFactory.createCategory(orderIndex: 1) // 기본값: name="식비", type=.variableExpense
-        let category2 = TestDataFactory.createCategory(name: "교통비") // 기본값: orderIndex=0
-        let category3 = TestDataFactory.createCategory(name: "급여", type: .income) // 기본값: orderIndex=0
+        let category2 = TestDataFactory.createCategory(name: "교통비", iconName: "car.fill") // 기본값: orderIndex=0
+        let category3 = TestDataFactory.createCategory(name: "급여", iconName: "dollarsign.circle.fill", type: .income) // 기본값: orderIndex=0
         
         try await repository.insertCategory(category1)
         try await repository.insertCategory(category2)
@@ -59,7 +59,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchCategory_ExistingId() async throws {
         // Given: 테스트 카테고리 생성
-        let originalCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense, orderIndex: 0)
+        let originalCategory = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense, orderIndex: 0)
         try await repository.insertCategory(originalCategory)
         
         // When: 특정 카테고리 조회
@@ -109,8 +109,8 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchActiveCategories() async throws {
         // Given: 활성/비활성 카테고리들 생성
-        let activeCategory = TestDataFactory.createCategory(name: "활성카테고리", type: .variableExpense, isActive: true)
-        let inactiveCategory = TestDataFactory.createCategory(name: "비활성카테고리", type: .variableExpense, isActive: false)
+        let activeCategory = TestDataFactory.createCategory(name: "활성카테고리", iconName: "checkmark.circle.fill", type: .variableExpense, isActive: true)
+        let inactiveCategory = TestDataFactory.createCategory(name: "비활성카테고리", iconName: "xmark.circle.fill", type: .variableExpense, isActive: false)
         
         try await repository.insertCategory(activeCategory)
         try await repository.insertCategory(inactiveCategory)
@@ -126,10 +126,10 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testFetchCategoriesByType() async throws {
         // Given: 다양한 유형의 카테고리들 생성
-        let incomeCategory = TestDataFactory.createCategory(name: "급여", type: .income)
-        let expenseCategory1 = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
-        let expenseCategory2 = TestDataFactory.createCategory(name: "교통비", type: .variableExpense)
-        let fixedExpenseCategory = TestDataFactory.createCategory(name: "월세", type: .fixedExpense)
+        let incomeCategory = TestDataFactory.createCategory(name: "급여", iconName: "dollarsign.circle.fill", type: .income)
+        let expenseCategory1 = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense)
+        let expenseCategory2 = TestDataFactory.createCategory(name: "교통비", iconName: "car.fill", type: .variableExpense)
+        let fixedExpenseCategory = TestDataFactory.createCategory(name: "월세", iconName: "house.fill", type: .fixedExpense)
         
         try await repository.insertCategory(incomeCategory)
         try await repository.insertCategory(expenseCategory1)
@@ -162,13 +162,14 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testUpdateCategory_Success() async throws {
         // Given: 기존 카테고리 생성
-        let originalCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense, orderIndex: 0)
+        let originalCategory = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense, orderIndex: 0)
         try await repository.insertCategory(originalCategory)
         
         // When: 카테고리 정보 수정
         let updatedCategory = CategoryDTO(
             id: originalCategory.id,
             name: "외식비",
+            iconName: "fork.knife",
             transactionType: .variableExpense,
             isActive: false,
             orderIndex: 1
@@ -184,7 +185,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testUpdateCategory_NonExistingCategory() async throws {
         // Given: 존재하지 않는 카테고리 ID
-        let nonExistingCategory = TestDataFactory.createCategory(name: "존재하지않음", type: .variableExpense)
+        let nonExistingCategory = TestDataFactory.createCategory(name: "존재하지않음", iconName: "questionmark.circle.fill", type: .variableExpense)
         
         // When & Then: 에러 발생
         do {
@@ -204,7 +205,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testDeactivateCategory_Success() async throws {
         // Given: 활성 카테고리 생성
-        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: true)
+        let category = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense, isActive: true)
         try await repository.insertCategory(category)
         
         // When: 카테고리 비활성화
@@ -235,7 +236,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testActivateCategory_Success() async throws {
         // Given: 비활성 카테고리 생성
-        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: false)
+        let category = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense, isActive: false)
         try await repository.insertCategory(category)
         
         // When: 카테고리 활성화
@@ -268,7 +269,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testDeleteCategory_InactiveCategory_Success() async throws {
         // Given: 비활성 카테고리 생성
-        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: false)
+        let category = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense, isActive: false)
         try await repository.insertCategory(category)
         
         // When: 카테고리 삭제
@@ -281,7 +282,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testDeleteCategory_ActiveCategory_ThrowsError() async throws {
         // Given: 활성 카테고리 생성
-        let category = TestDataFactory.createCategory(name: "식비", type: .variableExpense, isActive: true)
+        let category = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense, isActive: true)
         try await repository.insertCategory(category)
         
         // When & Then: 에러 발생
@@ -324,7 +325,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_AvailableName() async throws {
         // Given: 기존 카테고리 생성
-        let existingCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 다른 이름으로 검증
@@ -336,7 +337,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_DuplicateName() async throws {
         // Given: 기존 카테고리 생성
-        let existingCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 동일한 이름으로 검증
@@ -348,7 +349,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_DuplicateNameButDifferentType() async throws {
         // Given: 기존 카테고리 생성 (변동지출)
-        let existingCategory = TestDataFactory.createCategory(name: "용돈", type: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "용돈", iconName: "creditcard.fill", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 동일한 이름이지만 다른 유형으로 검증 (수입)
@@ -360,7 +361,7 @@ final class CategoryRepositoryTests: XCTestCase {
     
     func testValidateCategoryName_ExcludingSelf() async throws {
         // Given: 기존 카테고리 생성
-        let existingCategory = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+        let existingCategory = TestDataFactory.createCategory(name: "식비", iconName: "fork.knife", type: .variableExpense)
         try await repository.insertCategory(existingCategory)
         
         // When: 자기 자신을 제외하고 검증 (수정 시나리오)

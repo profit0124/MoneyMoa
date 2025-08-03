@@ -33,7 +33,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func createParentCategory(id: UUID, name: String, type: TransactionType) async throws {
-        let categoryDTO = TestDataFactory.createCategory(id: id, name: name, type: type)
+        let categoryDTO = TestDataFactory.createCategory(id: id, name: name, iconName: "fork.knife", type: type)
         try await database.withModelContext { context in
             let category = categoryDTO.toModel()
             context.insert(category)
@@ -50,8 +50,8 @@ final class SubCategoryRepositoryTests: XCTestCase {
         let categoryId2 = UUID()
         
         try await database.withModelContext { context in
-            let categoryDTO1 = TestDataFactory.createCategory(id: categoryId1, name: "식비", type: .variableExpense)
-            let categoryDTO2 = TestDataFactory.createCategory(id: categoryId2, name: "급여", type: .income)
+            let categoryDTO1 = TestDataFactory.createCategory(id: categoryId1, name: "식비", iconName: "fork.knife", type: .variableExpense)
+            let categoryDTO2 = TestDataFactory.createCategory(id: categoryId2, name: "급여", iconName: "dollarsign.circle.fill", type: .income)
             
             let category1 = categoryDTO1.toModel()
             let category2 = categoryDTO2.toModel()
@@ -239,7 +239,8 @@ final class SubCategoryRepositoryTests: XCTestCase {
             transactionType: .variableExpense,
             isActive: false,
             orderIndex: 1,
-            categoryId: parentCategoryId
+            categoryId: parentCategoryId,
+            categoryIconName: "fork.knife"
         )
         try await repository.updateSubCategory(updatedSubCategory)
         

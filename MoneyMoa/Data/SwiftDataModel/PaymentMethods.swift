@@ -94,7 +94,8 @@ extension PaymentMethodDTO {
             name: self.name,
             kind: self.kind,
             orderIndex: self.orderIndex,
-            isActive: self.isActive
+            isActive: self.isActive,
+            iconName: self.iconName
         )
     }
 }
