@@ -54,3 +54,14 @@ extension TransactionDTO: Comparable {
         return lhs.amount > rhs.amount
     }
 }
+
+// MARK: - TransactionDTO Extensions for Formatting
+
+extension TransactionDTO {
+    
+    /// 거래 금액을 포맷된 문자열로 반환
+    public var formattedAmount: String {
+        return transactionType.formatAmount(amount)
+    }
+    
+}

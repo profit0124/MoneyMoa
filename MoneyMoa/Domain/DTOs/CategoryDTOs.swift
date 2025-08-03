@@ -12,6 +12,7 @@ import Foundation
 public struct CategoryDTO: Sendable, Hashable, Identifiable {
     public let id: UUID
     public let name: String
+    public let iconName: String
     public let transactionType: TransactionType
     public let isActive: Bool
     public let orderIndex: Int
@@ -20,6 +21,7 @@ public struct CategoryDTO: Sendable, Hashable, Identifiable {
     public init(
         id: UUID = UUID(),
         name: String,
+        iconName: String,
         transactionType: TransactionType,
         isActive: Bool = true,
         orderIndex: Int = 0,
@@ -27,6 +29,7 @@ public struct CategoryDTO: Sendable, Hashable, Identifiable {
     ) {
         self.id = id
         self.name = name
+        self.iconName = iconName
         self.transactionType = transactionType
         self.isActive = isActive
         self.orderIndex = orderIndex
@@ -43,6 +46,7 @@ public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
     public let isActive: Bool
     public let orderIndex: Int
     public let categoryId: UUID
+    public let categoryIconName: String
     
     public init(
         id: UUID = UUID(),
@@ -50,7 +54,8 @@ public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
         transactionType: TransactionType,
         isActive: Bool = true,
         orderIndex: Int = 0,
-        categoryId: UUID
+        categoryId: UUID,
+        categoryIconName: String
     ) {
         self.id = id
         self.name = name
@@ -58,6 +63,7 @@ public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
         self.isActive = isActive
         self.orderIndex = orderIndex
         self.categoryId = categoryId
+        self.categoryIconName = categoryIconName
     }
 }
 

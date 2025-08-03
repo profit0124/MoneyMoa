@@ -42,6 +42,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category = MoneyMoa.Category(
                 id: categoryId,
                 name: "식비",
+                iconName: "",
                 transactionType: .variableExpense
             )
             context.insert(category)
@@ -65,6 +66,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             try await database.withModelContext { context in
                 let category = MoneyMoa.Category(
                     name: "카테고리\(i)",
+                    iconName: "icon",
                     transactionType: .variableExpense
                 )
                 context.insert(category)
@@ -89,6 +91,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category = MoneyMoa.Category(
                 id: categoryId,
                 name: "식비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category)
@@ -128,6 +131,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category = MoneyMoa.Category(
                 id: categoryId,
                 name: "식비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category)
@@ -167,11 +171,13 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category1 = MoneyMoa.Category(
                 id: category1Id,
                 name: "식비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             let category2 = MoneyMoa.Category(
                 id: category2Id,
                 name: "교통비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category1)
@@ -200,6 +206,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let activeCategory = MoneyMoa.Category(
                 id: activeId,
                 name: "활성카테고리",
+                iconName: "icon",
                 transactionType: .variableExpense,
                 orderIndex: 0,
                 isActive: true
@@ -207,6 +214,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let inactiveCategory = MoneyMoa.Category(
                 id: inactiveId,
                 name: "비활성카테고리",
+                iconName: "icon",
                 transactionType: .variableExpense,
                 orderIndex: 1,
                 isActive: false
@@ -259,6 +267,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             // Insert a test category to ensure ModelContext is working
             let category = MoneyMoa.Category(
                 name: "테스트카테고리",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category)
