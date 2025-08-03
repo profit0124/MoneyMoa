@@ -20,7 +20,7 @@ public class MainViewModel {
     
     /// MainView 완료 시점에 transactions 의 필요 여부에 따라 삭제 가능
     private(set) var transactions: [TransactionDTO] = []
-    private var transactionsByDate: [Date: [TransactionDTO]] = [:]
+    public private(set) var transactionsByDate: [Date: [TransactionDTO]] = [:]
     public var listData: [(Date, [TransactionDTO])] {
         transactionsByDate.sorted(by: { $0.key > $1.key})
     }

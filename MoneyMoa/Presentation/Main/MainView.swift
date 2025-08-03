@@ -18,6 +18,26 @@ struct MainView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 0) {
+                    // Year/Month Header
+                    YearMonthHeaderView(
+                        yearMonth: viewModel.currentYearMonth,
+                        onYearMonthChange: handleYearMonthChange
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    
+                    // Calendar Section
+                    CalendarView(
+                        yearMonth: viewModel.currentYearMonth,
+                        transactionsByDate: viewModel.transactionsByDate,
+                        onDateTap: handleDateTap
+                    )
+                    .padding(.horizontal, 16)
+                    
+                    // Divider
+                    Divider()
+                        .padding(.vertical, 16)
+                    
                     // TransactionList Section
                     TransactionListView(
                         listData: viewModel.listData,
@@ -38,6 +58,15 @@ struct MainView: View {
     private func handleTransactionTap(_ transaction: TransactionDTO) {
         // TODO: 거래 상세 화면으로 이동
         print("Transaction tapped: \(transaction.id)")
+    }
+    
+    private func handleDateTap(_ date: Date) {
+        // TODO: 해당 날짜 거래 목록으로 스크롤
+        print("Date tapped: \(date)")
+    }
+    
+    private func handleYearMonthChange(_ action: MainViewModel.HandleYearMonth) {
+        viewModel.send(.handleYearMonth(action))
     }
 }
 
