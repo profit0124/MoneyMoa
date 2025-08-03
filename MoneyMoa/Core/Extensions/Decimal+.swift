@@ -31,4 +31,28 @@ extension Decimal {
         let formattedAmount = formatter.string(from: self as NSDecimalNumber) ?? "0"
         return "-\(formattedAmount)원"
     }
+    
+    // MARK: - Calendar Display Extensions
+    
+    /// Calendar용 압축 금액 표시 (예: "+1만", "-50만", "+1억+")
+    public var compactAmountText: String {
+        let absoluteValue = abs(self)
+        
+        // 99,999,999 초과 처리
+        if absoluteValue > 99_999_999 {
+            return "1억+"
+        }
+        
+        // 1만 이상 (99,999,999 이하)
+        if absoluteValue >= 10_000 {
+            let tenThousands = absoluteValue / 10_000
+            let intValue = Int(truncating: tenThousands as NSDecimalNumber)
+            return "\(intValue)만"
+        }
+        
+        // 1만 미만
+        let formatter = FormatterManager.shared.amountFormatter
+        let formattedAmount = formatter.string(from: absoluteValue as NSDecimalNumber) ?? "0"
+        return "\(formattedAmount)"
+    }
 }
