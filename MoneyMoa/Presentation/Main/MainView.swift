@@ -8,8 +8,51 @@
 import SwiftUI
 
 struct MainView: View {
+    @State private var viewModel: MainViewModel
+    
+    init(viewModel: MainViewModel) {
+        self._viewModel = State(wrappedValue: viewModel)
+    }
+    
     var body: some View {
-        Text("Main View")
+        NavigationStack {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    // TransactionList Section
+                    TransactionListView(
+                        listData: viewModel.listData,
+                        onTransactionTap: handleTransactionTap
+                    )
+                }
+            }
+            .navigationTitle("MoneyMoa")
+            .navigationBarTitleDisplayMode(.large)
+            .task {
+                viewModel.send(.loadTransactions)
+            }
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func handleTransactionTap(_ transaction: TransactionDTO) {
+        // TODO: 거래 상세 화면으로 이동
+        print("Transaction tapped: \(transaction.id)")
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    // TODO: 실제 의존성 주입으로 교체 예정
+    let mockUseCase = MockGetMonthlyTransactionsUseCase()
+    let viewModel = MainViewModel(getMonthlyTransactionsUseCase: mockUseCase)
+    
+    MainView(viewModel: viewModel)
+}
+
+
+        /// TODO: 다음 구현 예정 섹션들
         /// 1. HeaderSection
         /// - 앱 이름 표시
         /// - Toolbar
@@ -39,9 +82,3 @@ struct MainView: View {
         ///     3. 셀 탭 → FullScreenCover(모달) 또는 NavigationStack Push로 상세 페이지
         ///     4. **캘린더‑리스트 연동**: Calendar 날짜 선택 시 해당 날짜 Section으로 스크롤 to Top
         /// 6. 우측 하단 + 버튼 (Transaction 추가)
-    }
-}
-
-#Preview {
-    MainView()
-}

@@ -68,6 +68,7 @@ extension PaymentMethod {
             id: self.id,
             name: self.name,
             kind: self.kind,
+            iconName: self.iconName,
             orderIndex: self.orderIndex,
             isActive: self.isActive,
         )
