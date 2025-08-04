@@ -26,6 +26,14 @@ struct MainView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     
+                    // Summary Section
+                    SummaryView(
+                        summaryData: viewModel.summaryData,
+                        isLoading: viewModel.isSummaryLoading,
+                        onBudgetSetupTap: handleBudgetSetupTap
+                    )
+                    .padding(.vertical, 8)
+                    
                     // Calendar Section
                     CalendarView(
                         yearMonth: viewModel.currentYearMonth,
@@ -67,6 +75,11 @@ struct MainView: View {
     
     private func handleYearMonthChange(_ action: MainViewModel.HandleYearMonth) {
         viewModel.send(.handleYearMonth(action))
+    }
+    
+    private func handleBudgetSetupTap() {
+        // TODO: 예산 설정 화면으로 이동
+        print("Budget setup tapped")
     }
 }
 

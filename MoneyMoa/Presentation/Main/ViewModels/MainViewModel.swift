@@ -37,7 +37,7 @@ public class MainViewModel {
     public private(set) var summaryData: SummaryDisplayData?
     
     /// Summary 로딩 상태
-    public private(set) var isSummaryLoading: Bool = false
+    public private(set) var isSummaryLoading: Bool = true
     
     /// 현재 월 지출 (계산된 값 저장)
     private var currentMonthExpenseAmount: Decimal = 0

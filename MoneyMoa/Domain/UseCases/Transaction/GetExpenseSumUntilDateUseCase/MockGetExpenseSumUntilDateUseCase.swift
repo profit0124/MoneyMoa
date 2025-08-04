@@ -37,18 +37,18 @@ public final class MockGetExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseC
         let calendar = Calendar.current
         let targetYearMonth = YearMonth(from: untilDay)
         
-        if yearMonth < targetYearMonth {
-            // 과거 월인 경우: 해당 월 전체 지출
+        if yearMonth < YearMonth(from: Date()).previousMonth() {
+            // 그 이전 월들인 경우: 해당 월 전체 지출
             return mockExpenseData[yearMonth] ?? calculateMockMonthlyExpense(for: yearMonth)
         } else {
-            // 현재 월인 경우: 해당 일자까지의 지출
+            // 현재 날짜와 같은 일자까지
             let currentDay = calendar.component(.day, from: untilDay)
-            let dailyExpense = mockExpenseData[yearMonth] ?? calculateMockMonthlyExpense(for: yearMonth)
+            let monthlyExpense = mockExpenseData[yearMonth] ?? calculateMockMonthlyExpense(for: yearMonth)
             let daysInMonth = calendar.range(of: .day, in: .month, for: yearMonth.startOfMonth)?.count ?? 30
             
-            // 일별 평균으로 계산
-            let averageDailyExpense = dailyExpense / Decimal(daysInMonth)
-            return averageDailyExpense * Decimal(currentDay)
+            // 일별 평균으로 계산 (같은 일자까지)
+            let averageDailyExpense = monthlyExpense / Decimal(daysInMonth)
+            return averageDailyExpense * Decimal(min(currentDay, daysInMonth))
         }
     }
     
@@ -83,7 +83,6 @@ public final class MockGetExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseC
     
     /// 일반적인 지출 시나리오를 설정합니다
     public func configureNormalExpenseScenario() {
-        let currentDate = Date()
         let currentYearMonth = YearMonth.current
         let previousYearMonth = currentYearMonth.previousMonth()
         
@@ -94,7 +93,6 @@ public final class MockGetExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseC
     
     /// 고지출 시나리오를 설정합니다
     public func configureHighExpenseScenario() {
-        let currentDate = Date()
         let currentYearMonth = YearMonth.current
         let previousYearMonth = currentYearMonth.previousMonth()
         
@@ -105,7 +103,6 @@ public final class MockGetExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseC
     
     /// 저지출 시나리오를 설정합니다
     public func configureLowExpenseScenario() {
-        let currentDate = Date()
         let currentYearMonth = YearMonth.current
         let previousYearMonth = currentYearMonth.previousMonth()
         
