@@ -9,7 +9,11 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        MainView(viewModel: .init(getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase()))
+        MainView(viewModel: .init(
+            getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
+            getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
+            getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase()
+        ))
     }
 }
 

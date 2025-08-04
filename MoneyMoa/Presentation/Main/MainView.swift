@@ -74,8 +74,11 @@ struct MainView: View {
 
 #Preview {
     // TODO: 실제 의존성 주입으로 교체 예정
-    let mockUseCase = MockGetMonthlyTransactionsUseCase()
-    let viewModel = MainViewModel(getMonthlyTransactionsUseCase: mockUseCase)
+    let viewModel = MainViewModel(
+        getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
+        getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
+        getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase()
+    )
     
     MainView(viewModel: viewModel)
 }
