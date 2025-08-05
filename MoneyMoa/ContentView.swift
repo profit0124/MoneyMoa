@@ -8,17 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    // MARK: - Properties
+    
+    /// DI 컨테이너
+    private let diContainer: DIContainer
+    
+    // MARK: - Initialization
+    
+    init(diContainer: DIContainer) {
+        self.diContainer = diContainer
+    }
+    
+    // MARK: - View Body
+    
     var body: some View {
-        MainView(viewModel: .init(
-            getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
-            getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
-            getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
-            getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase()
-        ))
+        MainView(viewModel: diContainer.makeMainViewModel())
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(diContainer: MockDIContainer())
 }
