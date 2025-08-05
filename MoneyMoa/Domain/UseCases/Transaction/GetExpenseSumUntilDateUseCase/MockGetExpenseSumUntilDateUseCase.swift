@@ -35,7 +35,6 @@ public final class MockGetExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseC
         try await Task.sleep(nanoseconds: mockDelay)
         
         let calendar = Calendar.current
-        let targetYearMonth = YearMonth(from: untilDay)
         
         if yearMonth < YearMonth(from: Date()).previousMonth() {
             // 그 이전 월들인 경우: 해당 월 전체 지출
