@@ -12,7 +12,9 @@ struct ContentView: View {
         MainView(viewModel: .init(
             getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
             getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
-            getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase()
+            getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
+            getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
+            createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase()
         ))
     }
 }

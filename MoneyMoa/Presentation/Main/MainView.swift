@@ -90,7 +90,9 @@ struct MainView: View {
     let viewModel = MainViewModel(
         getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
         getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
-        getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase()
+        getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
+        getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
+        createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase()
     )
     
     MainView(viewModel: viewModel)

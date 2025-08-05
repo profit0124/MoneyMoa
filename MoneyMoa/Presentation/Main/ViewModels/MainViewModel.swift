@@ -53,6 +53,8 @@ public class MainViewModel {
     private let getMonthlyTransactionsUseCase: GetMonthlyTransactionsUseCase
     private let getExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseCase
     private let getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase
+    private let getBudgetTemplateUseCase: GetBudgetTemplateUseCase
+    private let createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase
     
     // MARK: - Initialization
     
@@ -60,11 +62,15 @@ public class MainViewModel {
         getMonthlyTransactionsUseCase: GetMonthlyTransactionsUseCase,
         getExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseCase,
         getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase,
+        getBudgetTemplateUseCase: GetBudgetTemplateUseCase,
+        createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase,
         initialYearMonth: YearMonth = YearMonth.current
     ) {
         self.getMonthlyTransactionsUseCase = getMonthlyTransactionsUseCase
         self.getExpenseSumUntilDateUseCase = getExpenseSumUntilDateUseCase
         self.getMonthlyBudgetUseCase = getMonthlyBudgetUseCase
+        self.getBudgetTemplateUseCase = getBudgetTemplateUseCase
+        self.createBudgetFromTemplateUseCase = createBudgetFromTemplateUseCase
         self.currentYearMonth = initialYearMonth
     }
     
@@ -75,6 +81,9 @@ public class MainViewModel {
         case calculateCurrentMonthExpense
         case loadPreviousMonthExpense
         case loadCurrentMonthBudget
+        case checkBudgetTemplate
+        case createBudgetFromTemplate(BudgetTemplateDTO)
+        case setBudget(BudgetDTO)
         case updateSummaryData
         case handleYearMonth(HandleYearMonth)
     }
@@ -107,9 +116,36 @@ public class MainViewModel {
             }
         case .loadCurrentMonthBudget:
             Task {
-                await loadCurrentMonthBudget()
-                send(.updateSummaryData)
+                let budgetResult = await loadCurrentMonthBudget()
+                if let budget = budgetResult {
+                    send(.setBudget(budget))
+                } else {
+                    send(.checkBudgetTemplate)
+                }
             }
+        case .checkBudgetTemplate:
+            Task {
+                let template = await checkBudgetTemplate()
+                if let template = template {
+                    send(.createBudgetFromTemplate(template))
+                } else {
+                    currentMonthBudget = nil
+                    send(.updateSummaryData)
+                }
+            }
+        case .createBudgetFromTemplate(let template):
+            Task {
+                let newBudget = await createBudgetFromTemplate(template)
+                if let budget = newBudget {
+                    send(.setBudget(budget))
+                } else {
+                    currentMonthBudget = nil
+                    send(.updateSummaryData)
+                }
+            }
+        case .setBudget(let budget):
+            setBudget(budget)
+            send(.updateSummaryData)
         case .updateSummaryData:
             updateSummaryData()
         case .handleYearMonth(let handleYearMonth):
@@ -167,14 +203,9 @@ public class MainViewModel {
     
     /// 동기 작업에 대한 로딩 상태 처리
     private func handleLoading(_ process: () -> Void) {
-        if !isSummaryLoading {
-            isSummaryLoading = true
-        }
-        
+        startSummaryLoading()
         defer {
-            if isSummaryLoading {
-                isSummaryLoading = false
-            }
+            stopSummaryLoading()
         }
         
         process()
@@ -182,14 +213,9 @@ public class MainViewModel {
     
     /// 비동기 작업에 대한 로딩 상태 처리
     private func handleAsyncLoading(_ process: () async -> Void) async {
-        if !isSummaryLoading {
-            isSummaryLoading = true
-        }
-        
+        startSummaryLoading()
         defer {
-            if isSummaryLoading {
-                isSummaryLoading = false
-            }
+            stopSummaryLoading()
         }
         
         await process()
@@ -248,15 +274,56 @@ public class MainViewModel {
     }
     
     /// 현재 월 예산을 로드합니다
-    private func loadCurrentMonthBudget() async {
-        await handleAsyncLoading {
-            do {
-                currentMonthBudget = try await getMonthlyBudgetUseCase.execute(yearMonth: currentYearMonth)
-            } catch {
-                print("Current month budget load error: \(error.localizedDescription)")
-                currentMonthBudget = nil
-            }
+    private func loadCurrentMonthBudget() async -> BudgetDTO? {
+        startSummaryLoading()
+        defer {
+            stopSummaryLoading()
         }
+        
+        do {
+            return try await getMonthlyBudgetUseCase.execute(yearMonth: currentYearMonth)
+        } catch {
+            print("Current month budget load error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    /// 예산 템플릿이 있는지 확인합니다
+    private func checkBudgetTemplate() async -> BudgetTemplateDTO? {
+        startSummaryLoading()
+        defer {
+            stopSummaryLoading()
+        }
+        
+        do {
+            return try await getBudgetTemplateUseCase.execute()
+        } catch {
+            print("Budget template check error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    /// 템플릿을 기반으로 예산을 생성합니다
+    private func createBudgetFromTemplate(_ template: BudgetTemplateDTO) async -> BudgetDTO? {
+        startSummaryLoading()
+        defer {
+            stopSummaryLoading()
+        }
+        
+        do {
+            return try await createBudgetFromTemplateUseCase.execute(
+                template: template,
+                yearMonth: currentYearMonth
+            )
+        } catch {
+            print("Create budget from template error: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    /// 예산을 설정합니다 (reload 대신 직접 설정)
+    private func setBudget(_ budget: BudgetDTO) {
+        currentMonthBudget = budget
     }
     
     /// Summary 데이터를 업데이트합니다 (모든 계산된 데이터 조립)
