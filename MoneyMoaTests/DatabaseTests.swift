@@ -36,14 +36,15 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
     
     func testInsertCategoryUsingWithModelContext() async throws {
         let database = try createFreshDatabase()
-        let categoryId = UUID()
+        let categoryDTO = TestDataFactory.createCategory(
+            id: UUID(),
+            name: "식비",
+            iconName: "",
+            type: .variableExpense
+        )
         
         try await database.withModelContext { context in
-            let category = MoneyMoa.Category(
-                id: categoryId,
-                name: "식비",
-                transactionType: .variableExpense
-            )
+            let category = categoryDTO.toModel()
             context.insert(category)
             try context.save()
         }
@@ -54,19 +55,22 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         XCTAssertEqual(categories.count, 1)
         XCTAssertEqual(categories.first?.name, "식비")
-        XCTAssertEqual(categories.first?.id, categoryId)
+        XCTAssertEqual(categories.first?.id, categoryDTO.id)
     }
     
     func testMultipleOperations() async throws {
         let database = try createFreshDatabase()
         
-        // Insert 10 categories
+        // Insert 10 categories using TestDataFactory
         for i in 0..<10 {
             try await database.withModelContext { context in
-                let category = MoneyMoa.Category(
+                let categoryDTO = TestDataFactory.createCategory(
                     name: "카테고리\(i)",
-                    transactionType: .variableExpense
+                    iconName: "icon",
+                    type: .variableExpense,
+                    orderIndex: i
                 )
+                let category = categoryDTO.toModel()
                 context.insert(category)
                 try context.save()
             }
@@ -89,6 +93,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category = MoneyMoa.Category(
                 id: categoryId,
                 name: "식비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category)
@@ -128,6 +133,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category = MoneyMoa.Category(
                 id: categoryId,
                 name: "식비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category)
@@ -167,11 +173,13 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let category1 = MoneyMoa.Category(
                 id: category1Id,
                 name: "식비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             let category2 = MoneyMoa.Category(
                 id: category2Id,
                 name: "교통비",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category1)
@@ -200,6 +208,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let activeCategory = MoneyMoa.Category(
                 id: activeId,
                 name: "활성카테고리",
+                iconName: "icon",
                 transactionType: .variableExpense,
                 orderIndex: 0,
                 isActive: true
@@ -207,6 +216,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             let inactiveCategory = MoneyMoa.Category(
                 id: inactiveId,
                 name: "비활성카테고리",
+                iconName: "icon",
                 transactionType: .variableExpense,
                 orderIndex: 1,
                 isActive: false
@@ -259,6 +269,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
             // Insert a test category to ensure ModelContext is working
             let category = MoneyMoa.Category(
                 name: "테스트카테고리",
+                iconName: "icon",
                 transactionType: .variableExpense
             )
             context.insert(category)

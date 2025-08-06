@@ -21,7 +21,7 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     static public var current: YearMonth {
         let date = Date()
-        let calendar = Calendar.current
+        let calendar = FormatterManager.shared.koreaCalendar
         return YearMonth(
             year: calendar.component(.year, from: date),
             month: calendar.component(.month, from: date)
@@ -58,6 +58,19 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
         let nextMonthStart = nextMonth.startOfMonth
         // 다음 달 첫날에서 1초를 빼서 이번 달 마지막날 23:59:59를 만듦
         return calendar.date(byAdding: .second, value: -1, to: nextMonthStart) ?? Date()
+    }
+    
+    /// 기본 생성자
+    public init(year: Int, month: Int) {
+        self.year = year
+        self.month = month
+    }
+    
+    /// Date로부터 YearMonth를 생성합니다
+    public init(from date: Date) {
+        let calendar = Calendar.current
+        self.year = calendar.component(.year, from: date)
+        self.month = calendar.component(.month, from: date)
     }
 }
 

@@ -14,6 +14,7 @@ import SwiftData
 final class Category {
     @Attribute(.unique) var id: UUID
     var name: String
+    var iconName: String
     var orderIndex: Int
     var transactionTypeRawValue: String
     var transactionType: TransactionType {
@@ -26,9 +27,16 @@ final class Category {
     @Relationship(deleteRule: .cascade, inverse: \SubCategory.category)
     var subCategories: [SubCategory] = []
     
-    init(id: UUID = UUID(), name: String, transactionType: TransactionType, orderIndex: Int = 0, isActive: Bool = true) {
+    init(id: UUID = UUID(),
+         name: String,
+         iconName: String,
+         transactionType: TransactionType,
+         orderIndex: Int = 0,
+         isActive: Bool = true
+    ) {
         self.id = id
         self.name = name
+        self.iconName = iconName
         self.transactionTypeRawValue = transactionType.rawValue
         self.orderIndex = orderIndex
         self.isActive = isActive
@@ -84,6 +92,7 @@ extension Category {
         return CategoryDTO(
             id: self.id,
             name: self.name,
+            iconName: self.iconName,
             transactionType: self.transactionType,
             isActive: self.isActive,
             orderIndex: self.orderIndex,
@@ -101,7 +110,8 @@ extension SubCategory {
             transactionType: self.transactionType,
             isActive: self.isActive,
             orderIndex: self.orderIndex,
-            categoryId: self.category.id
+            categoryId: self.category.id,
+            categoryIconName: self.category.iconName
         )
     }
 }
@@ -132,6 +142,7 @@ extension CategoryDTO {
         return Category(
             id: self.id,
             name: self.name,
+            iconName: self.iconName,
             transactionType: self.transactionType,
             orderIndex: self.orderIndex,
             isActive: self.isActive

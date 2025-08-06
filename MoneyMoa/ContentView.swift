@@ -8,17 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    // MARK: - Properties
+    
+    /// DI 컨테이너
+    private let diContainer: DIContainer
+    
+    // MARK: - Initialization
+    
+    init(diContainer: DIContainer) {
+        self.diContainer = diContainer
+    }
+    
+    // MARK: - View Body
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        MainView(viewModel: diContainer.makeMainViewModel())
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(diContainer: MockDIContainer())
 }
