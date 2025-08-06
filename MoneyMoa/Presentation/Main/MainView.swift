@@ -26,6 +26,14 @@ struct MainView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     
+                    // Summary Section
+                    SummaryView(
+                        summaryData: viewModel.summaryData,
+                        isLoading: viewModel.isSummaryLoading,
+                        onBudgetSetupTap: handleBudgetSetupTap
+                    )
+                    .padding(.vertical, 8)
+                    
                     // Calendar Section
                     CalendarView(
                         yearMonth: viewModel.currentYearMonth,
@@ -68,14 +76,24 @@ struct MainView: View {
     private func handleYearMonthChange(_ action: MainViewModel.HandleYearMonth) {
         viewModel.send(.handleYearMonth(action))
     }
+    
+    private func handleBudgetSetupTap() {
+        // TODO: 예산 설정 화면으로 이동
+        print("Budget setup tapped")
+    }
 }
 
 // MARK: - Preview
 
 #Preview {
     // TODO: 실제 의존성 주입으로 교체 예정
-    let mockUseCase = MockGetMonthlyTransactionsUseCase()
-    let viewModel = MainViewModel(getMonthlyTransactionsUseCase: mockUseCase)
+    let viewModel = MainViewModel(
+        getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
+        getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
+        getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
+        getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
+        createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase()
+    )
     
     MainView(viewModel: viewModel)
 }
