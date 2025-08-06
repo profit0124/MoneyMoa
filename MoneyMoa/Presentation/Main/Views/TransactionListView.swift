@@ -14,15 +14,51 @@ struct TransactionListView: View {
     let onTransactionTap: (TransactionDTO) -> Void
     
     var body: some View {
-        LazyVStack(spacing: 0) {
-            ForEach(listData, id: \.0) { (date, transactions) in
-                TransactionDateSectionView(
-                    date: date,
-                    transactions: transactions,
-                    onTransactionTap: onTransactionTap
-                )
+        Group {
+            if listData.isEmpty {
+                TransactionEmptyView()
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(listData, id: \.0) { (date, transactions) in
+                        TransactionDateSectionView(
+                            date: date,
+                            transactions: transactions,
+                            onTransactionTap: onTransactionTap
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+// MARK: - TransactionEmptyView
+
+private struct TransactionEmptyView: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            // Empty Icon
+            Image(systemName: "list.clipboard")
+                .font(.system(size: 64))
+                .foregroundColor(.gray.opacity(0.5))
+            
+            // Empty Message
+            VStack(spacing: 8) {
+                Text("거래 내역이 없습니다")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text("이번 달에 등록된 거래가 없어요.\n우측 하단의 + 버튼을 눌러 거래를 추가해보세요!")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(nil)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 60)
+        .frame(maxWidth: .infinity, minHeight: 200)
     }
 }
 
@@ -230,6 +266,16 @@ private struct CategoryIconView: View {
 //    )
 //    .padding()
 //}
+
+#Preview("Empty State") {
+    TransactionListView(
+        listData: [],
+        onTransactionTap: { transaction in
+            print("Tapped: \(transaction.subCategory.name)")
+        }
+    )
+    .padding()
+}
 //
 //private func createDummyTransactionData() -> [(Date, [TransactionDTO])] {
 //    let today = Date()
