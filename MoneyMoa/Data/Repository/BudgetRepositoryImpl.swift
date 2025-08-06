@@ -171,6 +171,40 @@ public class BudgetRepositoryImpl: BudgetRepository {
         return try await fetchBudget(for: month)!
     }
     
+    public func createBudget(for month: YearMonth, budget: BudgetDTO) async throws {
+        try await database.withModelContext { context in
+            // 기존 예산이 있는지 확인
+            let predicate = #Predicate<Budget> { $0.month.year == month.year && $0.month.month == month.month }
+            let descriptor = FetchDescriptor<Budget>(predicate: predicate)
+            let existingBudgets = try context.fetch(descriptor)
+            
+            // 기존 예산이 있으면 삭제 (덮어쓰기)
+            for existing in existingBudgets {
+                context.delete(existing)
+            }
+            
+            // 새로운 예산 생성
+            let newBudget = Budget(
+                month: month,
+                totalAmount: budget.totalAmount
+            )
+            context.insert(newBudget)
+            
+            // 카테고리별 예산 생성
+            for categoryBudgetDTO in budget.categoryBudgets {
+                let categoryBudget = CategoryBudget(
+                    amount: categoryBudgetDTO.amount,
+                    categoryID: categoryBudgetDTO.categoryID,
+                    categoryName: categoryBudgetDTO.categoryName,
+                    budget: newBudget
+                )
+                context.insert(categoryBudget)
+            }
+            
+            try context.save()
+        }
+    }
+    
     public func fetchRecentBudgets(months: Int = 12) async throws -> [BudgetDTO] {
         try await database.withModelContext { context in
             var descriptor = FetchDescriptor<Budget>(

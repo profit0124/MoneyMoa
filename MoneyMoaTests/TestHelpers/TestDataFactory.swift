@@ -207,4 +207,72 @@ struct TestDataFactory {
             budgetId: budgetId
         )
     }
+    
+    // MARK: - SummaryDisplayData Factory Methods
+    
+    static func createSummaryDisplayData(
+        currentMonthExpense: Decimal = 800000,
+        previousMonthExpense: Decimal = 600000,
+        monthlyComparison: Decimal? = 200000,
+        comparisonPercentage: Double? = 0.33,
+        hasPreviousMonthData: Bool = true,
+        budget: BudgetDTO? = nil,
+        remainingBudget: Decimal? = nil,
+        budgetUsagePercentage: Double? = nil
+    ) -> SummaryDisplayData {
+        SummaryDisplayData(
+            currentMonthExpense: currentMonthExpense,
+            previousMonthExpense: previousMonthExpense,
+            monthlyComparison: monthlyComparison,
+            comparisonPercentage: comparisonPercentage,
+            hasPreviousMonthData: hasPreviousMonthData,
+            budget: budget,
+            remainingBudget: remainingBudget,
+            budgetUsagePercentage: budgetUsagePercentage
+        )
+    }
+    
+    static func createSummaryDisplayDataWithBudget(
+        currentMonthExpense: Decimal = 800000,
+        budgetAmount: Decimal = 2000000
+    ) -> SummaryDisplayData {
+        let budget = createBudget(
+            totalAmount: budgetAmount,
+            categoryBudgets: [
+                createCategoryBudget(
+                    amount: 800000,
+                    categoryID: UUID(),
+                    categoryName: "식비",
+                    budgetId: UUID()
+                ),
+                createCategoryBudget(
+                    amount: 400000,
+                    categoryID: UUID(),
+                    categoryName: "교통비",
+                    budgetId: UUID()
+                )
+            ]
+        )
+        
+        return createSummaryDisplayData(
+            currentMonthExpense: currentMonthExpense,
+            budget: budget,
+            remainingBudget: budgetAmount - currentMonthExpense,
+            budgetUsagePercentage: Double(truncating: currentMonthExpense as NSNumber) / Double(truncating: budgetAmount as NSNumber)
+        )
+    }
+    
+    static func createSummaryDisplayDataWithoutBudget(
+        currentMonthExpense: Decimal = 500000
+    ) -> SummaryDisplayData {
+        createSummaryDisplayData(
+            currentMonthExpense: currentMonthExpense,
+            previousMonthExpense: 400000,
+            monthlyComparison: 100000,
+            comparisonPercentage: 0.25,
+            budget: nil,
+            remainingBudget: nil,
+            budgetUsagePercentage: nil
+        )
+    }
 }

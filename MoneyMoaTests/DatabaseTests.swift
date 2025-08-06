@@ -36,15 +36,15 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
     
     func testInsertCategoryUsingWithModelContext() async throws {
         let database = try createFreshDatabase()
-        let categoryId = UUID()
+        let categoryDTO = TestDataFactory.createCategory(
+            id: UUID(),
+            name: "식비",
+            iconName: "",
+            type: .variableExpense
+        )
         
         try await database.withModelContext { context in
-            let category = MoneyMoa.Category(
-                id: categoryId,
-                name: "식비",
-                iconName: "",
-                transactionType: .variableExpense
-            )
+            let category = categoryDTO.toModel()
             context.insert(category)
             try context.save()
         }
@@ -55,20 +55,22 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         XCTAssertEqual(categories.count, 1)
         XCTAssertEqual(categories.first?.name, "식비")
-        XCTAssertEqual(categories.first?.id, categoryId)
+        XCTAssertEqual(categories.first?.id, categoryDTO.id)
     }
     
     func testMultipleOperations() async throws {
         let database = try createFreshDatabase()
         
-        // Insert 10 categories
+        // Insert 10 categories using TestDataFactory
         for i in 0..<10 {
             try await database.withModelContext { context in
-                let category = MoneyMoa.Category(
+                let categoryDTO = TestDataFactory.createCategory(
                     name: "카테고리\(i)",
                     iconName: "icon",
-                    transactionType: .variableExpense
+                    type: .variableExpense,
+                    orderIndex: i
                 )
+                let category = categoryDTO.toModel()
                 context.insert(category)
                 try context.save()
             }

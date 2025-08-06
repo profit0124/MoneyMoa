@@ -42,8 +42,8 @@ public class CreateBudgetFromTemplateUseCaseImpl: CreateBudgetFromTemplateUseCas
             categoryBudgets: categoryBudgets
         )
         
-        // Repository를 통해 예산 저장
-        try await budgetRepository.updateBudget(for: yearMonth, budget: newBudget)
+        // Repository를 통해 예산 저장 (새로운 createBudget 메서드 사용)
+        try await budgetRepository.createBudget(for: yearMonth, budget: newBudget)
         
         // 저장된 예산 다시 조회하여 반환 (실제 DB ID 포함)
         guard let savedBudget = try await budgetRepository.fetchBudgetWithCategories(for: yearMonth) else {

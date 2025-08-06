@@ -55,6 +55,12 @@ public protocol BudgetRepository {
     /// - Returns: 생성된 월별 예산
     func ensureBudgetExists(for month: YearMonth) async throws -> BudgetDTO
     
+    /// 새로운 예산 생성 (DTO 기반)
+    /// - Parameters:
+    ///   - month: 생성할 년월
+    ///   - budget: 생성할 예산 정보
+    func createBudget(for month: YearMonth, budget: BudgetDTO) async throws
+    
     /// 월별 예산 목록 조회 (최근 N개월)
     /// - Parameter months: 조회할 개월 수 (기본값: 12개월)
     /// - Returns: 최근 N개월의 예산 목록 (최신순)
