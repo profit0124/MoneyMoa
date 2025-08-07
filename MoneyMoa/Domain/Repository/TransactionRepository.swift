@@ -139,4 +139,3 @@ public protocol TransactionRepository {
     /// - Returns: 존재하고 활성 상태이면 true
     func validatePaymentMethodExists(id: UUID) async throws -> Bool
 }
-

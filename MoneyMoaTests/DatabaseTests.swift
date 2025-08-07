@@ -50,7 +50,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         }
         
         let categories = try await database.withModelContext { context in
-            try context.fetch(FetchDescriptor<MoneyMoa.Category>())
+            try context.fetch(FetchDescriptor<MoneyMoa.Category>()).toDTOs()
         }
         
         XCTAssertEqual(categories.count, 1)
@@ -78,7 +78,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         // Fetch all categories
         let categories = try await database.withModelContext { context in
-            try context.fetch(FetchDescriptor<MoneyMoa.Category>())
+            try context.fetch(FetchDescriptor<MoneyMoa.Category>()).toDTOs()
         }
         
         XCTAssertEqual(categories.count, 10)
@@ -102,7 +102,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         // Verify it exists
         let categoriesBeforeDelete = try await database.withModelContext { context in
-            try context.fetch(FetchDescriptor<MoneyMoa.Category>())
+            try context.fetch(FetchDescriptor<MoneyMoa.Category>()).toDTOs()
         }
         XCTAssertEqual(categoriesBeforeDelete.count, 1)
         
@@ -119,7 +119,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         // Verify it's deleted
         let categoriesAfterDelete = try await database.withModelContext { context in
-            try context.fetch(FetchDescriptor<MoneyMoa.Category>())
+            try context.fetch(FetchDescriptor<MoneyMoa.Category>()).toDTOs()
         }
         XCTAssertEqual(categoriesAfterDelete.count, 0)
     }
@@ -153,7 +153,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         // Verify update
         let updatedCategories = try await database.withModelContext { context in
-            try context.fetch(FetchDescriptor<MoneyMoa.Category>())
+            try context.fetch(FetchDescriptor<MoneyMoa.Category>()).toDTOs()
         }
         
         XCTAssertEqual(updatedCategories.count, 1)
@@ -191,7 +191,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         let filteredCategories = try await database.withModelContext { context in
             let predicate = #Predicate<MoneyMoa.Category> { $0.name == "식비" }
             let descriptor = FetchDescriptor<MoneyMoa.Category>(predicate: predicate)
-            return try context.fetch(descriptor)
+            return try context.fetch(descriptor).toDTOs()
         }
         
         XCTAssertEqual(filteredCategories.count, 1)
@@ -230,7 +230,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         let activeCategories = try await database.withModelContext { context in
             let predicate = #Predicate<MoneyMoa.Category> { $0.isActive == true }
             let descriptor = FetchDescriptor<MoneyMoa.Category>(predicate: predicate)
-            return try context.fetch(descriptor)
+            return try context.fetch(descriptor).toDTOs()
         }
         
         XCTAssertEqual(activeCategories.count, 1)
@@ -239,22 +239,19 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
     }
     
     // MARK: - Thread Isolation Tests
-    
     func testMainThreadVsDatabaseThread() async throws {
         var database: Database!
         var isMainThreadDuringCreation = false
         var isMainThreadDuringOperation = false
         
         // Create database on MainActor and test immediate operation
-        await MainActor.run {
-            isMainThreadDuringCreation = Thread.isMainThread
-            print("Creating database on main thread: \(isMainThreadDuringCreation)")
-            
+        (database, isMainThreadDuringCreation) = try await MainActor.run {
             do {
-                database = try createFreshDatabase()
                 print("Database created successfully on main thread")
+                return (try createFreshDatabase(), Thread.isMainThread)
             } catch {
                 XCTFail("Failed to create database: \(error)")
+                throw error
             }
         }
         
@@ -282,7 +279,7 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         // Verify the operation actually worked
         let categories = try await database.withModelContext { context in
-            try context.fetch(FetchDescriptor<MoneyMoa.Category>())
+            try context.fetch(FetchDescriptor<MoneyMoa.Category>()).toDTOs()
         }
         
         XCTAssertEqual(categories.count, 1, "Category should be inserted successfully")

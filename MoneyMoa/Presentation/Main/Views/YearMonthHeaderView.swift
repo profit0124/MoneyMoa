@@ -19,7 +19,7 @@ struct YearMonthHeaderView: View {
             // Year/Month Display (Left aligned, clickable)
             Button(action: {
                 isDatePickerPresented = true
-            }) {
+            }, label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(format: "%d년", yearMonth.year))
                         .font(.headline)
@@ -31,7 +31,7 @@ struct YearMonthHeaderView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                 }
-            }
+            })
             .buttonStyle(PlainButtonStyle())
             
             Spacer()
@@ -41,20 +41,20 @@ struct YearMonthHeaderView: View {
                 // Previous Month Button
                 Button(action: {
                     onYearMonthChange(.moveToPreviousMonth)
-                }) {
+                }, label: {
                     Image(systemName: "chevron.left")
                         .font(.title2)
                         .foregroundColor(.blue)
-                }
+                })
                 
                 // Next Month Button
                 Button(action: {
                     onYearMonthChange(.moveToNextMonth)
-                }) {
+                }, label: {
                     Image(systemName: "chevron.right")
                         .font(.title2)
                         .foregroundColor(.blue)
-                }
+                })
             }
         }
         .padding(.horizontal, 8)

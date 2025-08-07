@@ -116,3 +116,153 @@ extension CategoryBudgetTemplateDTO: Comparable {
         lhs.categoryName < rhs.categoryName
     }
 }
+
+#if DEBUG
+// MARK: - Mock Data Extensions
+
+extension BudgetTemplateDTO {
+    static let mockStandard = BudgetTemplateDTO(
+        totalAmount: 2_000_000,
+        categoryBudgetTemplates: [
+            .mockFood, .mockTransport, .mockLifestyle, .mockOthers
+        ]
+    )
+    
+    static let mockSimple = BudgetTemplateDTO(
+        totalAmount: 1_000_000,
+        categoryBudgetTemplates: [.mockFood]
+    )
+    
+    static let mockLarge = BudgetTemplateDTO(
+        totalAmount: 3_000_000,
+        categoryBudgetTemplates: [
+            .mockFoodLarge, .mockTransportLarge, .mockLifestyleLarge, .mockOthersLarge
+        ]
+    )
+}
+
+extension CategoryBudgetTemplateDTO {
+    private static let mockTemplateId = UUID()
+    
+    static let mockFood = CategoryBudgetTemplateDTO(
+        amount: 800_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "식비",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    static let mockTransport = CategoryBudgetTemplateDTO(
+        amount: 300_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "교통비",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    static let mockLifestyle = CategoryBudgetTemplateDTO(
+        amount: 500_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "생활용품",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    static let mockOthers = CategoryBudgetTemplateDTO(
+        amount: 400_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "기타",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    // Large budget versions
+    static let mockFoodLarge = CategoryBudgetTemplateDTO(
+        amount: 1_200_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "식비",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    static let mockTransportLarge = CategoryBudgetTemplateDTO(
+        amount: 500_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "교통비",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    static let mockLifestyleLarge = CategoryBudgetTemplateDTO(
+        amount: 800_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "생활용품",
+        budgetTemplateId: mockTemplateId
+    )
+    
+    static let mockOthersLarge = CategoryBudgetTemplateDTO(
+        amount: 500_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "기타",
+        budgetTemplateId: mockTemplateId
+    )
+}
+
+extension BudgetDTO {
+    static let mockCurrent = BudgetDTO(
+        month: .current,
+        totalAmount: 3_000_000,
+        categoryBudgets: [
+            .mockFood, .mockTransport, .mockOthers
+        ]
+    )
+    
+    static let mockPrevious = BudgetDTO(
+        month: YearMonth.current.previousMonth(),
+        totalAmount: 2_800_000,
+        categoryBudgets: []
+    )
+    
+    static let mockStandard = BudgetDTO(
+        month: YearMonth(year: 2025, month: 1),
+        totalAmount: 1_000_000,
+        categoryBudgets: [.mockFood]
+    )
+    
+    static func mockFor(month: YearMonth, amount: Decimal = 1_000_000) -> BudgetDTO {
+        BudgetDTO(
+            month: month,
+            totalAmount: amount,
+            categoryBudgets: []
+        )
+    }
+}
+
+extension CategoryBudgetDTO {
+    private static let mockBudgetId = UUID()
+    
+    static let mockFood = CategoryBudgetDTO(
+        amount: 800_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "식비",
+        budgetId: mockBudgetId
+    )
+    
+    static let mockTransport = CategoryBudgetDTO(
+        amount: 500_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "교통비",
+        budgetId: mockBudgetId
+    )
+    
+    static let mockOthers = CategoryBudgetDTO(
+        amount: 1_700_000,
+        categoryID: CategoryDTO.mockExpense.id,
+        categoryName: "기타",
+        budgetId: mockBudgetId
+    )
+    
+    static func mockWith(name: String, amount: Decimal, categoryId: UUID = CategoryDTO.mockExpense.id) -> CategoryBudgetDTO {
+        CategoryBudgetDTO(
+            amount: amount,
+            categoryID: categoryId,
+            categoryName: name,
+            budgetId: mockBudgetId
+        )
+    }
+}
+#endif

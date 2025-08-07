@@ -39,11 +39,10 @@ public final class MockCreateBudgetFromTemplateUseCase: CreateBudgetFromTemplate
         
         // 템플릿을 기반으로 Mock Budget 생성
         let categoryBudgets = template.categoryBudgetTemplates.map { templateBudget in
-            CategoryBudgetDTO(
+            CategoryBudgetDTO.mockWith(
+                name: templateBudget.categoryName,
                 amount: templateBudget.amount,
-                categoryID: templateBudget.categoryID,
-                categoryName: templateBudget.categoryName,
-                budgetId: UUID() // Mock에서는 새로운 UUID 생성
+                categoryId: templateBudget.categoryID
             )
         }
         

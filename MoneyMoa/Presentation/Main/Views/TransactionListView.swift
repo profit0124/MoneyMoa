@@ -132,7 +132,6 @@ private struct TransactionRowView: View {
                 }
                 
                 Spacer()
-                
 
                 VStack(alignment: .trailing, spacing: 4) {
                     // Amount (가장 강조)
@@ -216,7 +215,6 @@ private struct TransactionRowView: View {
     }
 }
 
-
 // MARK: - PaymentMethodKindIconView
 
 private struct PaymentMethodKindIconView: View {
@@ -256,7 +254,7 @@ private struct CategoryIconView: View {
 
 // MARK: - Preview
 
-//#Preview {
+// #Preview {
 //    let dummyData = createDummyTransactionData()
 //    return TransactionListView(
 //        listData: dummyData,
@@ -265,7 +263,7 @@ private struct CategoryIconView: View {
 //        }
 //    )
 //    .padding()
-//}
+// }
 
 #Preview("Empty State") {
     TransactionListView(
@@ -277,7 +275,7 @@ private struct CategoryIconView: View {
     .padding()
 }
 //
-//private func createDummyTransactionData() -> [(Date, [TransactionDTO])] {
+// private func createDummyTransactionData() -> [(Date, [TransactionDTO])] {
 //    let today = Date()
 //    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? today
 //    let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: today) ?? today
@@ -380,4 +378,4 @@ private struct CategoryIconView: View {
 //        (yesterday, yesterdayTransactions),
 //        (threeDaysAgo, threeDaysAgoTransactions)
 //    ]
-//}
+// }

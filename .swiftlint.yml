@@ -1,0 +1,46 @@
+# SwiftLint Configuration for MoneyMoa
+
+# Disabled rules
+disabled_rules:
+  - trailing_whitespace # 공백 관련은 너무 엄격
+  - line_length # 라인 길이는 유연하게
+  - force_unwrapping # 테스트 코드에서 많이 사용
+  - implicitly_unwrapped_optional # 테스트 프로퍼티에서 사용
+
+# Enabled rules (additional)
+opt_in_rules:
+  - explicit_init
+
+# Analyzer rules (별도 실행 필요)
+analyzer_rules:
+  - explicit_self
+  - unused_import
+
+# Rule configurations (line_length rule is disabled above)
+
+file_length:
+  warning: 500
+  error: 600
+
+type_body_length:
+  warning: 400
+  error: 500
+
+function_body_length:
+  warning: 50
+  error: 80
+
+identifier_name:
+  min_length: 1 # 한 글자 변수 허용 (i, j 등)
+  max_length: 
+    warning: 40
+    error: 60
+
+# Custom rules
+custom_rules:
+  # TODO/FIXME 주석 금지 (프로덕션)
+  no_todo_fixme:
+    name: "No TODO/FIXME"
+    regex: "(TODO|FIXME)"
+    message: "TODO/FIXME should be resolved before committing"
+    severity: warning

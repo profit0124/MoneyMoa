@@ -29,7 +29,7 @@ final class DecimalCompactAmountTextTests: XCTestCase {
             (Decimal(150_000_000), "1억+"),      // 1.5억
             (Decimal(999_999_999), "1억+"),      // 9.9억
             (Decimal(1_234_567_890), "1억+"),    // 12억
-            (Decimal(-150_000_000), "1억+"),     // 음수도 절댓값으로 처리
+            (Decimal(-150_000_000), "1억+")     // 음수도 절댓값으로 처리
         ]
         
         // When & Then
@@ -63,7 +63,7 @@ final class DecimalCompactAmountTextTests: XCTestCase {
             // 음수 테스트
             (Decimal(-50_000), "5만"),          // 음수도 절댓값으로 처리
             (Decimal(-125_000), "12만"),
-            (Decimal(-99_999_999), "9999만"),   // 음수 한계값
+            (Decimal(-99_999_999), "9999만")   // 음수 한계값
         ]
         
         // When & Then
@@ -93,7 +93,7 @@ final class DecimalCompactAmountTextTests: XCTestCase {
             // 음수 테스트
             (Decimal(-100), "100"),             // 음수도 절댓값으로 처리
             (Decimal(-5_000), "5,000"),
-            (Decimal(-9_999), "9,999"),
+            (Decimal(-9_999), "9,999")
         ]
         
         // When & Then

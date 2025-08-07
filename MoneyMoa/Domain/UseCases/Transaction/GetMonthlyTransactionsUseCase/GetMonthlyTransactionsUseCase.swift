@@ -15,4 +15,3 @@ public protocol GetMonthlyTransactionsUseCase {
     /// - Returns: 해당 월의 거래 내역 배열 (날짜 내림차순 정렬)
     func execute(yearMonth: YearMonth) async throws -> [TransactionDTO]
 }
-

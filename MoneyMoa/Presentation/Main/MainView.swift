@@ -89,12 +89,10 @@ struct MainView: View {
     // MARK: - Private Methods
     
     private func handleTransactionTap(_ transaction: TransactionDTO) {
-        // TODO: 거래 상세 화면으로 이동
         print("Transaction tapped: \(transaction.id)")
     }
     
     private func handleDateTap(_ date: Date) {
-        // TODO: 해당 날짜 거래 목록으로 스크롤
         print("Date tapped: \(date)")
     }
     
@@ -103,22 +101,18 @@ struct MainView: View {
     }
     
     private func handleBudgetSetupTap() {
-        // TODO: 예산 설정 화면으로 이동
         print("Budget setup tapped")
     }
     
     private func handleChartTap() {
-        // TODO: 차트/분석 화면으로 이동
         print("Chart tapped")
     }
     
     private func handleSettingsTap() {
-        // TODO: 설정 화면으로 이동
         print("Settings tapped")
     }
     
     private func handleAddTransactionTap() {
-        // TODO: 거래 추가 화면으로 이동
         print("Add transaction tapped")
     }
 }
@@ -126,7 +120,7 @@ struct MainView: View {
 // MARK: - Preview
 
 #Preview {
-    // TODO: 실제 의존성 주입으로 교체 예정
+    // Mock dependencies for preview
     let viewModel = MainViewModel(
         getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
         getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),

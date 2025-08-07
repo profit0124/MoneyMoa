@@ -66,7 +66,6 @@ public protocol BudgetRepository {
     /// - Returns: 최근 N개월의 예산 목록 (최신순)
     func fetchRecentBudgets(months: Int) async throws -> [BudgetDTO]
     
-    
     // MARK: - 예산 수정 (Budget Updates)
     
     /// 특정 월의 예산 전체 정보 수정

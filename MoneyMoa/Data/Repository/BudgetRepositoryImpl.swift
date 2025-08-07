@@ -40,22 +40,33 @@ public class BudgetRepositoryImpl: BudgetRepository {
     
     public func upsertBudgetTemplate(_ template: BudgetTemplateDTO) async throws {
         try await database.withModelContext { context in
-            // 기존 템플릿 삭제 (하나만 존재해야 함)
+            // 기존 템플릿 찾기
             let existingDescriptor = FetchDescriptor<BudgetTemplate>()
             let existingTemplates = try context.fetch(existingDescriptor)
             
-            for existingTemplate in existingTemplates {
-                context.delete(existingTemplate)
-            }
-            
-            // 새 템플릿 생성
-            let newTemplate = template.toModel()
-            context.insert(newTemplate)
-            
-            // 카테고리별 예산 템플릿 생성
-            for categoryBudgetTemplateDTO in template.categoryBudgetTemplates {
-                let categoryBudgetTemplate = categoryBudgetTemplateDTO.toModel(budgetTemplate: newTemplate)
-                context.insert(categoryBudgetTemplate)
+            if let existingTemplate = existingTemplates.first {
+                // UPDATE: 기존 템플릿 업데이트
+                existingTemplate.totalAmount = template.totalAmount
+                
+                // 기존 카테고리 예산 템플릿들 업데이트/추가/삭제
+                let existingCategoryBudgets = existingTemplate.categoryBudgetTemplates
+                let newCategoryBudgetDTOs = template.categoryBudgetTemplates
+                
+                // 기존 카테고리 예산 템플릿들 삭제
+                for existingCategoryBudget in existingCategoryBudgets {
+                    context.delete(existingCategoryBudget)
+                }
+                
+                // 새 카테고리 예산 템플릿들 추가
+                for categoryBudgetTemplateDTO in newCategoryBudgetDTOs {
+                    let categoryBudgetTemplate = categoryBudgetTemplateDTO.toModel(budgetTemplate: existingTemplate)
+                    context.insert(categoryBudgetTemplate)
+                }
+                
+            } else {
+                // INSERT: 새 템플릿 생성 (카테고리 포함)
+                let newTemplate = template.toModelWithCategories()
+                context.insert(newTemplate)
             }
             
             try context.save()
@@ -219,7 +230,6 @@ public class BudgetRepositoryImpl: BudgetRepository {
             return budgets.toDTOs(includeCategoryBudgets: false)
         }
     }
-    
     
     // MARK: - 예산 수정 (Budget Updates)
     

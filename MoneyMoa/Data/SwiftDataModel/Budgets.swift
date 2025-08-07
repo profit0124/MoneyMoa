@@ -204,6 +204,21 @@ extension BudgetTemplateDTO {
             totalAmount: self.totalAmount
         )
     }
+    
+    /// BudgetTemplateDTO를 SwiftData BudgetTemplate 모델로 변환 (카테고리 포함)
+    func toModelWithCategories() -> BudgetTemplate {
+        let budgetTemplate = BudgetTemplate(
+            id: self.id,
+            totalAmount: self.totalAmount
+        )
+        
+        let categoryTemplates = self.categoryBudgetTemplates.map { categoryDTO in
+            categoryDTO.toModel(budgetTemplate: budgetTemplate)
+        }
+        budgetTemplate.categoryBudgetTemplates = categoryTemplates
+        
+        return budgetTemplate
+    }
 }
 
 extension CategoryBudgetTemplateDTO {
