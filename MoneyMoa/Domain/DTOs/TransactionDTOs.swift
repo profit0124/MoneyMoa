@@ -65,3 +65,97 @@ extension TransactionDTO {
     }
     
 }
+
+#if DEBUG
+extension TransactionDTO {
+    static let mockLunch = TransactionDTO(
+        amount: 15000,
+        date: Date(),
+        place: "맥도날드 강남점",
+        memo: "점심식사",
+        transactionType: .variableExpense,
+        subCategory: .mockFoodExpense,
+        paymentMethod: .mockCreditCard
+    )
+    
+    static let mockTransport = TransactionDTO(
+        amount: 25000,
+        date: Date(),
+        place: nil,
+        memo: "교통비",
+        transactionType: .variableExpense,
+        subCategory: .mockTransportBus,
+        paymentMethod: .mockCreditCard
+    )
+    
+    static let mockAllowance = TransactionDTO(
+        amount: 50000,
+        date: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+        place: "아버지",
+        memo: "용돈",
+        transactionType: .income,
+        subCategory: .mockIncomeAllowance,
+        paymentMethod: .mockCash
+    )
+    
+    static let mockBeauty = TransactionDTO(
+        amount: 80000,
+        date: Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date(),
+        place: "올리브영 홍대점",
+        memo: "화장품",
+        transactionType: .variableExpense,
+        subCategory: .mockBeauty,
+        paymentMethod: .mockDebitCard
+    )
+    
+    static let mockSalary = TransactionDTO(
+        amount: 120000,
+        date: Calendar.current.date(byAdding: .day, value: -4, to: Date()) ?? Date(),
+        place: nil,
+        memo: "월급",
+        transactionType: .income,
+        subCategory: .mockSalary,
+        paymentMethod: .mockTransfer
+    )
+    
+    static let mockDatas: [TransactionDTO] = [
+        mockLunch, mockTransport, mockAllowance, mockBeauty, mockSalary
+    ]
+    
+    static let mockStandardExpense = TransactionDTO(
+        amount: 10000,
+        transactionType: .variableExpense,
+        subCategory: .mockFoodExpense,
+        paymentMethod: .mockCreditCard
+    )
+    
+    static let mockStandardIncome = TransactionDTO(
+        amount: 50000,
+        transactionType: .income,
+        subCategory: .mockIncomeAllowance,
+        paymentMethod: .mockCash
+    )
+    
+    static func mockWith(
+        amount: Decimal = 10000,
+        date: Date = Date(),
+        place: String? = nil,
+        memo: String? = nil,
+        transactionType: TransactionType = .variableExpense,
+        isFavorite: Bool = false,
+        subCategory: SubCategoryDTO,
+        paymentMethod: PaymentMethodDTO
+    ) -> TransactionDTO {
+        return TransactionDTO(
+            amount: amount,
+            date: date,
+            place: place,
+            memo: memo,
+            transactionType: transactionType,
+            isFavorite: isFavorite,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+    }
+}
+#endif

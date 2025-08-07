@@ -16,7 +16,16 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_hasBudget_withBudget_returnsTrue() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayDataWithBudget()
+        let summaryData = SummaryDisplayData(
+            currentMonthExpense: 800_000,
+            previousMonthExpense: 600_000,
+            monthlyComparison: 200_000,
+            comparisonPercentage: 0.33,
+            hasPreviousMonthData: true,
+            budget: .mockStandard,
+            remainingBudget: 1_200_000,
+            budgetUsagePercentage: 0.4
+        )
         
         // When & Then
         XCTAssertTrue(summaryData.hasBudget)
@@ -24,7 +33,16 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_hasBudget_withoutBudget_returnsFalse() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayDataWithoutBudget()
+        let summaryData = SummaryDisplayData(
+            currentMonthExpense: 500_000,
+            previousMonthExpense: 400_000,
+            monthlyComparison: 100_000,
+            comparisonPercentage: 0.25,
+            hasPreviousMonthData: true,
+            budget: nil,
+            remainingBudget: nil,
+            budgetUsagePercentage: nil
+        )
         
         // When & Then
         XCTAssertFalse(summaryData.hasBudget)
@@ -32,9 +50,15 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_isBudgetExceeded_withExceededBudget_returnsTrue() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayDataWithBudget(
-            currentMonthExpense: 1_200_000, // 예산 초과
-            budgetAmount: 1_000_000
+        let summaryData = SummaryDisplayData(
+            currentMonthExpense: 1_200_000,
+            previousMonthExpense: 800_000,
+            monthlyComparison: 400_000,
+            comparisonPercentage: 0.5,
+            hasPreviousMonthData: true,
+            budget: .mockStandard, // 1,000,000
+            remainingBudget: -200_000,
+            budgetUsagePercentage: 1.2
         )
         
         // When & Then
@@ -43,9 +67,15 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_isBudgetExceeded_withinBudget_returnsFalse() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayDataWithBudget(
-            currentMonthExpense: 800_000, // 예산 내
-            budgetAmount: 2_000_000
+        let summaryData = SummaryDisplayData(
+            currentMonthExpense: 800_000,
+            previousMonthExpense: 600_000,
+            monthlyComparison: 200_000,
+            comparisonPercentage: 0.33,
+            hasPreviousMonthData: true,
+            budget: .mockStandard, // 2,000,000
+            remainingBudget: 1_200_000,
+            budgetUsagePercentage: 0.4
         )
         
         // When & Then
@@ -54,7 +84,16 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_isBudgetExceeded_withoutBudget_returnsFalse() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayDataWithoutBudget()
+        let summaryData = SummaryDisplayData(
+            currentMonthExpense: 500_000,
+            previousMonthExpense: 400_000,
+            monthlyComparison: 100_000,
+            comparisonPercentage: 0.25,
+            hasPreviousMonthData: true,
+            budget: nil,
+            remainingBudget: nil,
+            budgetUsagePercentage: nil
+        )
         
         // When & Then
         XCTAssertFalse(summaryData.isBudgetExceeded)
@@ -64,11 +103,12 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_isExpenseIncreased_withIncreasedExpense_returnsTrue() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 800_000,
             previousMonthExpense: 600_000,
-            monthlyComparison: 200_000, // 증가
-            comparisonPercentage: 0.33
+            monthlyComparison: 200_000,
+            comparisonPercentage: 0.33,
+            hasPreviousMonthData: true
         )
         
         // When & Then
@@ -79,11 +119,12 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_isExpenseDecreased_withDecreasedExpense_returnsTrue() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 400_000,
             previousMonthExpense: 600_000,
-            monthlyComparison: -200_000, // 감소
-            comparisonPercentage: -0.33
+            monthlyComparison: -200_000,
+            comparisonPercentage: -0.33,
+            hasPreviousMonthData: true
         )
         
         // When & Then
@@ -94,11 +135,12 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_isExpenseUnchanged_withSameExpense_returnsTrue() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 600_000,
             previousMonthExpense: 600_000,
-            monthlyComparison: 0, // 동일
-            comparisonPercentage: 0.0
+            monthlyComparison: 0,
+            comparisonPercentage: 0.0,
+            hasPreviousMonthData: true
         )
         
         // When & Then
@@ -109,10 +151,10 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_expenseComparison_withNoComparison_returnsAllFalse() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 600_000,
             previousMonthExpense: 0,
-            monthlyComparison: nil, // 비교 데이터 없음
+            monthlyComparison: nil,
             comparisonPercentage: nil,
             hasPreviousMonthData: false
         )
@@ -127,10 +169,12 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_canShowComparison_withValidPreviousData_returnsTrue() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 800_000,
-            previousMonthExpense: 600_000, // > 0
-            hasPreviousMonthData: true // true
+            previousMonthExpense: 600_000,
+            monthlyComparison: 200_000,
+            comparisonPercentage: 0.33,
+            hasPreviousMonthData: true
         )
         
         // When & Then
@@ -139,9 +183,9 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_canShowComparison_withZeroPreviousExpense_returnsFalse() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 800_000,
-            previousMonthExpense: 0, // = 0
+            previousMonthExpense: 0,
             monthlyComparison: nil,
             comparisonPercentage: nil,
             hasPreviousMonthData: true
@@ -153,12 +197,12 @@ final class SummaryDisplayDataTests: XCTestCase {
     
     func test_canShowComparison_withNoPreviousData_returnsFalse() {
         // Given
-        let summaryData = TestDataFactory.createSummaryDisplayData(
+        let summaryData = SummaryDisplayData(
             currentMonthExpense: 800_000,
             previousMonthExpense: 600_000,
             monthlyComparison: nil,
             comparisonPercentage: nil,
-            hasPreviousMonthData: false // false
+            hasPreviousMonthData: false
         )
         
         // When & Then

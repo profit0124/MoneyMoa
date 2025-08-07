@@ -116,32 +116,18 @@ public class MainViewModel {
             }
         case .loadCurrentMonthBudget:
             Task {
-                let budgetResult = await loadCurrentMonthBudget()
-                if let budget = budgetResult {
-                    send(.setBudget(budget))
-                } else {
-                    send(.checkBudgetTemplate)
-                }
+                let action = await loadCurrentMonthBudget()
+                send(action)
             }
         case .checkBudgetTemplate:
             Task {
-                let template = await checkBudgetTemplate()
-                if let template = template {
-                    send(.createBudgetFromTemplate(template))
-                } else {
-                    currentMonthBudget = nil
-                    send(.updateSummaryData)
-                }
+                let action = await checkBudgetTemplate()
+                send(action)
             }
         case .createBudgetFromTemplate(let template):
             Task {
-                let newBudget = await createBudgetFromTemplate(template)
-                if let budget = newBudget {
-                    send(.setBudget(budget))
-                } else {
-                    currentMonthBudget = nil
-                    send(.updateSummaryData)
-                }
+                let action = await createBudgetFromTemplate(template)
+                send(action)
             }
         case .setBudget(let budget):
             setBudget(budget)
@@ -149,14 +135,7 @@ public class MainViewModel {
         case .updateSummaryData:
             updateSummaryData()
         case .handleYearMonth(let handleYearMonth):
-            switch handleYearMonth {
-            case .moveToNextMonth:
-                moveToNextMonth()
-            case .moveToPreviousMonth:
-                moveToPreviousMonth()
-            case .setMonth(let yearMonth):
-                setMonth(yearMonth)
-            }
+            handleYearMonthAction(handleYearMonth)
             send(.loadTransactions)
         }
     }
@@ -170,8 +149,7 @@ public class MainViewModel {
         do {
             self.transactions = try await getMonthlyTransactionsUseCase.execute(yearMonth: currentYearMonth)
         } catch {
-            // TODO: 에러 핸들링 추가 필요
-            print("error : \(error.localizedDescription)")
+            print("Failed to load transactions: \(error.localizedDescription)")
         }
     }
     
@@ -274,50 +252,62 @@ public class MainViewModel {
     }
     
     /// 현재 월 예산을 로드합니다
-    private func loadCurrentMonthBudget() async -> BudgetDTO? {
+    private func loadCurrentMonthBudget() async -> Action {
         startSummaryLoading()
         defer {
             stopSummaryLoading()
         }
         
         do {
-            return try await getMonthlyBudgetUseCase.execute(yearMonth: currentYearMonth)
+            let budgetDTO = try await getMonthlyBudgetUseCase.execute(yearMonth: currentYearMonth)
+            if let budgetDTO {
+                return .setBudget(budgetDTO)
+            } else {
+                return .checkBudgetTemplate
+            }
         } catch {
             print("Current month budget load error: \(error.localizedDescription)")
-            return nil
+            return .checkBudgetTemplate
         }
     }
     
     /// 예산 템플릿이 있는지 확인합니다
-    private func checkBudgetTemplate() async -> BudgetTemplateDTO? {
+    private func checkBudgetTemplate() async -> Action {
         startSummaryLoading()
         defer {
             stopSummaryLoading()
         }
         
         do {
-            return try await getBudgetTemplateUseCase.execute()
+            if let budgetTemplate = try await getBudgetTemplateUseCase.execute() {
+                return .createBudgetFromTemplate(budgetTemplate)
+            } else {
+                currentMonthBudget = nil
+                return .updateSummaryData
+            }
         } catch {
             print("Budget template check error: \(error.localizedDescription)")
-            return nil
+            currentMonthBudget = nil
+            return .updateSummaryData
         }
     }
     
     /// 템플릿을 기반으로 예산을 생성합니다
-    private func createBudgetFromTemplate(_ template: BudgetTemplateDTO) async -> BudgetDTO? {
+    private func createBudgetFromTemplate(_ template: BudgetTemplateDTO) async -> Action {
         startSummaryLoading()
         defer {
             stopSummaryLoading()
         }
         
         do {
-            return try await createBudgetFromTemplateUseCase.execute(
+            let newBudget = try await createBudgetFromTemplateUseCase.execute(
                 template: template,
                 yearMonth: currentYearMonth
             )
+            return .setBudget(newBudget)
         } catch {
-            print("Create budget from template error: \(error.localizedDescription)")
-            return nil
+            currentMonthBudget = nil
+            return .updateSummaryData
         }
     }
     
@@ -440,75 +430,16 @@ public class MainViewModel {
     public var hasSummaryData: Bool {
         summaryData != nil
     }
-}
-
-// MARK: - SummaryDisplayData
-
-/// Summary Section에 표시할 데이터 구조
-public struct SummaryDisplayData: Sendable, Equatable {
     
-    // MARK: - Core Data
-    
-    /// 현재 월 지출 총액 (현재 날짜까지)
-    public let currentMonthExpense: Decimal
-    
-    /// 전월 지출 총액 (같은 날짜까지)
-    public let previousMonthExpense: Decimal
-    
-    /// 전월 대비 증감 금액 (전월 데이터가 없으면 nil)
-    public let monthlyComparison: Decimal?
-    
-    /// 전월 대비 증감률 (-1.0 ~ 1.0+, 전월 데이터가 없으면 nil)
-    public let comparisonPercentage: Double?
-    
-    /// 전월 데이터 존재 여부
-    public let hasPreviousMonthData: Bool
-    
-    // MARK: - Budget Data (Optional)
-    
-    /// 예산 정보 (없으면 nil)
-    public let budget: BudgetDTO?
-    
-    /// 예산 잔여 금액 (없으면 nil)
-    public let remainingBudget: Decimal?
-    
-    /// 예산 사용률 (0.0 ~ 1.0+, 없으면 nil)
-    public let budgetUsagePercentage: Double?
-    
-    // MARK: - Computed Properties
-    
-    /// 예산이 설정되어 있는지 여부
-    public var hasBudget: Bool {
-        budget != nil
-    }
-    
-    /// 예산을 초과했는지 여부
-    public var isBudgetExceeded: Bool {
-        guard let budget = budget else { return false }
-        return currentMonthExpense > budget.totalAmount
-    }
-    
-    /// 전월 대비 지출이 증가했는지 여부
-    public var isExpenseIncreased: Bool {
-        guard let comparison = monthlyComparison else { return false }
-        return comparison > 0
-    }
-    
-    /// 전월 대비 지출이 감소했는지 여부
-    public var isExpenseDecreased: Bool {
-        guard let comparison = monthlyComparison else { return false }
-        return comparison < 0
-    }
-    
-    /// 전월과 지출이 동일한지 여부
-    public var isExpenseUnchanged: Bool {
-        guard let comparison = monthlyComparison else { return false }
-        return comparison == 0
-    }
-    
-    /// 전월 비교 데이터를 표시할 수 있는지 여부
-    public var canShowComparison: Bool {
-        hasPreviousMonthData && previousMonthExpense > 0
+    // MARK: handleYearMonth
+    private func handleYearMonthAction(_ handleYearMonth: HandleYearMonth) {
+        switch handleYearMonth {
+        case .moveToNextMonth:
+            moveToNextMonth()
+        case .moveToPreviousMonth:
+            moveToPreviousMonth()
+        case .setMonth(let yearMonth):
+            setMonth(yearMonth)
+        }
     }
 }
-

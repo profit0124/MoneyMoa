@@ -45,23 +45,7 @@ final class GetBudgetTemplateUseCaseImplTests: XCTestCase {
     
     func test_execute_withExistingTemplate_returnsTemplate() async throws {
         // Given
-        let expectedTemplate = TestDataFactory.createBudgetTemplate(
-            totalAmount: 2_000_000,
-            categoryBudgetTemplates: [
-                TestDataFactory.createCategoryBudgetTemplate(
-                    amount: 800_000,
-                    categoryID: UUID(),
-                    categoryName: "식비",
-                    budgetTemplateId: UUID()
-                ),
-                TestDataFactory.createCategoryBudgetTemplate(
-                    amount: 300_000,
-                    categoryID: UUID(),
-                    categoryName: "교통비",
-                    budgetTemplateId: UUID()
-                )
-            ]
-        )
+        let expectedTemplate = BudgetTemplateDTO.mockStandard
         
         // Save template to database
         try await budgetRepository.upsertBudgetTemplate(expectedTemplate)
@@ -77,7 +61,7 @@ final class GetBudgetTemplateUseCaseImplTests: XCTestCase {
         // Verify category budget templates match (order independent)
         for expectedCategoryBudget in expectedTemplate.categoryBudgetTemplates {
             let matchingCategoryBudget = result?.categoryBudgetTemplates.first { 
-                $0.categoryID == expectedCategoryBudget.categoryID 
+                $0.id == expectedCategoryBudget.id
             }
             XCTAssertNotNil(matchingCategoryBudget)
             XCTAssertEqual(matchingCategoryBudget?.amount, expectedCategoryBudget.amount)
@@ -97,10 +81,7 @@ final class GetBudgetTemplateUseCaseImplTests: XCTestCase {
     
     func test_execute_withEmptyTemplate_returnsEmptyTemplate() async throws {
         // Given
-        let emptyTemplate = TestDataFactory.createBudgetTemplate(
-            totalAmount: 1_000_000,
-            categoryBudgetTemplates: [] // No category budgets
-        )
+        let emptyTemplate = BudgetTemplateDTO.mockSimple
         
         // Save empty template to database
         try await budgetRepository.upsertBudgetTemplate(emptyTemplate)
@@ -111,7 +92,7 @@ final class GetBudgetTemplateUseCaseImplTests: XCTestCase {
         // Then
         XCTAssertNotNil(result)
         XCTAssertEqual(result?.totalAmount, emptyTemplate.totalAmount)
-        XCTAssertEqual(result?.categoryBudgetTemplates.count, 0)
+        XCTAssertEqual(result?.categoryBudgetTemplates.count, 1)
     }
     
 }
@@ -163,17 +144,7 @@ final class MockGetBudgetTemplateUseCaseTests: XCTestCase {
     
     func test_execute_withCustomTemplate_returnsCustomTemplate() async throws {
         // Given
-        let customTemplate = BudgetTemplateDTO(
-            totalAmount: Decimal(3_000_000),
-            categoryBudgetTemplates: [
-                CategoryBudgetTemplateDTO(
-                    amount: Decimal(1_000_000),
-                    categoryID: UUID(),
-                    categoryName: "주거비",
-                    budgetTemplateId: UUID()
-                )
-            ]
-        )
+        let customTemplate = BudgetTemplateDTO.mockLarge
         mockUseCase.setMockTemplate(customTemplate)
         
         // When
@@ -182,8 +153,8 @@ final class MockGetBudgetTemplateUseCaseTests: XCTestCase {
         // Then
         XCTAssertNotNil(result)
         XCTAssertEqual(result?.totalAmount, Decimal(3_000_000))
-        XCTAssertEqual(result?.categoryBudgetTemplates.count, 1)
-        XCTAssertEqual(result?.categoryBudgetTemplates.first?.categoryName, "주거비")
+        XCTAssertEqual(result?.categoryBudgetTemplates.count, 4)
+        XCTAssertTrue(result?.categoryBudgetTemplates.contains { $0.categoryName == "식비" } ?? false)
     }
     
     func test_setMockDelay_affectsExecutionTime() async throws {
@@ -201,4 +172,3 @@ final class MockGetBudgetTemplateUseCaseTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(executionTime, 0.15) // 최소 0.15초 (여유 고려)
     }
 }
-

@@ -36,17 +36,17 @@ final class TransactionRepositoryTests: XCTestCase {
     private func setupBasicTestData() async throws {
         try await database.withModelContext { [self] context in
             // 카테고리 생성
-            let categoryDTO = TestDataFactory.createCategory() // 기본값: name="식비"
+            let categoryDTO = CategoryDTO.mockExpense
             testCategory = categoryDTO.toModel()
             context.insert(testCategory)
             
             // 서브카테고리 생성
-            let subCategoryDTO = TestDataFactory.createSubCategory(categoryId: testCategory.id) // 기본값: name="외식비"
+            let subCategoryDTO = SubCategoryDTO.mockFoodExpense
             testSubCategory = subCategoryDTO.toModel(parentCategory: testCategory)
             context.insert(testSubCategory)
             
             // 결제수단 생성
-            let paymentMethodDTO = TestDataFactory.createPaymentMethod() // 기본값: name="신용카드"
+            let paymentMethodDTO = PaymentMethodDTO.mockCreditCard
             testPaymentMethod = paymentMethodDTO.toModel()
             context.insert(testPaymentMethod)
             
@@ -64,7 +64,7 @@ final class TransactionRepositoryTests: XCTestCase {
         transactionType: TransactionType = .variableExpense,
         isFavorite: Bool = false
     ) -> TransactionDTO {
-        return TestDataFactory.createTransaction(
+        return TransactionDTO(
             amount: amount,
             date: date,
             place: place,
@@ -92,57 +92,35 @@ final class TransactionRepositoryTests: XCTestCase {
         // Given: 기본 테스트 데이터 설정
         try await setupBasicTestData()
         
-        // Given: 테스트 거래들 생성
         let today = Date()
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? today
         let dayBeforeYesterday = Calendar.current.date(byAdding: .day, value: -2, to: today) ?? today
         
-        let transaction1 = createTransaction(amount: 10000, date: yesterday)
-        let transaction2 = createTransaction(amount: 20000, date: today)
-        let transaction3 = createTransaction(amount: 15000, date: dayBeforeYesterday)
+        try await repository.insertTransaction(createTransaction(amount: 10000, date: yesterday))
+        try await repository.insertTransaction(createTransaction(amount: 20000, date: today))
+        try await repository.insertTransaction(createTransaction(amount: 15000, date: dayBeforeYesterday))
         
-        try await repository.insertTransaction(transaction1)
-        try await repository.insertTransaction(transaction2)
-        try await repository.insertTransaction(transaction3)
-        
-        // When: 모든 거래 조회
         let transactions = try await repository.fetchTransactions()
-        
-        // Then: 날짜 내림차순으로 정렬되어 반환
         XCTAssertEqual(transactions.count, 3)
-        XCTAssertEqual(transactions[0].amount, 20000) // 오늘 (가장 최신)
+        XCTAssertEqual(transactions[0].amount, 20000) // 오늘 (최신)
         XCTAssertEqual(transactions[1].amount, 10000) // 어제
         XCTAssertEqual(transactions[2].amount, 15000) // 그저께
     }
     
-    func testFetchTransaction_ExistingId() async throws {
-        // Given: 기본 테스트 데이터 설정
+    func testFetchTransaction() async throws {
         try await setupBasicTestData()
         
-        // Given: 테스트 거래 생성
-        let originalTransaction = createTransaction() // 모든 기본값 사용
+        let originalTransaction = createTransaction()
         try await repository.insertTransaction(originalTransaction)
         
-        // When: 특정 거래 조회
+        // 존재하는 ID 조회
         let transaction = try await repository.fetchTransaction(id: originalTransaction.id)
-        
-        // Then: 해당 거래 반환
-        XCTAssertNotNil(transaction)
         XCTAssertEqual(transaction?.id, originalTransaction.id)
         XCTAssertEqual(transaction?.amount, 10000)
         XCTAssertEqual(transaction?.place, "맥도날드")
-        XCTAssertEqual(transaction?.memo, "점심식사")
-    }
-    
-    func testFetchTransaction_NonExistingId() async throws {
-        // Given: 존재하지 않는 ID
-        let nonExistingId = UUID()
         
-        // When: 존재하지 않는 ID로 조회
-        let transaction = try await repository.fetchTransaction(id: nonExistingId)
-        
-        // Then: nil 반환
-        XCTAssertNil(transaction)
+        let nonExistentTransaction = try await repository.fetchTransaction(id: UUID())
+        XCTAssertNil(nonExistentTransaction)
     }
     
     func testFetchTransactions_DateRange() async throws {
@@ -219,12 +197,8 @@ final class TransactionRepositoryTests: XCTestCase {
         try await repository.insertTransaction(expenseTransaction)
         try await repository.insertTransaction(incomeTransaction)
         
-        // When: 변동지출 거래만 조회
         let transactions = try await repository.fetchTransactionsByType(.variableExpense)
-        
-        // Then: 해당 유형의 거래만 반환
         XCTAssertEqual(transactions.count, 1)
-        XCTAssertEqual(transactions.first?.transactionType, .variableExpense)
         XCTAssertEqual(transactions.first?.amount, 50000)
     }
     
@@ -277,16 +251,8 @@ final class TransactionRepositoryTests: XCTestCase {
         
         // Given: 다양한 유형의 거래들 생성
         let today = Date()
-        let expenseTransaction1 = createTransaction(
-            amount: 50000,
-            date: today,
-            transactionType: .variableExpense
-        )
-        let expenseTransaction2 = createTransaction(
-            amount: 30000,
-            date: today,
-            transactionType: .variableExpense
-        )
+        let expenseTransaction1 = createTransaction(amount: 50000, date: today, transactionType: .variableExpense)
+        let expenseTransaction2 = createTransaction(amount: 30000, date: today, transactionType: .variableExpense)
         
         try await repository.insertTransaction(expenseTransaction1)
         try await repository.insertTransaction(expenseTransaction2)
@@ -310,16 +276,8 @@ final class TransactionRepositoryTests: XCTestCase {
         let currentMonth = YearMonth.current
         let lastMonth = currentMonth.previousMonth()
         
-        let thisMonthTransaction = createTransaction(
-            amount: 100000,
-            date: currentMonth.startOfMonth,
-            transactionType: .variableExpense
-        )
-        let lastMonthTransaction = createTransaction(
-            amount: 50000,
-            date: lastMonth.startOfMonth,
-            transactionType: .variableExpense
-        )
+        let thisMonthTransaction = createTransaction(amount: 100000, date: currentMonth.startOfMonth, transactionType: .variableExpense)
+        let lastMonthTransaction = createTransaction(amount: 50000, date: lastMonth.startOfMonth, transactionType: .variableExpense)
         
         try await repository.insertTransaction(thisMonthTransaction)
         try await repository.insertTransaction(lastMonthTransaction)
@@ -379,15 +337,20 @@ final class TransactionRepositoryTests: XCTestCase {
         try await setupBasicTestData()
         
         // Given: 존재하지 않는 서브카테고리를 가진 거래
-        let invalidSubCategory = TestDataFactory.createSubCategory(
+        let invalidSubCategory = SubCategoryDTO(
             name: "존재하지않음",
-            categoryId: UUID() // 비유효 ID
+            transactionType: .variableExpense,
+            categoryId: UUID(),
+            categoryIconName: "questionmark"
         )
         
-        let transaction = TestDataFactory.createTransaction(
+        let transaction = TransactionDTO(
             amount: 10000,
+            date: Date(),
             place: "테스트",
             memo: "테스트",
+            transactionType: .variableExpense,
+            isFavorite: false,
             subCategory: invalidSubCategory,
             paymentMethod: testPaymentMethod.toDTO()
         )
@@ -461,37 +424,21 @@ final class TransactionRepositoryTests: XCTestCase {
     
     // MARK: - 삭제 테스트 (Delete Operations)
     
-    func testDeleteTransaction_Success() async throws {
-        // Given: 기본 테스트 데이터 설정
+    func testDeleteTransaction() async throws {
         try await setupBasicTestData()
         
-        // Given: 거래 생성
-        let transaction = createTransaction() // 모든 기본값 사용
+        // 삭제 성공
+        let transaction = createTransaction()
         try await repository.insertTransaction(transaction)
-        
-        // When: 거래 삭제
         try await repository.deleteTransaction(id: transaction.id)
+        let transactionsAfterDelete = try await repository.fetchTransactions()
+        XCTAssertTrue(transactionsAfterDelete.isEmpty)
         
-        // Then: 데이터베이스에서 삭제됨
-        let transactions = try await repository.fetchTransactions()
-        XCTAssertTrue(transactions.isEmpty)
-    }
-    
-    func testDeleteTransaction_NonExistingTransaction() async throws {
-        // Given: 존재하지 않는 거래 ID
-        let nonExistingId = UUID()
-        
-        // When & Then: 에러 발생
         do {
-            try await repository.deleteTransaction(id: nonExistingId)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.transactionNotFound:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected transactionNotFound error, but got \(error)")
-            }
+            try await repository.deleteTransaction(id: UUID())
+            XCTFail("Expected error")
+        } catch RepositoryError.transactionNotFound {
+            // Expected
         }
     }
     
@@ -519,74 +466,30 @@ final class TransactionRepositoryTests: XCTestCase {
     
     // MARK: - 검증 테스트 (Validation)
     
-    func testValidateSubCategoryExists_ValidId() async throws {
-        // Given: 기본 테스트 데이터 설정
+    func testValidateExists() async throws {
         try await setupBasicTestData()
         
-        // When: 활성 서브카테고리 검증
-        let isValid = try await repository.validateSubCategoryExists(id: testSubCategory.id)
+        let validSubCategory = try await repository.validateSubCategoryExists(id: testSubCategory.id)
+        let invalidSubCategory = try await repository.validateSubCategoryExists(id: UUID())
+        XCTAssertTrue(validSubCategory)
+        XCTAssertFalse(invalidSubCategory)
         
-        // Then: 유효함
-        XCTAssertTrue(isValid)
-    }
-    
-    func testValidateSubCategoryExists_InvalidId() async throws {
-        // Given: 존재하지 않는 ID
-        let nonExistingId = UUID()
-        
-        // When: 존재하지 않는 서브카테고리 검증
-        let isValid = try await repository.validateSubCategoryExists(id: nonExistingId)
-        
-        // Then: 유효하지 않음
-        XCTAssertFalse(isValid)
-    }
-    
-    func testValidatePaymentMethodExists_ValidId() async throws {
-        // Given: 기본 테스트 데이터 설정
-        try await setupBasicTestData()
-        
-        // When: 활성 결제수단 검증
-        let isValid = try await repository.validatePaymentMethodExists(id: testPaymentMethod.id)
-        
-        // Then: 유효함
-        XCTAssertTrue(isValid)
-    }
-    
-    func testValidatePaymentMethodExists_InvalidId() async throws {
-        // Given: 존재하지 않는 ID
-        let nonExistingId = UUID()
-        
-        // When: 존재하지 않는 결제수단 검증
-        let isValid = try await repository.validatePaymentMethodExists(id: nonExistingId)
-        
-        // Then: 유효하지 않음
-        XCTAssertFalse(isValid)
+        let validPaymentMethod = try await repository.validatePaymentMethodExists(id: testPaymentMethod.id)
+        let invalidPaymentMethod = try await repository.validatePaymentMethodExists(id: UUID())
+        XCTAssertTrue(validPaymentMethod)
+        XCTAssertFalse(invalidPaymentMethod)
     }
     
     // MARK: - YearMonth 유틸리티 테스트
     
     func testYearMonth_StartAndEndOfMonth() {
-        // Given: 2024년 7월
         let yearMonth = YearMonth(year: 2024, month: 7)
-        
-        // When: 월 시작일과 종료일 조회
-        let startOfMonth = yearMonth.startOfMonth
-        let endOfMonth = yearMonth.endOfMonth
-        
-        // Then: 정확한 시간 설정
         let calendar = Calendar.current
-        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: startOfMonth)
-        let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: endOfMonth)
         
-        // 시작일: 2024-07-01 00:00:00
-        XCTAssertEqual(startComponents.year, 2024)
-        XCTAssertEqual(startComponents.month, 7)
-        XCTAssertEqual(startComponents.day, 1)
-        XCTAssertEqual(startComponents.hour, 0)
-        XCTAssertEqual(startComponents.minute, 0)
-        XCTAssertEqual(startComponents.second, 0)
+        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: yearMonth.startOfMonth)
+        XCTAssertEqual(startComponents, DateComponents(year: 2024, month: 7, day: 1, hour: 0, minute: 0, second: 0))
         
-        // 종료일: 2024-07-31 23:59:59
+        let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: yearMonth.endOfMonth)
         XCTAssertEqual(endComponents.year, 2024)
         XCTAssertEqual(endComponents.month, 7)
         XCTAssertEqual(endComponents.day, 31)

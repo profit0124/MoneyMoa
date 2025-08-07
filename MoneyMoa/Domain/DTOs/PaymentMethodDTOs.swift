@@ -54,3 +54,58 @@ extension PaymentMethodDTO {
         return iconName ?? kind.iconName
     }
 }
+
+#if DEBUG
+// MARK: - Mock Data Extensions
+
+extension PaymentMethodDTO {
+    static let mockCreditCard = PaymentMethodDTO(
+        name: "신용카드",
+        kind: .credit,
+        orderIndex: 0
+    )
+    
+    static let mockDebitCard = PaymentMethodDTO(
+        name: "체크카드",
+        kind: .debit,
+        orderIndex: 1
+    )
+    
+    static let mockCash = PaymentMethodDTO(
+        name: "현금",
+        kind: .cash,
+        orderIndex: 2
+    )
+    
+    static let mockTransfer = PaymentMethodDTO(
+        name: "계좌이체",
+        kind: .transfer,
+        orderIndex: 3
+    )
+    
+    static let mockCustomCard = PaymentMethodDTO(
+        name: "커스텀카드",
+        kind: .credit,
+        iconName: "creditcard.fill",
+        orderIndex: 4
+    )
+    
+    static let mockStandards = [mockCreditCard, mockDebitCard, mockCash, mockTransfer]
+    
+    static func mockWith(
+        name: String,
+        kind: PaymentMethodKind,
+        iconName: String? = nil,
+        orderIndex: Int = 0,
+        isActive: Bool = true
+    ) -> PaymentMethodDTO {
+        return PaymentMethodDTO(
+            name: name,
+            kind: kind,
+            iconName: iconName,
+            orderIndex: orderIndex,
+            isActive: isActive
+        )
+    }
+}
+#endif

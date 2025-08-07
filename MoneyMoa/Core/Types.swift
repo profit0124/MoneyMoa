@@ -76,17 +76,17 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
 
 // MARK: - Transaction Type Enum
 public enum TransactionType: String, Codable, CaseIterable, Sendable {
-    case income = "income"
-    case fixedExpense = "fixedExpense"
-    case variableExpense = "variableExpense"
+    case income
+    case fixedExpense
+    case variableExpense
 }
 
 // MARK: - Payment Method Type
 public enum PaymentMethodKind: String, Codable, CaseIterable, Sendable {
-    case cash = "cash"
-    case transfer = "transfer"
-    case credit = "credit"
-    case debit = "debit"
+    case cash
+    case transfer
+    case credit
+    case debit
 }
 
 // MARK: - Repository Errors

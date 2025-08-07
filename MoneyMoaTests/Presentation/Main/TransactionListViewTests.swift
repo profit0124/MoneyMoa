@@ -17,53 +17,25 @@ final class TransactionListViewTests: XCTestCase {
         let today = Date()
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today) ?? today
         
-        let expenseCategory = TestDataFactory.createCategory(
-            name: "식비",
-            iconName: "fork.knife",
-            type: .variableExpense
-        )
-        
-        let incomeCategory = TestDataFactory.createCategory(
-            name: "수입",
-            iconName: "banknote",
-            type: .income
-        )
-        
         let todayTransactions = [
-            TestDataFactory.createTransaction(
+            TransactionDTO(
                 amount: 15000,
                 date: today,
                 place: "맥도날드",
                 transactionType: .variableExpense,
-                subCategory: TestDataFactory.createSubCategory(
-                    name: "외식",
-                    categoryId: expenseCategory.id,
-                    categoryIconName: expenseCategory.iconName,
-                    type: .variableExpense
-                ),
-                paymentMethod: TestDataFactory.createPaymentMethod(
-                    name: "신용카드",
-                    kind: .credit
-                )
+                subCategory: .mockFoodExpense,
+                paymentMethod: .mockCreditCard
             )
         ]
         
         let yesterdayTransactions = [
-            TestDataFactory.createTransaction(
+            TransactionDTO(
                 amount: 50000,
                 date: yesterday,
                 place: "회사",
                 transactionType: .income,
-                subCategory: TestDataFactory.createSubCategory(
-                    name: "급여",
-                    categoryId: incomeCategory.id,
-                    categoryIconName: incomeCategory.iconName,
-                    type: .income
-                ),
-                paymentMethod: TestDataFactory.createPaymentMethod(
-                    name: "계좌이체",
-                    kind: .transfer
-                )
+                subCategory: .mockSalary,
+                paymentMethod: .mockTransfer
             )
         ]
         
@@ -137,7 +109,7 @@ final class TransactionListViewTests: XCTestCase {
         // When & Then
         XCTAssertEqual(subCategory.categoryIconName, "fork.knife")
         XCTAssertEqual(subCategory.transactionType, .variableExpense)
-        XCTAssertEqual(subCategory.name, "외식")
+        XCTAssertEqual(subCategory.name, "외식비")
     }
     
     func testPaymentMethodIconConfiguration() {

@@ -132,7 +132,6 @@ extension Collection where Element == SubCategory {
     }
 }
 
-
 // MARK: - DTO to SwiftData Model Extensions
 
 extension CategoryDTO {

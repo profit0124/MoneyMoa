@@ -4,11 +4,9 @@
 //
 //  Created by Sooik Kim on 7/28/25.
 //
-
 import XCTest
 import SwiftData
 @testable import MoneyMoa
-
 final class PaymentMethodRepositoryTests: XCTestCase {
     
     private var database: Database!
@@ -38,10 +36,9 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testFetchPaymentMethods_WithData() async throws {
-        // Given: 테스트 결제수단들 생성
-        let paymentMethod1 = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit, orderIndex: 1)
-        let paymentMethod2 = TestDataFactory.createPaymentMethod(name: "체크카드", kind: .debit, orderIndex: 0)
-        let paymentMethod3 = TestDataFactory.createPaymentMethod(name: "현금", kind: .cash, orderIndex: 2)
+        let paymentMethod1 = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit, orderIndex: 1)
+        let paymentMethod2 = PaymentMethodDTO.mockWith(name: "체크카드", kind: .debit, orderIndex: 0)
+        let paymentMethod3 = PaymentMethodDTO.mockWith(name: "현금", kind: .cash, orderIndex: 2)
         
         try await repository.insertPaymentMethod(paymentMethod1)
         try await repository.insertPaymentMethod(paymentMethod2)
@@ -58,14 +55,10 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testFetchPaymentMethod_ExistingId() async throws {
-        // Given: 테스트 결제수단 생성
-        let originalPaymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
+        let originalPaymentMethod = PaymentMethodDTO.mockCreditCard
         try await repository.insertPaymentMethod(originalPaymentMethod)
         
-        // When: 특정 결제수단 조회
         let paymentMethod = try await repository.fetchPaymentMethod(id: originalPaymentMethod.id)
-        
-        // Then: 해당 결제수단 반환
         XCTAssertNotNil(paymentMethod)
         XCTAssertEqual(paymentMethod?.id, originalPaymentMethod.id)
         XCTAssertEqual(paymentMethod?.name, "신용카드")
@@ -73,20 +66,13 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testFetchPaymentMethod_NonExistingId() async throws {
-        // Given: 빈 데이터베이스
-        let nonExistingId = UUID()
-        
-        // When: 존재하지 않는 ID로 조회
-        let paymentMethod = try await repository.fetchPaymentMethod(id: nonExistingId)
-        
-        // Then: nil 반환
-        XCTAssertNil(paymentMethod)
+        let nonExistentPaymentMethod = try await repository.fetchPaymentMethod(id: UUID())
+        XCTAssertNil(nonExistentPaymentMethod)
     }
     
     func testFetchActivePaymentMethods() async throws {
-        // Given: 활성/비활성 결제수단들 생성
-        let activePaymentMethod = TestDataFactory.createPaymentMethod(name: "활성결제수단", kind: .credit, isActive: true)
-        let inactivePaymentMethod = TestDataFactory.createPaymentMethod(name: "비활성결제수단", kind: .debit, isActive: false)
+        let activePaymentMethod = PaymentMethodDTO.mockWith(name: "활성결제수단", kind: .credit, isActive: true)
+        let inactivePaymentMethod = PaymentMethodDTO.mockWith(name: "비활성결제수단", kind: .debit, isActive: false)
         
         try await repository.insertPaymentMethod(activePaymentMethod)
         try await repository.insertPaymentMethod(inactivePaymentMethod)
@@ -101,11 +87,10 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testFetchPaymentMethodsByKind() async throws {
-        // Given: 다양한 종류의 결제수단들 생성
-        let creditCard = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
-        let debitCard = TestDataFactory.createPaymentMethod(name: "체크카드", kind: .debit)
-        let cash = TestDataFactory.createPaymentMethod(name: "현금", kind: .cash)
-        let transfer = TestDataFactory.createPaymentMethod(name: "계좌이체", kind: .transfer)
+        let creditCard = PaymentMethodDTO.mockCreditCard
+        let debitCard = PaymentMethodDTO.mockDebitCard
+        let cash = PaymentMethodDTO.mockCash
+        let transfer = PaymentMethodDTO.mockTransfer
         
         try await repository.insertPaymentMethod(creditCard)
         try await repository.insertPaymentMethod(debitCard)
@@ -125,7 +110,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testInsertPaymentMethod_Success() async throws {
         // Given: 새로운 결제수단 DTO
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit)
         
         // When: 결제수단 삽입
         try await repository.insertPaymentMethod(paymentMethod)
@@ -139,7 +124,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testUpdatePaymentMethod_Success() async throws {
         // Given: 기존 결제수단 생성
-        let originalPaymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit, orderIndex: 0)
+        let originalPaymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit, orderIndex: 0)
         try await repository.insertPaymentMethod(originalPaymentMethod)
         
         // When: 결제수단 정보 수정
@@ -160,28 +145,20 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testUpdatePaymentMethod_NonExistingPaymentMethod() async throws {
-        // Given: 존재하지 않는 결제수단 ID
-        let nonExistingPaymentMethod = TestDataFactory.createPaymentMethod(name: "존재하지않음", kind: .credit)
-        
-        // When & Then: 에러 발생
+        let nonExistingPaymentMethod = PaymentMethodDTO.mockWith(name: "존재하지않음", kind: .credit)
         do {
             try await repository.updatePaymentMethod(nonExistingPaymentMethod)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.paymentMethodNotFound:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected paymentMethodNotFound error, but got \(error)")
-            }
+            XCTFail("Expected error")
+        } catch RepositoryError.paymentMethodNotFound {
+            // Expected
         }
     }
     
     func testUpdatePaymentMethodOrder_Success() async throws {
         // Given: 여러 결제수단 생성
-        let paymentMethod1 = TestDataFactory.createPaymentMethod(name: "첫번째", kind: .credit, orderIndex: 0)
-        let paymentMethod2 = TestDataFactory.createPaymentMethod(name: "두번째", kind: .debit, orderIndex: 1)
-        let paymentMethod3 = TestDataFactory.createPaymentMethod(name: "세번째", kind: .cash, orderIndex: 2)
+        let paymentMethod1 = PaymentMethodDTO.mockWith(name: "첫번째", kind: .credit, orderIndex: 0)
+        let paymentMethod2 = PaymentMethodDTO.mockWith(name: "두번째", kind: .debit, orderIndex: 1)
+        let paymentMethod3 = PaymentMethodDTO.mockWith(name: "세번째", kind: .cash, orderIndex: 2)
         
         try await repository.insertPaymentMethod(paymentMethod1)
         try await repository.insertPaymentMethod(paymentMethod2)
@@ -202,7 +179,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testDeactivatePaymentMethod_Success() async throws {
         // Given: 활성 결제수단 생성
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit, isActive: true)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit, isActive: true)
         try await repository.insertPaymentMethod(paymentMethod)
         
         // When: 결제수단 비활성화
@@ -233,7 +210,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testActivatePaymentMethod_Success() async throws {
         // Given: 비활성 결제수단 생성
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit, isActive: false)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit, isActive: false)
         try await repository.insertPaymentMethod(paymentMethod)
         
         // When: 결제수단 활성화
@@ -266,7 +243,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testDeletePaymentMethod_InactivePaymentMethod_Success() async throws {
         // Given: 비활성 결제수단 생성
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit, isActive: false)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit, isActive: false)
         try await repository.insertPaymentMethod(paymentMethod)
         
         // When: 결제수단 삭제
@@ -279,7 +256,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testDeletePaymentMethod_ActivePaymentMethod_ThrowsError() async throws {
         // Given: 활성 결제수단 생성
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit, isActive: true)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit, isActive: true)
         try await repository.insertPaymentMethod(paymentMethod)
         
         // When & Then: 에러 발생
@@ -322,7 +299,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testValidatePaymentMethodName_AvailableName() async throws {
         // Given: 기존 결제수단 생성
-        let existingPaymentMethod = TestDataFactory.createPaymentMethod(name: "국민카드", kind: .credit)
+        let existingPaymentMethod = PaymentMethodDTO.mockWith(name: "국민카드", kind: .credit)
         try await repository.insertPaymentMethod(existingPaymentMethod)
         
         // When: 다른 이름으로 검증
@@ -334,7 +311,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testValidatePaymentMethodName_DuplicateName_SameKind() async throws {
         // Given: 기존 결제수단 생성
-        let existingPaymentMethod = TestDataFactory.createPaymentMethod(name: "국민카드", kind: .credit)
+        let existingPaymentMethod = PaymentMethodDTO.mockWith(name: "국민카드", kind: .credit)
         try await repository.insertPaymentMethod(existingPaymentMethod)
         
         // When: 동일한 이름과 종류로 검증
@@ -346,7 +323,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testValidatePaymentMethodName_DuplicateNameButDifferentKind() async throws {
         // Given: 기존 결제수단 생성 (신용카드)
-        let existingPaymentMethod = TestDataFactory.createPaymentMethod(name: "국민카드", kind: .credit)
+        let existingPaymentMethod = PaymentMethodDTO.mockWith(name: "국민카드", kind: .credit)
         try await repository.insertPaymentMethod(existingPaymentMethod)
         
         // When: 동일한 이름이지만 다른 종류로 검증 (체크카드)
@@ -358,7 +335,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testValidatePaymentMethodName_ExcludingSelf() async throws {
         // Given: 기존 결제수단 생성
-        let existingPaymentMethod = TestDataFactory.createPaymentMethod(name: "국민카드", kind: .credit)
+        let existingPaymentMethod = PaymentMethodDTO.mockWith(name: "국민카드", kind: .credit)
         try await repository.insertPaymentMethod(existingPaymentMethod)
         
         // When: 자기 자신을 제외하고 검증 (수정 시나리오)
@@ -370,27 +347,22 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testHasTransactions_WithTransactions() async throws {
         // Given: 결제수단, 카테고리, 서브카테고리, 거래 내역 생성
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit)
         try await repository.insertPaymentMethod(paymentMethod)
         
         // 데이터베이스에 직접 카테고리, 서브카테고리, 거래 내역 추가
         try await database.withModelContext { context in
             let paymentMethodModel = try context.fetch(FetchDescriptor<PaymentMethod>()).first!
             
-            let categoryDTO = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+            let categoryDTO = CategoryDTO.mockExpense
             let categoryModel = categoryDTO.toModel()
             context.insert(categoryModel)
             
-            let subCategoryDTO = TestDataFactory.createSubCategory(name: "외식비", categoryId: categoryModel.id)
+            let subCategoryDTO = SubCategoryDTO.mockFoodExpense
             let subCategoryModel = subCategoryDTO.toModel(parentCategory: categoryModel)
             context.insert(subCategoryModel)
             
-            let transactionDTO = TestDataFactory.createTransaction(
-                amount: 10000,
-                memo: "점심식사",
-                subCategory: subCategoryDTO,
-                paymentMethod: paymentMethod
-            )
+            let transactionDTO = TransactionDTO.mockWith(amount: 10000, memo: "점심식사", subCategory: subCategoryDTO, paymentMethod: paymentMethod)
             let transactionModel = transactionDTO.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethodModel)
             context.insert(transactionModel)
             try context.save()
@@ -405,7 +377,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testHasTransactions_WithoutTransactions() async throws {
         // Given: 결제수단만 생성 (거래 없음)
-        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
+        let paymentMethod = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit)
         try await repository.insertPaymentMethod(paymentMethod)
         
         // When: 거래 내역 존재 여부 확인
@@ -419,9 +391,9 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testFetchPaymentMethodUsageStats() async throws {
         // Given: 결제수단들과 거래 내역 생성
-        let paymentMethod1 = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
-        let paymentMethod2 = TestDataFactory.createPaymentMethod(name: "체크카드", kind: .debit)
-        let paymentMethod3 = TestDataFactory.createPaymentMethod(name: "현금", kind: .cash)
+        let paymentMethod1 = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit)
+        let paymentMethod2 = PaymentMethodDTO.mockWith(name: "체크카드", kind: .debit)
+        let paymentMethod3 = PaymentMethodDTO.mockWith(name: "현금", kind: .cash)
         
         try await repository.insertPaymentMethod(paymentMethod1)
         try await repository.insertPaymentMethod(paymentMethod2)
@@ -432,25 +404,24 @@ final class PaymentMethodRepositoryTests: XCTestCase {
             let paymentMethods = try context.fetch(FetchDescriptor<PaymentMethod>())
             let paymentMethod1Model = paymentMethods.first { $0.name == "신용카드" }!
             let paymentMethod2Model = paymentMethods.first { $0.name == "체크카드" }!
-            let paymentMethod3Model = paymentMethods.first { $0.name == "현금" }!
             
-            let categoryDTO = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+            let categoryDTO = CategoryDTO.mockExpense
             let categoryModel = categoryDTO.toModel()
             context.insert(categoryModel)
             
-            let subCategoryDTO = TestDataFactory.createSubCategory(name: "외식비", categoryId: categoryModel.id)
+            let subCategoryDTO = SubCategoryDTO.mockFoodExpense
             let subCategoryModel = subCategoryDTO.toModel(parentCategory: categoryModel)
             context.insert(subCategoryModel)
             
             // 신용카드: 3회 거래
             for _ in 0..<3 {
-                let transactionDTO = TestDataFactory.createTransaction(subCategory: subCategoryDTO, paymentMethod: paymentMethod1)
+                let transactionDTO = TransactionDTO.mockWith(subCategory: subCategoryDTO, paymentMethod: paymentMethod1)
                 let transactionModel = transactionDTO.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethod1Model)
                 context.insert(transactionModel)
             }
             
             // 체크카드: 1회 거래  
-            let transactionDTO2 = TestDataFactory.createTransaction(subCategory: subCategoryDTO, paymentMethod: paymentMethod2)
+            let transactionDTO2 = TransactionDTO.mockWith(subCategory: subCategoryDTO, paymentMethod: paymentMethod2)
             let transactionModel2 = transactionDTO2.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethod2Model)
             context.insert(transactionModel2)
             
@@ -474,14 +445,14 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     func testFetchPaymentMethodAmountSummary() async throws {
         // Given: 결제수단들과 거래 내역 생성
-        let paymentMethod1 = TestDataFactory.createPaymentMethod(name: "신용카드", kind: .credit)
-        let paymentMethod2 = TestDataFactory.createPaymentMethod(name: "체크카드", kind: .debit)
+        let paymentMethod1 = PaymentMethodDTO.mockWith(name: "신용카드", kind: .credit)
+        let paymentMethod2 = PaymentMethodDTO.mockWith(name: "체크카드", kind: .debit)
         
         try await repository.insertPaymentMethod(paymentMethod1)
         try await repository.insertPaymentMethod(paymentMethod2)
         
-        let startDate = TestDataFactory.startOfMonth()
-        let endDate = TestDataFactory.endOfMonth()
+        let startDate = YearMonth.current.startOfMonth
+        let endDate = YearMonth.current.endOfMonth
         
         // 데이터베이스에 직접 거래 내역 추가
         try await database.withModelContext { context in
@@ -489,25 +460,25 @@ final class PaymentMethodRepositoryTests: XCTestCase {
             let paymentMethod1Model = paymentMethods.first { $0.name == "신용카드" }!
             let paymentMethod2Model = paymentMethods.first { $0.name == "체크카드" }!
             
-            let categoryDTO = TestDataFactory.createCategory(name: "식비", type: .variableExpense)
+            let categoryDTO = CategoryDTO.mockExpense
             let categoryModel = categoryDTO.toModel()
             context.insert(categoryModel)
             
-            let subCategoryDTO = TestDataFactory.createSubCategory(name: "외식비", categoryId: categoryModel.id)
+            let subCategoryDTO = SubCategoryDTO.mockFoodExpense
             let subCategoryModel = subCategoryDTO.toModel(parentCategory: categoryModel)
             context.insert(subCategoryModel)
             
             // 신용카드: 50000원 (20000 + 30000)
-            let transaction1 = TestDataFactory.createTransaction(amount: 20000, date: startDate, subCategory: subCategoryDTO, paymentMethod: paymentMethod1)
+            let transaction1 = TransactionDTO.mockWith(amount: 20000, date: startDate, subCategory: subCategoryDTO, paymentMethod: paymentMethod1)
             let transactionModel1 = transaction1.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethod1Model)
             context.insert(transactionModel1)
             
-            let transaction2 = TestDataFactory.createTransaction(amount: 30000, date: endDate, subCategory: subCategoryDTO, paymentMethod: paymentMethod1)
+            let transaction2 = TransactionDTO.mockWith(amount: 30000, date: endDate, subCategory: subCategoryDTO, paymentMethod: paymentMethod1)
             let transactionModel2 = transaction2.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethod1Model)
             context.insert(transactionModel2)
             
             // 체크카드: 15000원
-            let transaction3 = TestDataFactory.createTransaction(amount: 15000, date: startDate, subCategory: subCategoryDTO, paymentMethod: paymentMethod2)
+            let transaction3 = TransactionDTO.mockWith(amount: 15000, date: startDate, subCategory: subCategoryDTO, paymentMethod: paymentMethod2)
             let transactionModel3 = transaction3.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethod2Model)
             context.insert(transactionModel3)
             

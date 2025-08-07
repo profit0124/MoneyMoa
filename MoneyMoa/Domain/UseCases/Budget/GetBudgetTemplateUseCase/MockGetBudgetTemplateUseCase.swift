@@ -66,36 +66,6 @@ public final class MockGetBudgetTemplateUseCase: GetBudgetTemplateUseCase {
     
     /// 기본 Mock 템플릿을 설정합니다
     private func setupDefaultMockTemplate() {
-        let categoryTemplates = [
-            CategoryBudgetTemplateDTO(
-                amount: Decimal(800_000),
-                categoryID: UUID(),
-                categoryName: "식비",
-                budgetTemplateId: UUID()
-            ),
-            CategoryBudgetTemplateDTO(
-                amount: Decimal(300_000),
-                categoryID: UUID(),
-                categoryName: "교통비",
-                budgetTemplateId: UUID()
-            ),
-            CategoryBudgetTemplateDTO(
-                amount: Decimal(500_000),
-                categoryID: UUID(),
-                categoryName: "생활용품",
-                budgetTemplateId: UUID()
-            ),
-            CategoryBudgetTemplateDTO(
-                amount: Decimal(400_000),
-                categoryID: UUID(),
-                categoryName: "기타",
-                budgetTemplateId: UUID()
-            )
-        ]
-        
-        mockTemplate = BudgetTemplateDTO(
-            totalAmount: Decimal(2_000_000), // 200만원
-            categoryBudgetTemplates: categoryTemplates
-        )
+        mockTemplate = .mockStandard
     }
 }
