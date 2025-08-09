@@ -25,7 +25,9 @@ extension Date {
             return "어제"
         }
         
-        let daysDifference = calendar.dateComponents([.day], from: self, to: today).day ?? 0
+        let startSelf = calendar.startOfDay(for: self)
+        let startToday = calendar.startOfDay(for: today)
+        let daysDifference = calendar.dateComponents([.day], from: startSelf, to: startToday).day ?? 0
         
         if daysDifference > 0 && daysDifference <= 3 {
             return "\(daysDifference)일전"

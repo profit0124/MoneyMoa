@@ -4,7 +4,15 @@
       "id" : "F8E35F62-1C19-4F94-B8B4-8A7B4E3F1F7E",
       "name" : "Configuration 1",
       "options" : {
-
+        "codeCoverage" : {
+          "targets" : [
+            {
+              "containerPath" : "container:MoneyMoa.xcodeproj",
+              "identifier" : "31B4A3E72E334CAA00BA3397",
+              "name" : "MoneyMoa"
+            }
+          ]
+        }
       }
     }
   ],
