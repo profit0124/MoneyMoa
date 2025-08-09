@@ -23,7 +23,7 @@ public struct PaymentMethodDTO: Sendable, Hashable, Identifiable {
         kind: PaymentMethodKind,
         iconName: String? = nil,
         orderIndex: Int = 0,
-        isActive: Bool = true,
+        isActive: Bool = true
     ) {
         self.id = id
         self.name = name

@@ -70,7 +70,7 @@ extension PaymentMethod {
             kind: self.kind,
             iconName: self.iconName,
             orderIndex: self.orderIndex,
-            isActive: self.isActive,
+            isActive: self.isActive
         )
     }
 }
