@@ -20,7 +20,7 @@ final class BudgetTemplate {
     
     init(
         id: UUID = UUID(),
-        totalAmount: Decimal,
+        totalAmount: Decimal
     ) {
         self.id = id
         self.totalAmount = totalAmount
@@ -63,7 +63,8 @@ final class Budget {
     
     init(id: UUID = UUID(),
          month: YearMonth,
-         totalAmount: Decimal) {
+         totalAmount: Decimal
+    ) {
         self.id = id
         self.month = month
         self.totalAmount = totalAmount
