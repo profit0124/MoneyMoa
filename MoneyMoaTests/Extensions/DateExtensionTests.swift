@@ -215,7 +215,9 @@ final class DateExtensionTests: XCTestCase {
         
         // 오늘과 차이가 일주일 이상인지 확인
         let today = Date()
-        let daysDifference = calendar.dateComponents([.day], from: testDate, to: today).day ?? 0
+        let startSelf = calendar.startOfDay(for: testDate)
+        let startToday = calendar.startOfDay(for: today)
+        let daysDifference = calendar.dateComponents([.day], from: startSelf, to: startToday).day ?? 0
         
         // Given이 일주일 이상 차이나는 경우에만 테스트
         if daysDifference > 3 {

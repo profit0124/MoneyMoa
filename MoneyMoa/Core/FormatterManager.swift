@@ -34,6 +34,8 @@ public final class FormatterManager {
     public private(set) lazy var transactionDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
+        formatter.calendar = koreaCalendar
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")!
         formatter.dateFormat = "yyyy.MM.dd (E)"
         return formatter
     }()

@@ -1,0 +1,217 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      cache_reset:
+        description: 'Reset SPM caches (true/false)'
+        required: false
+        default: 'false'
+        type: choice
+        options: [ 'false', 'true' ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  XCODE_VERSION: "16.2"           # Runner image has Xcode 16.x; adjust if needed
+  IOS_SIMULATOR: "iPhone 16"      # Preferred device name
+  TEST_PLAN: ""                   # e.g. MoneyMoaTests.xctestplan (leave empty if none)
+  APP_SCHEME: "MoneyMoa"          # Your scheme (must be shared)
+  PROJECT_FILE: "MoneyMoa.xcodeproj"
+  COVERAGE_TARGETS: "MoneyMoa"    # Comma-separated if multiple; used only when a test plan exists
+
+jobs:
+  build-and-test:
+    name: Build • Lint • Test • Coverage
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Tooling versions
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Ensure jq
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then brew install jq; fi
+
+      - name: SwiftLint install (if missing)
+        run: |
+          if ! command -v swiftlint >/dev/null 2>&1; then brew install swiftlint; fi
+          swiftlint version
+
+      - name: SwiftLint
+        run: |
+          echo "🔍 SwiftLint running..."
+          swiftlint lint --reporter github-actions-logging
+          VIOLATIONS=$(swiftlint lint --quiet | wc -l | xargs)
+          echo "📊 SwiftLint violations: $VIOLATIONS"
+          if [ "$VIOLATIONS" -gt 0 ]; then
+            echo "❌ SwiftLint found $VIOLATIONS violations"
+            swiftlint lint
+            exit 1
+          fi
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/.swiftpm
+          key: spm-${{ runner.os }}-${{ env.XCODE_VERSION }}-${{ hashFiles('**/*.xcodeproj/project.pbxproj', '**/*.xcworkspace/contents.xcworkspacedata', 'Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-${{ env.XCODE_VERSION }}-
+            spm-${{ runner.os }}-
+
+      - name: Reset SPM cache (manual)
+        if: github.event.inputs.cache_reset == 'true'
+        run: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData ~/.swiftpm
+          echo "✅ SPM caches cleared"
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies -project "${PROJECT_FILE}" -scheme "${APP_SCHEME}"
+
+      - name: Find and boot an available iPhone simulator
+        id: sim
+        run: |
+          set -e
+          echo "🔎 Searching for simulator named: ${IOS_SIMULATOR}"
+          JSON=$(xcrun simctl list devices available -j)
+          # Try exact name first
+          UDID=$(echo "$JSON" | jq -r --arg NAME "${IOS_SIMULATOR}" '
+              [.devices[] | .[] | select((.isAvailable==true) and (.name==$NAME))][0].udid // empty')
+          # Fallback: any available iPhone
+          if [ -z "$UDID" ]; then
+            echo "ℹ️ Fallback to first available iPhone"
+            UDID=$(echo "$JSON" | jq -r '
+              [.devices[] | .[] | select((.isAvailable==true) and (.name|startswith("iPhone ")) )][0].udid // empty')
+          fi
+          if [ -z "$UDID" ]; then
+            echo "❌ No suitable simulator found"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "✅ Using UDID: $UDID"
+          # Boot & wait
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Force-enable coverage in .xctestplan (if present)
+        run: |
+          set -e
+          PLAN_FILES=$(git ls-files '*.xctestplan' || true)
+          if [ -n "$PLAN_FILES" ]; then
+            echo "🛠️ Patching test plans to enable coverage..."
+            for PLAN in $PLAN_FILES; do
+              echo "  - $PLAN"
+              TMP="${PLAN}.tmp"
+              # Enable coverage
+              jq '.codeCoverage = true' "$PLAN" > "$TMP" && mv "$TMP" "$PLAN"
+              # If plan supports coverageTargets, set them from env (safe even if key absent)
+              jq --arg targets "${COVERAGE_TARGETS}" '
+                .coverageTargets = (
+                  ($targets | split(",")) 
+                  | map(gsub("^\\s+|\\s+$";"")) 
+                  | map(select(length>0)) 
+                  | map({target:.})
+                )
+              ' "$PLAN" > "$TMP" && mv "$TMP" "$PLAN"
+            done
+            echo "✅ Test plans patched."
+          else
+            echo "ℹ️ No .xctestplan in repo. Relying on scheme setting + -enableCodeCoverage YES."
+          fi
+
+      - name: Build & Test (with coverage)
+        env:
+          UDID: ${{ steps.sim.outputs.udid }}
+        run: |
+          set -o pipefail
+          echo "🔨 Building & Testing scheme: ${APP_SCHEME}"
+          if [ -n "${TEST_PLAN}" ]; then
+            echo "Using test plan: ${TEST_PLAN}"
+            PLAN_ARG=(-testPlan "${TEST_PLAN}")
+          else
+            PLAN_ARG=()
+          fi
+          xcodebuild test \
+            -project "${PROJECT_FILE}" \
+            -scheme "${APP_SCHEME}" \
+            "${PLAN_ARG[@]}" \
+            -destination "id=${UDID}" \
+            -configuration Debug \
+            -derivedDataPath "$HOME/Library/Developer/Xcode/DerivedData" \
+            -enableCodeCoverage YES \
+            -resultBundlePath "TestResults.xcresult" \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty --report junit --output test-results.xml
+
+      - name: Coverage report (xccov)
+        if: success()
+        run: |
+          set -o pipefail
+          echo "📊 Generating coverage (xccov)..."
+          if [ ! -d "TestResults.xcresult" ]; then
+            echo "❌ TestResults.xcresult not found"; exit 1
+          fi
+
+          echo "🔎 xccov summary (non-fatal if empty):"
+          xcrun xccov view --report TestResults.xcresult 2>&1 | tee xccov_debug.txt || true
+
+          if xcrun xccov view --report --json TestResults.xcresult > coverage.json; then
+            # lineCoverage 값(0..1)을 퍼센트로 변환
+            if ! command -v jq >/dev/null 2>&1; then brew install jq; fi
+            COV=$(jq -r '
+              if has("lineCoverage") then
+                .lineCoverage
+              elif has("targets") then
+                (.targets | map(.lineCoverage) | add / length)
+              else
+                0
+              end * 100
+            ' coverage.json | awk '{ printf("%.2f", $0) }')
+            echo "📈 Line Coverage: ${COV}%"
+            echo "COVERAGE_PERCENTAGE=${COV}" >> $GITHUB_ENV
+          else
+            echo "⚠️ Failed to read coverage JSON"
+            echo '{"coverage": 0}' > coverage.json
+            echo "COVERAGE_PERCENTAGE=0" >> $GITHUB_ENV
+          fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ci-artifacts
+          path: |
+            test-results.xml
+            xccov_debug.txt
+            TestResults.xcresult
+            coverage.json
+          retention-days: 7
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "# iOS CI Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- Coverage: ${COVERAGE_PERCENTAGE:-N/A}%" >> $GITHUB_STEP_SUMMARY
+          fi
