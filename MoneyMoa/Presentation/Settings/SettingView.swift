@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct SettingsView: View {
-    let router: AppRouter
+    @Environment(AppRouter.self) private var router
     
     var body: some View {
         VStack {
@@ -32,4 +32,12 @@ struct SettingsView: View {
             }
         }
     }
+}
+
+#Preview {
+    NavigationStack {
+        SettingsView()
+            .environment(AppRouter())
+    }
+    
 }

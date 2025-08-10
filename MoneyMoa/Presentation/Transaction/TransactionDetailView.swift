@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TransactionDetailView: View {
     let transaction: TransactionDTO
-    let router: AppRouter
+    @Environment(AppRouter.self) private var router
     
     var body: some View {
         VStack {

@@ -38,6 +38,14 @@ final class AppRouter {
     var sheet: ModalItem?
     var fullScreen: ModalItem?
     
+    // MARK: - Hierarchical Router
+    
+    weak var parent: AppRouter?
+    
+    init(parent: AppRouter? = nil) {
+        self.parent = parent
+    }
+    
     // MARK: - Navigation Methods
     
     func push(_ route: AppRoute) {
@@ -64,15 +72,28 @@ final class AppRouter {
     }
     
     func dismissModal() {
-        sheet = nil
-        fullScreen = nil
+        if let parent = parent {
+            parent.dismissModal()
+        } else {
+            // Root router - handle local dismissal
+            sheet = nil
+            fullScreen = nil
+        }
     }
     
     func dismissSheet() {
-        sheet = nil
+        if let parent = parent {
+            parent.dismissSheet()
+        } else {
+            sheet = nil
+        }
     }
     
     func dismissFullScreen() {
-        fullScreen = nil
+        if let parent = parent {
+            parent.dismissFullScreen()
+        } else {
+            fullScreen = nil
+        }
     }
 }

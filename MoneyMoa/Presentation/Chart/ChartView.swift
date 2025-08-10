@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ChartView: View {
-    let router: AppRouter
+    @Environment(AppRouter.self) private var router
     
     var body: some View {
         VStack {

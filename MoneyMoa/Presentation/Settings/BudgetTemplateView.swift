@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BudgetTemplateView: View {
-    let router: AppRouter
+    @Environment(AppRouter.self) private var router
     
     var body: some View {
         VStack {
@@ -20,4 +20,12 @@ struct BudgetTemplateView: View {
         }
         .navigationTitle("Budget Template")
     }
+}
+
+#Preview {
+    NavigationStack {
+        BudgetTemplateView()
+            .environment(AppRouter())
+    }
+    
 }

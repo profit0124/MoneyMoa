@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct AddTransactionView: View {
-    let router: AppRouter
+    @Environment(AppRouter.self) private var router
     
     var body: some View {
         NavigationStack {

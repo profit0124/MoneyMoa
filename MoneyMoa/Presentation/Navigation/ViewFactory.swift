@@ -13,39 +13,32 @@ struct ViewFactory {
     let container: DIContainer
     
     @ViewBuilder
-    func makeView(for route: AppRoute, router: AppRouter) -> some View {
+    func makeView(for route: AppRoute) -> some View {
         switch route {
         // MARK: - Main Routes
         case .main(.home):
             MainView(viewModel: container.makeMainViewModel())
-                .environment(router)
             
         // MARK: - Settings Routes
         case .settings(.root):
-            SettingsView(router: router)
+            SettingsView()
             
         case .settings(.budget):
-            BudgetTemplateView(router: router)
+            BudgetTemplateView()
             
         // MARK: - Transactions Routes
         case .transactions(.add):
-            AddTransactionView(router: router)
+            AddTransactionView()
             
         case .transactions(.detail(let transaction)):
-            TransactionDetailView(
-                transaction: transaction,
-                router: router
-            )
+            TransactionDetailView(transaction: transaction)
             
         case .transactions(.update(let transaction)):
-            UpdateTransactionView(
-                transaction: transaction,
-                router: router
-            )
+            UpdateTransactionView(transaction: transaction)
             
         // MARK: - Charts Routes
         case .charts(.overview):
-            ChartView(router: router)
+            ChartView()
         }
     }
 }
