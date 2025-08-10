@@ -9,13 +9,13 @@ import SwiftUI
 
 struct MainView: View {
     @State private var viewModel: MainViewModel
+    @Environment(AppRouter.self) private var router
     
     init(viewModel: MainViewModel) {
         self._viewModel = State(wrappedValue: viewModel)
     }
     
     var body: some View {
-        NavigationStack {
             ZStack {
                 VStack {
                     // Custom Navigation Bar
@@ -83,13 +83,12 @@ struct MainView: View {
             .task {
                 viewModel.send(.loadTransactions)
             }
-        }
     }
     
     // MARK: - Private Methods
     
     private func handleTransactionTap(_ transaction: TransactionDTO) {
-        print("Transaction tapped: \(transaction.id)")
+        router.push(.transactionDetail(transaction))
     }
     
     private func handleDateTap(_ date: Date) {
@@ -101,19 +100,19 @@ struct MainView: View {
     }
     
     private func handleBudgetSetupTap() {
-        print("Budget setup tapped")
+        router.push(.settingsBudget)
     }
     
     private func handleChartTap() {
-        print("Chart tapped")
+        router.push(.chartsOverview)
     }
     
     private func handleSettingsTap() {
-        print("Settings tapped")
+        router.push(.settingsRoot)
     }
     
     private func handleAddTransactionTap() {
-        print("Add transaction tapped")
+        router.present(.transactionsAdd, as: .sheet)
     }
 }
 
@@ -130,4 +129,5 @@ struct MainView: View {
     )
     
     MainView(viewModel: viewModel)
+        .environment(AppRouter())
 }

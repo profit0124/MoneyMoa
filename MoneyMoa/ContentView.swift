@@ -23,7 +23,10 @@ struct ContentView: View {
     // MARK: - View Body
     
     var body: some View {
-        MainView(viewModel: diContainer.makeMainViewModel())
+        CoordinatorHost(
+            container: diContainer,
+            start: .mainHome
+        )
     }
 }
 
