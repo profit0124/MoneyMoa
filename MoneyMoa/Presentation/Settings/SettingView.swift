@@ -24,13 +24,6 @@ struct SettingsView: View {
             Spacer()
         }
         .navigationTitle("Settings")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("Close") {
-                    router.dismissModal()
-                }
-            }
-        }
     }
 }
 
