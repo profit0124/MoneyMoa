@@ -1,0 +1,79 @@
+//
+//  AppRouter.swift
+//  MoneyMoa
+//
+//  Created by Sooik Kim on 8/10/25.
+//
+
+import SwiftUI
+import Observation
+
+// MARK: - Modal Style
+
+enum ModalStyle {
+    case sheet
+    case fullScreen
+}
+
+// MARK: - Modal Item
+
+struct ModalItem: Identifiable, Equatable {
+    let id = UUID()
+    let root: AppRoute
+    let style: ModalStyle
+    
+    static func == (lhs: ModalItem, rhs: ModalItem) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+// MARK: - App Router
+
+@MainActor
+@Observable
+final class AppRouter {
+    // MARK: - Properties
+    
+    var path: [AppRoute] = []
+    var sheet: ModalItem?
+    var fullScreen: ModalItem?
+    
+    // MARK: - Navigation Methods
+    
+    func push(_ route: AppRoute) {
+        path.append(route)
+    }
+    
+    func pop() {
+        _ = path.popLast()
+    }
+    
+    func popToRoot() {
+        path.removeAll()
+    }
+    
+    func present(_ route: AppRoute, as style: ModalStyle) {
+        let modalItem = ModalItem(root: route, style: style)
+        
+        switch style {
+        case .sheet:
+            sheet = modalItem
+        case .fullScreen:
+            fullScreen = modalItem
+        }
+    }
+    
+    func dismissModal() {
+        sheet = nil
+        fullScreen = nil
+    }
+    
+    func dismissSheet() {
+        sheet = nil
+    }
+    
+    func dismissFullScreen() {
+        fullScreen = nil
+    }
+}
+
