@@ -12,12 +12,19 @@ import Foundation
 extension Decimal {
     
     /// 금액을 원화 표시 문자열로 변환 (예: "15,000원")
-    public var formattedAmount: String {
+    public var formattedAmountWithWon: String {
         let formatter = FormatterManager.shared.amountFormatter
         let formattedAmount = formatter.string(from: self as NSDecimalNumber) ?? "0"
         return "\(formattedAmount)원"
     }
-    
+
+    /// 금액을 문자열로 변환 (예: "15,000")
+    public var formattedAmountWithoutWon: String {
+        let formatter = FormatterManager.shared.amountFormatter
+        let formattedAmount = formatter.string(from: self as NSDecimalNumber) ?? "0"
+        return formattedAmount
+    }
+
     /// 수입 거래 금액으로 포맷 (예: "+15,000원")
     public var formattedIncomeAmount: String {
         let formatter = FormatterManager.shared.amountFormatter

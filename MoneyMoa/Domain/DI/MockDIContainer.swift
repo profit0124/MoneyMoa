@@ -39,4 +39,52 @@ final class MockDIContainer: DIContainer {
     func makeCreateBudgetFromTemplateUseCase() -> CreateBudgetFromTemplateUseCase {
         return MockCreateBudgetFromTemplateUseCase()
     }
+    
+    // MARK: - Transaction UseCase Factory Methods
+    
+    /// Mock CreateTransactionUseCase를 생성합니다
+    func makeCreateTransactionUseCase() -> CreateTransactionUseCase {
+        return MockCreateTransactionUseCase()
+    }
+    
+    /// Mock GetFavoriteTransactionsUseCase를 생성합니다
+    func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase {
+        return MockGetFavoriteTransactionsUseCase()
+    }
+    
+    // MARK: - Category UseCase Factory Methods
+    
+    /// Mock GetCategoriesByTypeUseCase를 생성합니다
+    func makeGetCategoriesByTypeUseCase() -> GetCategoriesByTypeUseCase {
+        return MockGetCategoriesByTypeUseCase()
+    }
+    
+    /// Mock CreateCategoryUseCase를 생성합니다
+    func makeCreateCategoryUseCase() -> CreateCategoryUseCase {
+        return MockCreateCategoryUseCase()
+    }
+    
+    /// Mock CreateSubCategoryUseCase를 생성합니다
+    func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase {
+        return MockCreateSubCategoryUseCase()
+    }
+    
+    // MARK: - PaymentMethod UseCase Factory Methods
+    
+    /// Mock GetActivePaymentMethodsUseCase를 생성합니다
+    func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase {
+        return MockGetActivePaymentMethodsUseCase()
+    }
+    
+    /// Mock CreatePaymentMethodUseCase를 생성합니다
+    func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase {
+        return MockCreatePaymentMethodUseCase()
+    }
+    
+    // MARK: - ViewModel Factory Methods
+    
+    /// Mock AddTransactionViewModel을 생성합니다
+    func makeAddㅈTransactionViewModel() -> AddTransactionViewModel {
+        return AddTransactionViewModel(container: self)
+    }
 }

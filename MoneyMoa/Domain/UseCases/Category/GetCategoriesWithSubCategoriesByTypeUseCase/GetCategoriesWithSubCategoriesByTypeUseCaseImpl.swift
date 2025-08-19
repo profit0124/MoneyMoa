@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class GetCategoriesWithSubCategoriesByTypeUseCaseImpl: GetCategoriesWithSubCategoriesByTypeUseCase {
+final class GetCategoriesByTypeUseCaseImpl: GetCategoriesByTypeUseCase {
     private let categoryRepository: CategoryRepository
     private let subCategoryRepository: SubCategoryRepository
     

@@ -34,6 +34,49 @@ protocol DIContainer {
     
     /// CreateBudgetFromTemplateUseCase를 생성합니다
     func makeCreateBudgetFromTemplateUseCase() -> CreateBudgetFromTemplateUseCase
+    
+    // MARK: - Transaction UseCase Factory Methods
+    
+    /// CreateTransactionUseCase를 생성합니다
+    func makeCreateTransactionUseCase() -> CreateTransactionUseCase
+    
+    /// GetFavoriteTransactionsUseCase를 생성합니다
+    func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase
+    
+    // MARK: - Category UseCase Factory Methods
+    
+    /// GetCategoriesByTypeUseCase를 생성합니다
+    func makeGetCategoriesByTypeUseCase() -> GetCategoriesByTypeUseCase
+    
+    /// CreateCategoryUseCase를 생성합니다
+    func makeCreateCategoryUseCase() -> CreateCategoryUseCase
+    
+    /// CreateSubCategoryUseCase를 생성합니다
+    func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase
+    
+    // MARK: - PaymentMethod UseCase Factory Methods
+    
+    /// GetActivePaymentMethodsUseCase를 생성합니다
+    func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase
+    
+    /// CreatePaymentMethodUseCase를 생성합니다
+    func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase
+    
+    // MARK: - ViewModel Factory Methods
+    
+    /// AddTransactionViewModel을 생성합니다
+    func makeAddTransactionViewModel() -> AddTransactionViewModel
+    
+    // MARK: - TransactionForm ViewModel Factory Methods
+    
+    /// AmountPlacePaymentMethodFormViewModel을 생성합니다
+    func makeAmountPlacePaymentMethodFormViewModel() -> AmountPlacePaymentMethodFormViewModel
+    
+    /// TransactionTypeCategoryFormViewModel을 생성합니다
+    func makeTransactionTypeCategoryFormViewModel() -> TransactionTypeCategoryFormViewModel
+    
+    /// DateAdditionalFormViewModel을 생성합니다
+    func makeDateAdditionalFormViewModel() -> DateAdditionalFormViewModel
 }
 
 // MARK: - Default Implementation
@@ -50,5 +93,29 @@ extension DIContainer {
             getBudgetTemplateUseCase: makeGetBudgetTemplateUseCase(),
             createBudgetFromTemplateUseCase: makeCreateBudgetFromTemplateUseCase()
         )
+    }
+    
+    // MARK: - TransactionForm ViewModel Default Implementation
+    
+    /// AmountPlacePaymentMethodFormViewModel을 생성합니다 (기본 구현)
+    func makeAmountPlacePaymentMethodFormViewModel() -> AmountPlacePaymentMethodFormViewModel {
+        return AmountPlacePaymentMethodFormViewModel(
+            getActivePaymentMethodsUseCase: makeGetActivePaymentMethodsUseCase(),
+            createPaymentMethodUseCase: makeCreatePaymentMethodUseCase()
+        )
+    }
+    
+    /// TransactionTypeCategoryFormViewModel을 생성합니다 (기본 구현)
+    func makeTransactionTypeCategoryFormViewModel() -> TransactionTypeCategoryFormViewModel {
+        return TransactionTypeCategoryFormViewModel(
+            getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
+            createCategoryUseCase: makeCreateCategoryUseCase(),
+            createSubCategoryUseCase: makeCreateSubCategoryUseCase()
+        )
+    }
+    
+    /// DateAdditionalFormViewModel을 생성합니다 (기본 구현)
+    func makeDateAdditionalFormViewModel() -> DateAdditionalFormViewModel {
+        return DateAdditionalFormViewModel()
     }
 }

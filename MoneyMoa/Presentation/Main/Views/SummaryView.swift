@@ -86,7 +86,7 @@ private struct CurrentMonthExpenseView: View {
     }
     
     private var formattedAmount: String {
-        amount.formattedAmount
+        amount.formattedAmountWithWon
     }
 }
 

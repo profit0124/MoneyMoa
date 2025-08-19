@@ -8,14 +8,14 @@
 import Foundation
 
 #if DEBUG
-final class MockGetCategoriesWithSubCategoriesByTypeUseCase: GetCategoriesWithSubCategoriesByTypeUseCase {
+final class MockGetCategoriesByTypeUseCase: GetCategoriesByTypeUseCase {
     var shouldFail = false
     
     func execute(_ type: TransactionType) async throws -> [CategoryDTO] {
         if shouldFail {
             throw NSError(domain: "MockError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Mock error"])
         }
-        
+
         switch type {
         case .income:
             return [
