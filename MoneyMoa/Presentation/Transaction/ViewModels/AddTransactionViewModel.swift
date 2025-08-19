@@ -15,6 +15,7 @@ final class AddTransactionViewModel {
     
     private let createTransactionUseCase: CreateTransactionUseCase
     private let getFavoriteTransactionsUseCase: GetFavoriteTransactionsUseCase
+    private let transactionEventPublisher: TransactionEventPublisher
 
     let amountPlacePaymentViewModel: AmountPlacePaymentMethodFormViewModel
     let transactionTypeSelectionViewModel: TransactionTypeCategoryFormViewModel
@@ -69,6 +70,7 @@ final class AddTransactionViewModel {
     init(container: DIContainer) {
         self.createTransactionUseCase = container.makeCreateTransactionUseCase()
         self.getFavoriteTransactionsUseCase = container.makeGetFavoriteTransactionsUseCase()
+        self.transactionEventPublisher = container.makeTransactionEventPublisher()
         
         self.amountPlacePaymentViewModel = container.makeAmountPlacePaymentMethodFormViewModel()
         self.transactionTypeSelectionViewModel = container.makeTransactionTypeCategoryFormViewModel()
@@ -118,8 +120,18 @@ final class AddTransactionViewModel {
             Task {
                 do {
                     try await createTransactionUseCase.execute(transactionDTO)
-                    completion()
-                    // notificationCenter 알림
+                    
+                    // 트랜잭션 생성 성공 이벤트 발행
+                    await MainActor.run {
+                        let event = TransactionEvent(
+                            type: .created,
+                            yearMonth: YearMonth(from: transactionDTO.date),
+                            transactionId: transactionDTO.id
+                        )
+                        transactionEventPublisher.publish(event)
+                        completion()
+                    }
+
                 } catch {
                     print(error)
                 }

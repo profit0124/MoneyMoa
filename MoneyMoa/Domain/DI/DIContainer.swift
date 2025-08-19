@@ -77,6 +77,11 @@ protocol DIContainer {
     
     /// DateAdditionalFormViewModel을 생성합니다
     func makeDateAdditionalFormViewModel() -> DateAdditionalFormViewModel
+    
+    // MARK: - Service Factory Methods
+    
+    /// TransactionEventPublisher를 생성합니다
+    func makeTransactionEventPublisher() -> TransactionEventPublisher
 }
 
 // MARK: - Default Implementation
@@ -91,7 +96,8 @@ extension DIContainer {
             getExpenseSumUntilDateUseCase: makeGetExpenseSumUntilDateUseCase(),
             getMonthlyBudgetUseCase: makeGetMonthlyBudgetUseCase(),
             getBudgetTemplateUseCase: makeGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: makeCreateBudgetFromTemplateUseCase()
+            createBudgetFromTemplateUseCase: makeCreateBudgetFromTemplateUseCase(),
+            transactionEventPublisher: makeTransactionEventPublisher()
         )
     }
     
@@ -117,5 +123,13 @@ extension DIContainer {
     /// DateAdditionalFormViewModel을 생성합니다 (기본 구현)
     func makeDateAdditionalFormViewModel() -> DateAdditionalFormViewModel {
         return DateAdditionalFormViewModel()
+    }
+    
+    // MARK: - Service Default Implementation
+    
+    /// TransactionEventPublisher를 생성합니다 (기본 구현)
+    /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
+    func makeTransactionEventPublisher() -> TransactionEventPublisher {
+        return DefaultTransactionEventPublisher.shared
     }
 }

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Observation
+import Combine
 
 // MARK: - MainViewModel
 
@@ -55,6 +56,12 @@ public class MainViewModel {
     private let getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase
     private let getBudgetTemplateUseCase: GetBudgetTemplateUseCase
     private let createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase
+    private let transactionEventPublisher: TransactionEventPublisher
+    
+    // MARK: - Publisher Subscriptions
+    
+    /// Publisher 구독 관리
+    private var cancellables: Set<AnyCancellable> = []
     
     // MARK: - Initialization
     
@@ -64,6 +71,7 @@ public class MainViewModel {
         getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase,
         getBudgetTemplateUseCase: GetBudgetTemplateUseCase,
         createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase,
+        transactionEventPublisher: TransactionEventPublisher,
         initialYearMonth: YearMonth = YearMonth.current
     ) {
         self.getMonthlyTransactionsUseCase = getMonthlyTransactionsUseCase
@@ -71,7 +79,10 @@ public class MainViewModel {
         self.getMonthlyBudgetUseCase = getMonthlyBudgetUseCase
         self.getBudgetTemplateUseCase = getBudgetTemplateUseCase
         self.createBudgetFromTemplateUseCase = createBudgetFromTemplateUseCase
+        self.transactionEventPublisher = transactionEventPublisher
         self.currentYearMonth = initialYearMonth
+        
+        setupTransactionEventObservers()
     }
     
     // MARK: - MainView Actions
@@ -441,5 +452,35 @@ public class MainViewModel {
         case .setMonth(let yearMonth):
             setMonth(yearMonth)
         }
+    }
+    
+    // MARK: - TransactionEvent Handling
+    
+    /// TransactionEvent 옵저버를 설정합니다
+    private func setupTransactionEventObservers() {
+        transactionEventPublisher.transactionEvents
+            .filter { [weak self] event in
+                // 현재 보고 있는 연월과 일치하는 이벤트만 처리
+                event.yearMonth == self?.currentYearMonth
+            }
+            .sink { [weak self] event in
+                self?.handleTransactionEvent(event)
+            }
+            .store(in: &cancellables)
+    }
+    
+    /// 트랜잭션 이벤트 처리
+    /// - Parameter event: 처리할 트랜잭션 이벤트
+    private func handleTransactionEvent(_ event: TransactionEvent) {
+        switch event.type {
+        case .created, .updated, .deleted:
+            // 모든 변경사항에 대해 목록 새로고침
+            send(.loadTransactions)
+        }
+    }
+    
+    /// Publisher 구독 해제 (deinit에서 호출)
+    deinit {
+        cancellables.removeAll()
     }
 }
