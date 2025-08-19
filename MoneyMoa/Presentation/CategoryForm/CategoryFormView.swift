@@ -24,6 +24,7 @@ struct CategoryFormView: View {
                 }
                 Spacer()
             }
+            .padding(16)
             .navigationTitle("새 카테고리")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -46,7 +47,7 @@ struct CategoryFormView: View {
             Text("거래정보 유형")
                 .font(.footnote)
 
-            Text("거래유형: \(viewModel.transactionType)")
+            Text("거래유형: \(viewModel.transactionType.displayName)")
                 .font(.footnote)
                 .padding(.vertical, 8)
                 .padding(.leading, 16)

@@ -48,7 +48,7 @@ final class DIContainerFactory {
     static func createDefault(database: Database? = nil) -> DIContainer {
         let containerType: ContainerType
         #if DEBUG
-        containerType = .production
+        containerType = .mock
         #else
         containerType = .production
         #endif

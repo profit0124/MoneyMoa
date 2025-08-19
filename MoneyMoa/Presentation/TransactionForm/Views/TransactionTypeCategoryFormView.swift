@@ -26,7 +26,6 @@ struct TransactionTypeCategoryFormView: View {
             },
             content: {
                 CategoryFormView(viewModel: $0)
-                    .padding(16)
             }
         )
     }
