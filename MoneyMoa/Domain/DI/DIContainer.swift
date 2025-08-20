@@ -73,17 +73,20 @@ protocol DIContainer {
     /// TransactionDetailViewModel을 생성합니다
     func makeTransactionDetailViewModel(transaction: TransactionDTO) -> TransactionDetailViewModel
 
+    /// UpdateTransactionViewModel을 생성합니다
+    func makeUpdateTransactionViewModel(transaction: TransactionDTO) -> UpdateTransactionViewModel
+
     // MARK: - TransactionForm ViewModel Factory Methods
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다
-    func makeAmountPlacePaymentMethodFormViewModel() -> AmountPlacePaymentMethodFormViewModel
-    
+    func makeAmountPlacePaymentMethodFormViewModel(amount: Decimal?, place: String, paymentMethod: PaymentMethodDTO?) -> AmountPlacePaymentMethodFormViewModel
+
     /// TransactionTypeCategoryFormViewModel을 생성합니다
-    func makeTransactionTypeCategoryFormViewModel() -> TransactionTypeCategoryFormViewModel
-    
+    func makeTransactionTypeCategoryFormViewModel(transactionType: TransactionType, subCategory: SubCategoryDTO?) -> TransactionTypeCategoryFormViewModel
+
     /// DateAdditionalFormViewModel을 생성합니다
-    func makeDateAdditionalFormViewModel() -> DateAdditionalFormViewModel
-    
+    func makeDateAdditionalFormViewModel(date: Date, memo: String, isFavorite: Bool) -> DateAdditionalFormViewModel
+
     // MARK: - Service Factory Methods
     
     /// TransactionEventPublisher를 생성합니다
@@ -116,28 +119,71 @@ extension DIContainer {
         )
     }
 
+    func makeUpdateTransactionViewModel(transaction: TransactionDTO) -> UpdateTransactionViewModel {
+        let amounPlacePaymentMethodFormViewModel = makeAmountPlacePaymentMethodFormViewModel(
+            amount: transaction.amount,
+            place: transaction.place ?? "",
+            paymentMethod: transaction.paymentMethod
+        )
+        let transactionTypeCategoryFormViewModel = makeTransactionTypeCategoryFormViewModel(
+            transactionType: transaction.transactionType,
+            subCategory: transaction.subCategory
+        )
+        let dateAdditionalFormViewModel = makeDateAdditionalFormViewModel(
+            date: transaction.date,
+            memo: transaction.memo ?? "",
+            isFavorite: transaction.isFavorite
+        )
+        return UpdateTransactionViewModel(
+            transaction: transaction,
+            transactionEventPublisher: makeTransactionEventPublisher(),
+            amountPlacePaymentViewModel: amounPlacePaymentMethodFormViewModel,
+            transactionTypeSelectionViewModel: transactionTypeCategoryFormViewModel,
+            dateAdditionalFormViewModel: dateAdditionalFormViewModel
+        )
+    }
+
     // MARK: - TransactionForm ViewModel Default Implementation
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다 (기본 구현)
-    func makeAmountPlacePaymentMethodFormViewModel() -> AmountPlacePaymentMethodFormViewModel {
+    func makeAmountPlacePaymentMethodFormViewModel(
+        amount: Decimal? = nil,
+        place: String = "",
+        paymentMethod: PaymentMethodDTO? = nil) -> AmountPlacePaymentMethodFormViewModel {
         return AmountPlacePaymentMethodFormViewModel(
             getActivePaymentMethodsUseCase: makeGetActivePaymentMethodsUseCase(),
-            createPaymentMethodUseCase: makeCreatePaymentMethodUseCase()
+            createPaymentMethodUseCase: makeCreatePaymentMethodUseCase(),
+            amount: amount,
+            place: place,
+            selectedPaymentMethod: paymentMethod
         )
     }
     
     /// TransactionTypeCategoryFormViewModel을 생성합니다 (기본 구현)
-    func makeTransactionTypeCategoryFormViewModel() -> TransactionTypeCategoryFormViewModel {
+    func makeTransactionTypeCategoryFormViewModel(
+        transactionType: TransactionType = .variableExpense,
+        subCategory: SubCategoryDTO? = nil
+    ) -> TransactionTypeCategoryFormViewModel {
         return TransactionTypeCategoryFormViewModel(
             getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
             createCategoryUseCase: makeCreateCategoryUseCase(),
-            createSubCategoryUseCase: makeCreateSubCategoryUseCase()
+            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
+            selectedTransactionType: transactionType,
+            selectedSubCategory: subCategory
         )
     }
     
     /// DateAdditionalFormViewModel을 생성합니다 (기본 구현)
-    func makeDateAdditionalFormViewModel() -> DateAdditionalFormViewModel {
-        return DateAdditionalFormViewModel()
+    func makeDateAdditionalFormViewModel(
+        date: Date = Date(),
+        memo: String = "",
+        isFavorite: Bool = false
+    ) -> DateAdditionalFormViewModel {
+        return DateAdditionalFormViewModel(
+            selectedDate: date,
+            memo: memo,
+            isFavorite: isFavorite
+        )
     }
     
     // MARK: - Service Default Implementation
