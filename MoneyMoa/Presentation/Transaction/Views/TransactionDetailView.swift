@@ -16,63 +16,68 @@ struct TransactionDetailView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 24) {
-                    // MARK: - 메인 정보 (가장 강조)
-                    mainInfoSection
-                    
-                    // MARK: - 부가 정보 (두 번째 우선순위)
-                    additionalInfoSection
-                    
-                    // MARK: - 메모 및 기타 정보
-                    if (viewModel.transaction.memo != nil && !viewModel.transaction.memo!.isEmpty) || viewModel.transaction.isFavorite {
-                        memoAndExtraSection
-                    }
-                    
-                    Spacer(minLength: 100) // 버튼 영역 확보
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-            }
-            .navigationTitle("거래 상세")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("수정", systemImage: "pencil") {
-                            viewModel.send(.changeViewMode)
+        if viewModel.viewMode == .detail {
+            NavigationStack {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 24) {
+                        // MARK: - 메인 정보 (가장 강조)
+                        mainInfoSection
+
+                        // MARK: - 부가 정보 (두 번째 우선순위)
+                        additionalInfoSection
+
+                        // MARK: - 메모 및 기타 정보
+                        if (viewModel.transaction.memo != nil && !viewModel.transaction.memo!.isEmpty) || viewModel.transaction.isFavorite {
+                            memoAndExtraSection
                         }
-                        
-                        Divider()
-                        
-                        Button("삭제", systemImage: "trash", role: .destructive) {
-                            viewModel.send(.showDeleteConfirmation)
+
+                        Spacer(minLength: 100) // 버튼 영역 확보
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                }
+                .navigationTitle("거래 상세")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button("수정", systemImage: "pencil") {
+                                viewModel.send(.changeViewMode)
+                            }
+
+                            Divider()
+
+                            Button("삭제", systemImage: "trash", role: .destructive) {
+                                viewModel.send(.showDeleteConfirmation)
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .font(.title3)
                         }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                            .font(.title3)
                     }
                 }
+                .safeAreaInset(edge: .bottom) {
+                    actionButtons
+                }
             }
-            .safeAreaInset(edge: .bottom) {
-                actionButtons
-            }
+            .confirmationDialog(
+                "거래를 삭제하시겠습니까?",
+                isPresented: $viewModel.isPresentedDeleteConfirmation,
+                titleVisibility: .visible,
+                actions: {
+                    Button("삭제", role: .destructive) {
+                        viewModel.send(.deleteTransaction(router.dismissModal))
+                    }
+                    Button("취소", role: .cancel) { }
+                },
+                message: {
+                    Text("삭제된 거래는 복구할 수 없습니다.")
+                }
+            )
+        } else {
+            UpdateTransactionView(viewModel: viewModel.updateTransactionViewModel)
         }
-        .confirmationDialog(
-            "거래를 삭제하시겠습니까?",
-            isPresented: $viewModel.isPresentedDeleteConfirmation,
-            titleVisibility: .visible,
-            actions: {
-                Button("삭제", role: .destructive) {
-                    viewModel.send(.deleteTransaction(router.dismissModal))
-                }
-                Button("취소", role: .cancel) { }
-            },
-            message: {
-                Text("삭제된 거래는 복구할 수 없습니다.")
-            }
-        )
+
     }
 }
 

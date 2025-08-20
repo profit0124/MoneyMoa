@@ -118,7 +118,8 @@ extension DIContainer {
         return TransactionDetailViewModel(
             transaction: transaction,
             deleteTransactionUseCase: makeDeleteTransactionUseCase(),
-            transactionEventPublisher: DefaultTransactionEventPublisher.shared
+            transactionEventPublisher: DefaultTransactionEventPublisher.shared,
+            updateTransactionViewModel: makeUpdateTransactionViewModel(transaction: transaction)
         )
     }
 
