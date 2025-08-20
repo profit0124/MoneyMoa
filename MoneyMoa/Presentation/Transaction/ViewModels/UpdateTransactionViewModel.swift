@@ -12,7 +12,7 @@ import Combine
 @Observable
 final class UpdateTransactionViewModel {
 
-//    private let updateTransactionUseCase: UpdateTransactionUseCase
+    private let updateTransactionUseCase: UpdateTransactionUseCase
     private let transactionEventPublisher: TransactionEventPublisher
 
     // MARK: Original Data
@@ -41,12 +41,14 @@ final class UpdateTransactionViewModel {
 
     init(
         transaction: TransactionDTO,
+        updateTransactionUseCase: UpdateTransactionUseCase,
         transactionEventPublisher: TransactionEventPublisher,
         amountPlacePaymentViewModel: AmountPlacePaymentMethodFormViewModel,
         transactionTypeSelectionViewModel: TransactionTypeCategoryFormViewModel,
         dateAdditionalFormViewModel: DateAdditionalFormViewModel
     ) {
         self.transaction = transaction
+        self.updateTransactionUseCase = updateTransactionUseCase
         self.transactionEventPublisher = transactionEventPublisher
         self.amountPlacePaymentViewModel = amountPlacePaymentViewModel
         self.transactionTypeSelectionViewModel = transactionTypeSelectionViewModel
@@ -72,7 +74,7 @@ final class UpdateTransactionViewModel {
                     )
                     send(.cancelButtonTapped)
                 } catch {
-
+                    print(error)
                 }
             }
 
@@ -95,8 +97,8 @@ final class UpdateTransactionViewModel {
                 subCategory: subCategory,
                 paymentMethod: paymentMethod
             )
-            // execute
-            print(transactionDTO)
+
+            try await updateTransactionUseCase.execute(transactionDTO)
         }
 
     }

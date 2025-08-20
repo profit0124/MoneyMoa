@@ -46,6 +46,9 @@ protocol DIContainer {
     /// DeleteTransactionUseCase를 생성합니다
     func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase
     
+    /// UpdateTransactionUseCase를 생성합니다
+    func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase
+    
     // MARK: - Category UseCase Factory Methods
     
     /// GetCategoriesByTypeUseCase를 생성합니다
@@ -136,6 +139,7 @@ extension DIContainer {
         )
         return UpdateTransactionViewModel(
             transaction: transaction,
+            updateTransactionUseCase: makeUpdateTransactionUseCase(),
             transactionEventPublisher: makeTransactionEventPublisher(),
             amountPlacePaymentViewModel: amounPlacePaymentMethodFormViewModel,
             transactionTypeSelectionViewModel: transactionTypeCategoryFormViewModel,

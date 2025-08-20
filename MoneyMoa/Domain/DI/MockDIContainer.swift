@@ -57,6 +57,11 @@ final class MockDIContainer: DIContainer {
         return MockDeleteTransactionUseCase()
     }
     
+    /// Mock UpdateTransactionUseCase를 생성합니다
+    func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
+        return MockUpdateTransactionUseCase()
+    }
+    
     // MARK: - Category UseCase Factory Methods
     
     /// Mock GetCategoriesByTypeUseCase를 생성합니다

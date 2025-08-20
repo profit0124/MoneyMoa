@@ -80,6 +80,12 @@ final class AppDIContainer: DIContainer {
         return DeleteTransactionUseCaseImpl(transactionRepository: repository)
     }
     
+    /// Production UpdateTransactionUseCase를 생성합니다
+    func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
+        let repository = makeTransactionRepository()
+        return UpdateTransactionUseCaseImpl(transactionRepository: repository)
+    }
+    
     // MARK: - Category UseCase Factory Methods
     
     /// Production GetCategoriesByTypeUseCase를 생성합니다
