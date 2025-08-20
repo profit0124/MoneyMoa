@@ -28,8 +28,8 @@ struct CoordinatorHost: View {
                 .navigationDestination(for: AppRoute.self) { route in
                     factory.makeView(for: route)
                 }
-                .environment(router)
         }
+        .environment(router)
         .sheet(item: $router.sheet) { item in
             CoordinatorHost(container: container, start: item.root, parent: router)
         }

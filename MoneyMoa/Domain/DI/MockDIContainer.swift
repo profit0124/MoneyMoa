@@ -12,7 +12,7 @@ import Foundation
 /// Mock 구현체들을 제공하는 DI 컨테이너
 /// Presentation Layer 개발 및 테스트 시 사용됩니다
 final class MockDIContainer: DIContainer {
-    
+
     // MARK: - UseCase Factory Methods
     
     /// Mock GetMonthlyTransactionsUseCase를 생성합니다
@@ -38,5 +38,53 @@ final class MockDIContainer: DIContainer {
     /// Mock CreateBudgetFromTemplateUseCase를 생성합니다
     func makeCreateBudgetFromTemplateUseCase() -> CreateBudgetFromTemplateUseCase {
         return MockCreateBudgetFromTemplateUseCase()
+    }
+    
+    // MARK: - Transaction UseCase Factory Methods
+    
+    /// Mock CreateTransactionUseCase를 생성합니다
+    func makeCreateTransactionUseCase() -> CreateTransactionUseCase {
+        return MockCreateTransactionUseCase()
+    }
+    
+    /// Mock GetFavoriteTransactionsUseCase를 생성합니다
+    func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase {
+        return MockGetFavoriteTransactionsUseCase()
+    }
+    
+    // MARK: - Category UseCase Factory Methods
+    
+    /// Mock GetCategoriesByTypeUseCase를 생성합니다
+    func makeGetCategoriesByTypeUseCase() -> GetCategoriesByTypeUseCase {
+        return MockGetCategoriesByTypeUseCase()
+    }
+    
+    /// Mock CreateCategoryUseCase를 생성합니다
+    func makeCreateCategoryUseCase() -> CreateCategoryUseCase {
+        return MockCreateCategoryUseCase()
+    }
+    
+    /// Mock CreateSubCategoryUseCase를 생성합니다
+    func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase {
+        return MockCreateSubCategoryUseCase()
+    }
+    
+    // MARK: - PaymentMethod UseCase Factory Methods
+    
+    /// Mock GetActivePaymentMethodsUseCase를 생성합니다
+    func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase {
+        return MockGetActivePaymentMethodsUseCase()
+    }
+    
+    /// Mock CreatePaymentMethodUseCase를 생성합니다
+    func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase {
+        return MockCreatePaymentMethodUseCase()
+    }
+    
+    // MARK: - ViewModel Factory Methods
+    
+    /// Mock AddTransactionViewModel을 생성합니다
+    func makeAddTransactionViewModel() -> AddTransactionViewModel {
+        return AddTransactionViewModel(container: self)
     }
 }

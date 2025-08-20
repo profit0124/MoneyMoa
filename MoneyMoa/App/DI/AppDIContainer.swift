@@ -60,6 +60,69 @@ final class AppDIContainer: DIContainer {
         return CreateBudgetFromTemplateUseCaseImpl(budgetRepository: repository)
     }
     
+    // MARK: - Transaction UseCase Factory Methods
+    
+    /// Production CreateTransactionUseCase를 생성합니다
+    func makeCreateTransactionUseCase() -> CreateTransactionUseCase {
+        let repository = makeTransactionRepository()
+        return CreateTransactionUseCaseImpl(transactionRepository: repository)
+    }
+    
+    /// Production GetFavoriteTransactionsUseCase를 생성합니다
+    func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase {
+        let repository = makeTransactionRepository()
+        return GetFavoriteTransactionsUseCaseImpl(transactionRepository: repository)
+    }
+    
+    // MARK: - Category UseCase Factory Methods
+    
+    /// Production GetCategoriesByTypeUseCase를 생성합니다
+    func makeGetCategoriesByTypeUseCase() -> GetCategoriesByTypeUseCase {
+        let categoryRepository = makeCategoryRepository()
+        let subCategoryRepository = makeSubCategoryRepository()
+        return GetCategoriesByTypeUseCaseImpl(
+            categoryRepository: categoryRepository,
+            subCategoryRepository: subCategoryRepository
+        )
+    }
+    
+    /// Production CreateCategoryUseCase를 생성합니다
+    func makeCreateCategoryUseCase() -> CreateCategoryUseCase {
+        let categoryRepository = makeCategoryRepository()
+        let subCategoryRepository = makeSubCategoryRepository()
+        return CreateCategoryUseCaseImpl(
+            categoryRepository: categoryRepository,
+            subCategoryRepository: subCategoryRepository
+        )
+    }
+    
+    /// Production CreateSubCategoryUseCase를 생성합니다
+    func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase {
+        let repository = makeSubCategoryRepository()
+        return CreateSubCategoryUseCaseImpl(subCategoryRepository: repository)
+    }
+    
+    // MARK: - PaymentMethod UseCase Factory Methods
+    
+    /// Production GetActivePaymentMethodsUseCase를 생성합니다
+    func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase {
+        let repository = makePaymentMethodRepository()
+        return GetActivePaymentMethodsUseCaseImpl(paymentMethodRepository: repository)
+    }
+    
+    /// Production CreatePaymentMethodUseCase를 생성합니다
+    func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase {
+        let repository = makePaymentMethodRepository()
+        return CreatePaymentMethodUseCaseImpl(paymentMethodRepository: repository)
+    }
+    
+    // MARK: - ViewModel Factory Methods
+    
+    /// Production AddTransactionViewModel을 생성합니다
+    func makeAddTransactionViewModel() -> AddTransactionViewModel {
+        return AddTransactionViewModel(container: self)
+    }
+    
     // MARK: - Repository Factory Methods
     
     /// TransactionRepository 구현체를 생성합니다
@@ -70,5 +133,20 @@ final class AppDIContainer: DIContainer {
     /// BudgetRepository 구현체를 생성합니다
     private func makeBudgetRepository() -> BudgetRepository {
         return BudgetRepositoryImpl(database: database)
+    }
+    
+    /// CategoryRepository 구현체를 생성합니다
+    private func makeCategoryRepository() -> CategoryRepository {
+        return CategoryRepositoryImpl(database: database)
+    }
+    
+    /// SubCategoryRepository 구현체를 생성합니다
+    private func makeSubCategoryRepository() -> SubCategoryRepository {
+        return SubCategoryRepositoryImpl(database: database)
+    }
+    
+    /// PaymentMethodRepository 구현체를 생성합니다
+    private func makePaymentMethodRepository() -> PaymentMethodRepository {
+        return PaymentMethodRepositoryImpl(database: database)
     }
 }

@@ -125,7 +125,8 @@ struct MainView: View {
         getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
         getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
         getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
-        createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase()
+        createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase(),
+        transactionEventPublisher: MockDIContainer().makeTransactionEventPublisher()
     )
     
     MainView(viewModel: viewModel)

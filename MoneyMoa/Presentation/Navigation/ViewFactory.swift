@@ -28,7 +28,7 @@ struct ViewFactory {
             
         // MARK: - Transactions Routes
         case .transactions(.add):
-            AddTransactionView()
+            AddTransactionView(viewModel: container.makeAddTransactionViewModel())
             
         case .transactions(.detail(let transaction)):
             TransactionDetailView(transaction: transaction)
