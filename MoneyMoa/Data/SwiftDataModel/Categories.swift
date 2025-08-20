@@ -111,6 +111,7 @@ extension SubCategory {
             isActive: self.isActive,
             orderIndex: self.orderIndex,
             categoryId: self.category.id,
+            categoryName: self.category.name,
             categoryIconName: self.category.iconName
         )
     }

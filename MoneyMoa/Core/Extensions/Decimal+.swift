@@ -62,4 +62,12 @@ extension Decimal {
         let formattedAmount = formatter.string(from: absoluteValue as NSDecimalNumber) ?? "0"
         return "\(formattedAmount)"
     }
+    
+    // MARK: - Currency Formatting (FormatterManager Integration)
+    
+    /// 통화 형식으로 포맷 (₩15,000)
+    /// FormatterManager의 formatCurrency를 사용하는 편의 메서드
+    public var currencyFormatted: String {
+        return FormatterManager.shared.formatCurrency(self)
+    }
 }

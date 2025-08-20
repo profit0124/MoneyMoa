@@ -38,4 +38,24 @@ extension Date {
         return formatter.string(from: self)
     }
     
+    // MARK: - Date Formatting (FormatterManager Integration)
+    
+    /// 날짜만 포맷 (2025년 8월 20일 (화))
+    /// FormatterManager의 formatDate(.dateOnly)를 사용하는 편의 메서드
+    public var dateOnlyFormatted: String {
+        return FormatterManager.shared.formatDate(self, format: .dateOnly)
+    }
+    
+    /// 시간만 포맷 (14:30)
+    /// FormatterManager의 formatDate(.timeOnly)를 사용하는 편의 메서드
+    public var timeOnlyFormatted: String {
+        return FormatterManager.shared.formatDate(self, format: .timeOnly)
+    }
+    
+    /// 거래 날짜 포맷 (2025.08.20 (화))
+    /// FormatterManager의 formatDate(.transaction)를 사용하는 편의 메서드
+    public var transactionFormatted: String {
+        return FormatterManager.shared.formatDate(self, format: .transaction)
+    }
+    
 }

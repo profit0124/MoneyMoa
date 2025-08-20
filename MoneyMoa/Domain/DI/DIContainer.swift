@@ -43,6 +43,9 @@ protocol DIContainer {
     /// GetFavoriteTransactionsUseCase를 생성합니다
     func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase
     
+    /// DeleteTransactionUseCase를 생성합니다
+    func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase
+    
     // MARK: - Category UseCase Factory Methods
     
     /// GetCategoriesByTypeUseCase를 생성합니다
@@ -66,7 +69,10 @@ protocol DIContainer {
     
     /// AddTransactionViewModel을 생성합니다
     func makeAddTransactionViewModel() -> AddTransactionViewModel
-    
+
+    /// TransactionDetailViewModel을 생성합니다
+    func makeTransactionDetailViewModel(transaction: TransactionDTO) -> TransactionDetailViewModel
+
     // MARK: - TransactionForm ViewModel Factory Methods
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다
@@ -100,7 +106,16 @@ extension DIContainer {
             transactionEventPublisher: makeTransactionEventPublisher()
         )
     }
-    
+
+    /// TransactionDetailViewModel을 생성합니다. (기본 구현)
+    func makeTransactionDetailViewModel(transaction: TransactionDTO) -> TransactionDetailViewModel {
+        return TransactionDetailViewModel(
+            transaction: transaction,
+            deleteTransactionUseCase: makeDeleteTransactionUseCase(),
+            transactionEventPublisher: DefaultTransactionEventPublisher.shared
+        )
+    }
+
     // MARK: - TransactionForm ViewModel Default Implementation
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다 (기본 구현)

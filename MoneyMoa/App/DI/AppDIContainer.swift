@@ -74,6 +74,12 @@ final class AppDIContainer: DIContainer {
         return GetFavoriteTransactionsUseCaseImpl(transactionRepository: repository)
     }
     
+    /// Production DeleteTransactionUseCase를 생성합니다
+    func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase {
+        let repository = makeTransactionRepository()
+        return DeleteTransactionUseCaseImpl(transactionRepository: repository)
+    }
+    
     // MARK: - Category UseCase Factory Methods
     
     /// Production GetCategoriesByTypeUseCase를 생성합니다

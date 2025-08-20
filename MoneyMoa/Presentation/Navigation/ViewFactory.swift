@@ -31,7 +31,7 @@ struct ViewFactory {
             AddTransactionView(viewModel: container.makeAddTransactionViewModel())
             
         case .transactions(.detail(let transaction)):
-            TransactionDetailView(transaction: transaction)
+            TransactionDetailView(viewModel: container.makeTransactionDetailViewModel(transaction: transaction))
             
         case .transactions(.update(let transaction)):
             UpdateTransactionView(transaction: transaction)

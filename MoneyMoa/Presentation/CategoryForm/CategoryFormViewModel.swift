@@ -87,7 +87,13 @@ final class CategoryFormViewModel: Identifiable {
             categoryDTO = category!
         }
 
-        let subCategoryDTO = SubCategoryDTO(name: subCategoryName, transactionType: transactionType, categoryId: categoryDTO.id, categoryIconName: categoryDTO.iconName)
+        let subCategoryDTO = SubCategoryDTO(
+            name: subCategoryName,
+            transactionType: transactionType,
+            categoryId: categoryDTO.id,
+            categoryName: categoryDTO.name,
+            categoryIconName: categoryDTO.iconName
+        )
         try await createSubCategoryUseCase.execute(subCategoryDTO)
 
         createPublisher.send(subCategoryDTO)

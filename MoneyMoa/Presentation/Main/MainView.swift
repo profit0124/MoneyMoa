@@ -88,7 +88,7 @@ struct MainView: View {
     // MARK: - Private Methods
     
     private func handleTransactionTap(_ transaction: TransactionDTO) {
-        router.push(.transactionDetail(transaction))
+        router.present(.transactionDetail(transaction), as: .sheet)
     }
     
     private func handleDateTap(_ date: Date) {

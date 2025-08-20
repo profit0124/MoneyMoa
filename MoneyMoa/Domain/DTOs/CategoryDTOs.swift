@@ -46,6 +46,7 @@ public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
     public let isActive: Bool
     public let orderIndex: Int
     public let categoryId: UUID
+    public let categoryName: String
     public let categoryIconName: String
     
     public init(
@@ -55,6 +56,7 @@ public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
         isActive: Bool = true,
         orderIndex: Int = 0,
         categoryId: UUID,
+        categoryName: String,
         categoryIconName: String
     ) {
         self.id = id
@@ -63,6 +65,7 @@ public struct SubCategoryDTO: Sendable, Hashable, Identifiable {
         self.isActive = isActive
         self.orderIndex = orderIndex
         self.categoryId = categoryId
+        self.categoryName = categoryName
         self.categoryIconName = categoryIconName
     }
 }
@@ -137,6 +140,7 @@ extension SubCategoryDTO {
         name: "외식비",
         transactionType: .variableExpense,
         categoryId: CategoryDTO.mockFood.id,
+        categoryName: CategoryDTO.mockFood.name,
         categoryIconName: CategoryDTO.mockFood.iconName
     )
     
@@ -144,6 +148,7 @@ extension SubCategoryDTO {
         name: "용돈",
         transactionType: .income,
         categoryId: CategoryDTO.mockIncome.id,
+        categoryName: CategoryDTO.mockIncome.name,
         categoryIconName: CategoryDTO.mockIncome.iconName
     )
     
@@ -151,6 +156,7 @@ extension SubCategoryDTO {
         name: "교통",
         transactionType: .variableExpense,
         categoryId: CategoryDTO.mockExpense.id,
+        categoryName: CategoryDTO.mockExpense.name,
         categoryIconName: CategoryDTO.mockExpense.iconName
     )
     
@@ -158,6 +164,7 @@ extension SubCategoryDTO {
         name: "미용",
         transactionType: .variableExpense,
         categoryId: CategoryDTO.mockIncome.id,
+        categoryName: CategoryDTO.mockIncome.name,
         categoryIconName: CategoryDTO.mockIncome.iconName
     )
     
@@ -165,6 +172,7 @@ extension SubCategoryDTO {
         name: "급여",
         transactionType: .income,
         categoryId: CategoryDTO.mockIncome.id,
+        categoryName: CategoryDTO.mockIncome.name,
         categoryIconName: CategoryDTO.mockIncome.iconName
     )
 }

@@ -52,6 +52,11 @@ final class MockDIContainer: DIContainer {
         return MockGetFavoriteTransactionsUseCase()
     }
     
+    /// Mock DeleteTransactionUseCase를 생성합니다
+    func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase {
+        return MockDeleteTransactionUseCase()
+    }
+    
     // MARK: - Category UseCase Factory Methods
     
     /// Mock GetCategoriesByTypeUseCase를 생성합니다
