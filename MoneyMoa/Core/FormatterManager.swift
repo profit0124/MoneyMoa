@@ -39,7 +39,55 @@ public final class FormatterManager {
         formatter.dateFormat = "yyyy.MM.dd (E)"
         return formatter
     }()
-
+    
+    /// 날짜만 표시용 DateFormatter
+    public private(set) lazy var dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.calendar = koreaCalendar
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        formatter.dateFormat = "yyyy년 MM월 dd일 (E)"
+        return formatter
+    }()
+    
+    /// 시간만 표시용 DateFormatter
+    public private(set) lazy var timeOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.calendar = koreaCalendar
+        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+    
+    // MARK: - Formatting Methods
+    
+    /// 통화 형식으로 금액을 포맷팅
+    /// - Parameter amount: 포맷팅할 금액 (Decimal)
+    /// - Returns: "₩15,000" 형식의 문자열
+    public func formatCurrency(_ amount: Decimal) -> String {
+        guard let formattedAmount = amountFormatter.string(from: amount as NSDecimalNumber) else {
+            return "₩0"
+        }
+        return "₩\(formattedAmount)"
+    }
+    
+    /// 날짜 포맷팅 (다양한 형식 지원)
+    /// - Parameters:
+    ///   - date: 포맷팅할 날짜
+    ///   - format: 포맷 타입
+    /// - Returns: 포맷팅된 날짜 문자열
+    public func formatDate(_ date: Date, format: DateFormatType) -> String {
+        switch format {
+        case .dateOnly:
+            return dateOnlyFormatter.string(from: date)
+        case .timeOnly:
+            return timeOnlyFormatter.string(from: date)
+        case .transaction:
+            return transactionDateFormatter.string(from: date)
+        }
+    }
+    
     // MARK: - Calendar
     /// 한국 로케일 캘린더 (날짜 계산용)
     /// 추후 Localization 고려
@@ -49,4 +97,12 @@ public final class FormatterManager {
         calendar.timeZone = TimeZone(identifier: "Asia/Seoul") ?? TimeZone.current
         return calendar
     }()
+}
+
+// MARK: - Date Format Types
+
+public enum DateFormatType {
+    case dateOnly    // "2025년 8월 20일 (화)"
+    case timeOnly    // "14:30"
+    case transaction // "2025.08.20 (화)"
 }
