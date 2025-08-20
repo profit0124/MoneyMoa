@@ -19,7 +19,7 @@ final class PaymentMethodFormViewModel: Identifiable {
 
     init(createPaymentMethodUseCase: CreatePaymentMethodUseCase,
          name: String = "",
-         selectedKind: PaymentMethodKind = .credit,
+         selectedKind: PaymentMethodKind = .credit
     ) {
         self.createPaymentMethodUseCase = createPaymentMethodUseCase
         self.name = name
