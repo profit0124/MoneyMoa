@@ -127,22 +127,17 @@ private extension TransactionDetailView {
                 .frame(width: 32, height: 32)
                 .background(Circle().fill(.blue.opacity(0.1)))
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text("카테고리")
-                    .font(.caption)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(viewModel.transaction.subCategory.transactionType.displayName)
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.transaction.subCategory.transactionType.displayName)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    HStack {
-                        Image(systemName: viewModel.transaction.subCategory.categoryIconName)
-                        Text(viewModel.transaction.subCategory.name)
-                    }
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                HStack {
+                    Image(systemName: viewModel.transaction.subCategory.categoryIconName)
+
+                    Text("\(viewModel.transaction.subCategory.categoryName) - \(viewModel.transaction.subCategory.name)")
                 }
+                .font(.headline)
+                .fontWeight(.semibold)
             }
             
             Spacer()

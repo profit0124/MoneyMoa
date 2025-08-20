@@ -240,6 +240,7 @@ final class SubCategoryRepositoryTests: XCTestCase {
             isActive: false,
             orderIndex: 1,
             categoryId: parentCategoryId,
+            categoryName: "식비",
             categoryIconName: "fork.knife"
         )
         try await repository.updateSubCategory(updatedSubCategory)

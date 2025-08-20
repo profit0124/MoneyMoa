@@ -20,7 +20,6 @@ final class TransactionRepositoryTests: XCTestCase {
     private var testPaymentMethod: PaymentMethodModel!
     
     override func setUpWithError() throws {
-        // 각 테스트마다 새로운 인메모리 데이터베이스 생성
         database = try Database(isStoredInMemoryOnly: true)
         repository = TransactionRepositoryImpl(database: database)
     }
@@ -341,6 +340,7 @@ final class TransactionRepositoryTests: XCTestCase {
             name: "존재하지않음",
             transactionType: .variableExpense,
             categoryId: UUID(),
+            categoryName: "존재하지않음",
             categoryIconName: "questionmark"
         )
         

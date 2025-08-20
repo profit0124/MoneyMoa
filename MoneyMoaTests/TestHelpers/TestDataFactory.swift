@@ -47,6 +47,7 @@ struct TestDataFactory {
         id: UUID = UUID(),
         name: String = "외식비",
         categoryId: UUID,
+        categoryName: String = "식비",
         categoryIconName: String = "fork.knife",
         type: TransactionType = .variableExpense,
         isActive: Bool = true,
@@ -59,6 +60,7 @@ struct TestDataFactory {
             isActive: isActive,
             orderIndex: orderIndex,
             categoryId: categoryId,
+            categoryName: categoryName,
             categoryIconName: categoryIconName
         )
     }

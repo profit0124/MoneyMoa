@@ -48,6 +48,7 @@ final class DTOExtensionTests: XCTestCase {
             isActive: true,
             orderIndex: 0,
             categoryId: parentCategory.id,
+            categoryName: parentCategory.name,
             categoryIconName: "fork.knife"
         )
         
@@ -107,10 +108,11 @@ final class DTOExtensionTests: XCTestCase {
     func testSubCategoryDTO_Sorting() {
         // Given: 다른 orderIndex를 가진 SubCategoryDTO들
         let categoryId = UUID()
-        let subCategory1 = SubCategoryDTO(name: "B서브카테고리", transactionType: .variableExpense, orderIndex: 1, categoryId: categoryId, categoryIconName: "icon")
-        let subCategory2 = SubCategoryDTO(name: "A서브카테고리", transactionType: .variableExpense, orderIndex: 1, categoryId: categoryId, categoryIconName: "icon")
-        let subCategory3 = SubCategoryDTO(name: "C서브카테고리", transactionType: .variableExpense, orderIndex: 0, categoryId: categoryId, categoryIconName: "icon")
-        
+        let categoryName = "카테고리"
+        let subCategory1 = SubCategoryDTO(name: "B서브카테고리", transactionType: .variableExpense, orderIndex: 1, categoryId: categoryId, categoryName: categoryName, categoryIconName: "icon")
+        let subCategory2 = SubCategoryDTO(name: "A서브카테고리", transactionType: .variableExpense, orderIndex: 1, categoryId: categoryId, categoryName: categoryName, categoryIconName: "icon")
+        let subCategory3 = SubCategoryDTO(name: "C서브카테고리", transactionType: .variableExpense, orderIndex: 0, categoryId: categoryId, categoryName: categoryName, categoryIconName: "icon")
+
         // When: 정렬
         let sortedSubCategories = [subCategory1, subCategory2, subCategory3].sorted()
         

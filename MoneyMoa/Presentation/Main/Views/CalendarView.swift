@@ -254,6 +254,7 @@ private func createMockTransaction(amount: Decimal, type: TransactionType) -> Tr
             name: "테스트",
             transactionType: type,
             categoryId: category.id,
+            categoryName: category.name,
             categoryIconName: category.iconName
         ),
         paymentMethod: PaymentMethodDTO(
