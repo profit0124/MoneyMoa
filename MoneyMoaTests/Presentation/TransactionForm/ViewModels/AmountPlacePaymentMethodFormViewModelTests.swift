@@ -11,7 +11,7 @@ import XCTest
 // MARK: - AmountPlacePaymentMethodFormViewModelTests
 
 @MainActor
-final class AmountPlacePaymentMethodFormViewModelTests: XCTestCase {
+final class AmountPlacePaymentMethodFormVMTests: XCTestCase {
     
     // MARK: - Properties
     

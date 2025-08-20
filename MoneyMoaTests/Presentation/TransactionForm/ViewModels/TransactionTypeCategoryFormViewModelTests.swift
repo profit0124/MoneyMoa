@@ -11,7 +11,7 @@ import XCTest
 // MARK: - TransactionTypeCategoryFormViewModelTests
 
 @MainActor
-final class TransactionTypeCategoryFormViewModelTests: XCTestCase {
+final class TransactionTypeCategoryFormVMTests: XCTestCase {
     
     // MARK: - Properties
     
