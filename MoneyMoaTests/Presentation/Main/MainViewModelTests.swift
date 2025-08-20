@@ -60,7 +60,8 @@ final class MainViewModelTests: XCTestCase {
             getExpenseSumUntilDateUseCase: getExpenseSumUntilDateUseCase,
             getMonthlyBudgetUseCase: getMonthlyBudgetUseCase,
             getBudgetTemplateUseCase: getBudgetTemplateUseCase,
-            createBudgetFromTemplateUseCase: createBudgetFromTemplateUseCase
+            createBudgetFromTemplateUseCase: createBudgetFromTemplateUseCase,
+            transactionEventPublisher: DefaultTransactionEventPublisher.shared
         )
         
         // Setup test data
@@ -170,6 +171,7 @@ final class MainViewModelTests: XCTestCase {
             getMonthlyBudgetUseCase: getMonthlyBudgetUseCase,
             getBudgetTemplateUseCase: getBudgetTemplateUseCase,
             createBudgetFromTemplateUseCase: createBudgetFromTemplateUseCase,
+            transactionEventPublisher: DefaultTransactionEventPublisher.shared,
             initialYearMonth: customYearMonth
         )
         

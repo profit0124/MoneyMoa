@@ -76,6 +76,27 @@ final class AddTransactionViewModel {
         self.transactionTypeSelectionViewModel = container.makeTransactionTypeCategoryFormViewModel()
         self.dateAdditionalFormViewModel = container.makeDateAdditionalFormViewModel()
     }
+    
+    #if DEBUG
+    // MARK: - Test-only Init
+    
+    init(
+        createTransactionUseCase: CreateTransactionUseCase,
+        getFavoriteTransactionsUseCase: GetFavoriteTransactionsUseCase,
+        transactionEventPublisher: TransactionEventPublisher,
+        amountPlacePaymentViewModel: AmountPlacePaymentMethodFormViewModel,
+        transactionTypeSelectionViewModel: TransactionTypeCategoryFormViewModel,
+        dateAdditionalFormViewModel: DateAdditionalFormViewModel
+    ) {
+        self.createTransactionUseCase = createTransactionUseCase
+        self.getFavoriteTransactionsUseCase = getFavoriteTransactionsUseCase
+        self.transactionEventPublisher = transactionEventPublisher
+        
+        self.amountPlacePaymentViewModel = amountPlacePaymentViewModel
+        self.transactionTypeSelectionViewModel = transactionTypeSelectionViewModel
+        self.dateAdditionalFormViewModel = dateAdditionalFormViewModel
+    }
+    #endif
 
     enum Action {
         case buttonTapped(() -> Void)

@@ -127,4 +127,89 @@ final class MockDIContainerTests: XCTestCase {
         // Then
         XCTAssertTrue(useCase is MockCreateBudgetFromTemplateUseCase)
     }
+    
+    // MARK: - Test Methods - TransactionForm ViewModels
+    
+    func test_makeAmountPlacePaymentMethodFormViewModel_returnsValidViewModel() {
+        // Given & When
+        let viewModel = container.makeAmountPlacePaymentMethodFormViewModel()
+        
+        // Then
+        XCTAssertNotNil(viewModel)
+        XCTAssertNil(viewModel.amount)
+        XCTAssertEqual(viewModel.place, "")
+        XCTAssertNil(viewModel.selectedPaymentMethod)
+        XCTAssertTrue(viewModel.paymentMethodOptions.isEmpty)
+    }
+    
+    func test_makeTransactionTypeCategoryFormViewModel_returnsValidViewModel() {
+        // Given & When
+        let viewModel = container.makeTransactionTypeCategoryFormViewModel()
+        
+        // Then
+        XCTAssertNotNil(viewModel)
+        XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
+        XCTAssertNil(viewModel.selectedSubCategory)
+        XCTAssertTrue(viewModel.categories.isEmpty)
+    }
+    
+    func test_makeDateAdditionalFormViewModel_returnsValidViewModel() {
+        // Given & When
+        let viewModel = container.makeDateAdditionalFormViewModel()
+        
+        // Then
+        XCTAssertNotNil(viewModel)
+        XCTAssertEqual(viewModel.memo, "")
+        XCTAssertFalse(viewModel.isFavorite)
+        
+        // selectedDate는 현재 날짜와 거의 같아야 함
+        let currentDate = Date()
+        let timeDifference = abs(viewModel.selectedDate.timeIntervalSince(currentDate))
+        XCTAssertLessThan(timeDifference, 5.0)
+    }
+    
+    // MARK: - Test Methods - Transaction ViewModels
+    
+    func test_makeAddTransactionViewModel_returnsValidViewModel() {
+        // Given & When
+        let viewModel = container.makeAddTransactionViewModel()
+        
+        // Then
+        XCTAssertNotNil(viewModel)
+        XCTAssertEqual(viewModel.currentStep, .amountPlacePaymentMethod)
+        XCTAssertTrue(viewModel.filteredCompletedStep.isEmpty)
+        XCTAssertFalse(viewModel.isValid)
+        XCTAssertNotNil(viewModel.amountPlacePaymentViewModel)
+        XCTAssertNotNil(viewModel.transactionTypeSelectionViewModel)
+        XCTAssertNotNil(viewModel.dateAdditionalFormViewModel)
+    }
+    
+    // MARK: - Test Methods - Transaction UseCases
+    
+    func test_makeCreateTransactionUseCase_returnsMockUseCase() {
+        // Given & When
+        let useCase = container.makeCreateTransactionUseCase()
+        
+        // Then
+        XCTAssertTrue(useCase is MockCreateTransactionUseCase)
+    }
+    
+    func test_makeGetFavoriteTransactionsUseCase_returnsMockUseCase() {
+        // Given & When
+        let useCase = container.makeGetFavoriteTransactionsUseCase()
+        
+        // Then
+        XCTAssertTrue(useCase is MockGetFavoriteTransactionsUseCase)
+    }
+    
+    // MARK: - Test Methods - TransactionEventPublisher
+    
+    func test_makeTransactionEventPublisher_returnsValidPublisher() {
+        // Given & When
+        let publisher = container.makeTransactionEventPublisher()
+        
+        // Then
+        XCTAssertNotNil(publisher)
+        XCTAssertTrue(publisher is DefaultTransactionEventPublisher)
+    }
 }
