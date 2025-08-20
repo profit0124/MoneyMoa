@@ -112,7 +112,7 @@ private extension TransactionDetailView {
                     .foregroundColor(transaction.transactionType.color)
             }
             
-            Text(FormatterManager.shared.formatCurrency(transaction.amount))
+            Text(transaction.amount.currencyFormatted)
                 .font(.system(size: 36, weight: .bold, design: .rounded))
                 .foregroundColor(transaction.transactionType.color)
         }
@@ -165,11 +165,11 @@ private extension TransactionDetailView {
                     .foregroundColor(.secondary)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(FormatterManager.shared.formatDate(viewModel.transaction.date, format: .dateOnly))
+                    Text(viewModel.transaction.date.dateOnlyFormatted)
                         .font(.headline)
                         .fontWeight(.semibold)
                     
-                    Text(FormatterManager.shared.formatDate(viewModel.transaction.date, format: .timeOnly))
+                    Text(viewModel.transaction.date.timeOnlyFormatted)
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
