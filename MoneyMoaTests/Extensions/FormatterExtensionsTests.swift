@@ -61,7 +61,7 @@ final class FormatterExtensionsTests: XCTestCase {
     
     func testDateOnlyFormatted_ReturnsCorrectFormat() {
         // Given
-        let calendar = Calendar.current
+        let calendar = FormatterManager.shared.koreaCalendar
         let date = calendar.date(from: DateComponents(year: 2025, month: 8, day: 20))!
         
         // When
@@ -87,7 +87,7 @@ final class FormatterExtensionsTests: XCTestCase {
     
     func testTransactionFormatted_ReturnsCorrectFormat() {
         // Given
-        let calendar = Calendar.current
+        let calendar = FormatterManager.shared.koreaCalendar
         let date = calendar.date(from: DateComponents(year: 2025, month: 8, day: 20))!
         
         // When
