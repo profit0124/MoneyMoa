@@ -109,7 +109,11 @@ extension DIContainer {
 
     /// TransactionDetailViewModel을 생성합니다. (기본 구현)
     func makeTransactionDetailViewModel(transaction: TransactionDTO) -> TransactionDetailViewModel {
-        return TransactionDetailViewModel(transaction: transaction)
+        return TransactionDetailViewModel(
+            transaction: transaction,
+            deleteTransactionUseCase: makeDeleteTransactionUseCase(),
+            transactionEventPublisher: DefaultTransactionEventPublisher.shared
+        )
     }
 
     // MARK: - TransactionForm ViewModel Default Implementation

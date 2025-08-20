@@ -365,7 +365,7 @@ private extension TransactionDetailView {
 }
 
 #Preview {
-    let viewModel = TransactionDetailViewModel(transaction: .mockLunch)
+    let viewModel = MockDIContainer().makeTransactionDetailViewModel(transaction: TransactionDTO.mockLunch)
     TransactionDetailView(viewModel: viewModel)
         .environment(AppRouter())
 }

@@ -19,9 +19,18 @@ final class TransactionDetailViewModel {
     var transaction: TransactionDTO
     var viewMode: TransactionDetailViewMode = .detail
     var isPresentedDeleteConfirmation: Bool = false
+    
+    private let deleteTransactionUseCase: DeleteTransactionUseCase
+    private let transactionEventPublisher: TransactionEventPublisher
 
-    init(transaction: TransactionDTO) {
+    init(
+        transaction: TransactionDTO,
+        deleteTransactionUseCase: DeleteTransactionUseCase,
+        transactionEventPublisher: TransactionEventPublisher
+    ) {
         self.transaction = transaction
+        self.deleteTransactionUseCase = deleteTransactionUseCase
+        self.transactionEventPublisher = transactionEventPublisher
     }
 
     enum Action {
@@ -53,6 +62,14 @@ final class TransactionDetailViewModel {
     }
 
     private func deleteTransaction() async throws {
-        // delte transaction
+        try await deleteTransactionUseCase.execute(transactionId: transaction.id)
+        transactionEventPublisher.publish(
+            .init(
+                type: .deleted,
+                yearMonth: YearMonth(
+                    from: transaction.date
+                )
+            )
+        )
     }
 }
