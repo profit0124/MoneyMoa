@@ -22,6 +22,7 @@ final class TransactionDetailViewModel {
     var isPresentedDeleteConfirmation: Bool = false
     
     private let deleteTransactionUseCase: DeleteTransactionUseCase
+    private let getTransactionByIdUseCase: GetTransactionByIdUseCase
     private let transactionEventPublisher: TransactionEventPublisher
 
     let updateTransactionViewModel: UpdateTransactionViewModel
@@ -31,11 +32,13 @@ final class TransactionDetailViewModel {
     init(
         transaction: TransactionDTO,
         deleteTransactionUseCase: DeleteTransactionUseCase,
+        getTransactionByIdUseCase: GetTransactionByIdUseCase,
         transactionEventPublisher: TransactionEventPublisher,
         updateTransactionViewModel: UpdateTransactionViewModel
     ) {
         self.transaction = transaction
         self.deleteTransactionUseCase = deleteTransactionUseCase
+        self.getTransactionByIdUseCase = getTransactionByIdUseCase
         self.transactionEventPublisher = transactionEventPublisher
         self.updateTransactionViewModel = updateTransactionViewModel
     }
@@ -64,7 +67,9 @@ final class TransactionDetailViewModel {
             handleChangeViewMode()
 
         case .fetchTransaction:
-            print("fetch")
+            Task {
+                await fetchTransaction()
+            }
         }
     }
 
@@ -104,6 +109,12 @@ final class TransactionDetailViewModel {
     }
 
     private func fetchTransaction() async {
-
+        do {
+            if let updatedTransaction = try await getTransactionByIdUseCase.execute(id: transaction.id) {
+                self.transaction = updatedTransaction
+            }
+        } catch {
+            print("거래 내역 조회 실패: \(error)")
+        }
     }
 }
