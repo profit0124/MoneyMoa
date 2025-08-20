@@ -43,6 +43,9 @@ protocol DIContainer {
     /// GetFavoriteTransactionsUseCase를 생성합니다
     func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase
     
+    /// DeleteTransactionUseCase를 생성합니다
+    func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase
+    
     // MARK: - Category UseCase Factory Methods
     
     /// GetCategoriesByTypeUseCase를 생성합니다
