@@ -37,7 +37,9 @@ class BasicCardFormCoordinator: CardFormCoordinatorProtocol {
     }
 
     func expandCard(_ id: String) {}
-    func collapseCard(_ id: String) {}
+    func collapseCard(_ id: String) {
+        expandedCards.remove(id)
+    }
 }
 
 final class CreateTransactionFormCoordinator: BasicCardFormCoordinator {
@@ -50,9 +52,18 @@ final class CreateTransactionFormCoordinator: BasicCardFormCoordinator {
         self.expandedCards.removeAll()
         expandedCards.insert(id)
     }
+}
 
-    override func collapseCard(_ id: String) {
-        expandedCards.remove(id)
+final class UpdateTransactionFormCoordinator: BasicCardFormCoordinator {
+    init(_ ids: [String]) {
+        super.init()
+        ids.forEach {
+            self.expandCard($0)
+        }
+    }
+
+    override func expandCard(_ id: String) {
+        expandedCards.insert(id)
     }
 }
 

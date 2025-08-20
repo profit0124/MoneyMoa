@@ -72,13 +72,15 @@ final class TransactionTypeCategoryFormViewModel: Identifiable {
                 createCategoryUseCase: CreateCategoryUseCase,
                 createSubCategoryUseCase: CreateSubCategoryUseCase,
                 categories: [CategoryDTO] = [],
-                selectedTransactionType: TransactionType = .variableExpense
+                selectedTransactionType: TransactionType = .variableExpense,
+                selectedSubCategory: SubCategoryDTO? = nil
     ) {
         self.getCategoriesByTypeUseCase = getCategoriesByTypeUseCase
         self.createCategoryUseCase = createCategoryUseCase
         self.createSubCategoryUseCase = createSubCategoryUseCase
         self.categories = categories
         self.selectedTransactionType = selectedTransactionType
+        self.selectedSubCategory = selectedSubCategory
     }
 
     // MARK: - Action Handling
