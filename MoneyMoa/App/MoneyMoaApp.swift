@@ -19,18 +19,37 @@ struct MoneyMoaApp: App {
     /// DI 컨테이너
     private let diContainer: DIContainer
     
+    /// 앱 상태 관리
+    @State private var appState: AppState
+    
     // MARK: - Initialization
     
     init() {
         self.database = try? Database(isStoredInMemoryOnly: true)
         self.diContainer = DIContainerFactory.createDefault(database: self.database)
+        self.appState = AppState(diContainer: self.diContainer)
     }
     
     // MARK: - App Body
     
     var body: some Scene {
         WindowGroup {
-            ContentView(diContainer: diContainer)
+            Group {
+                if appState.isLoading {
+                    LoadingView(
+                        message: appState.loadingMessage,
+                        skipAction: {
+                            appState.isLoading = false
+                        }
+                    )
+                    .task {
+                        await appState.initializeApp()
+                    }
+                } else {
+                    ContentView(diContainer: diContainer)
+                }
+            }
         }
+
     }
 }

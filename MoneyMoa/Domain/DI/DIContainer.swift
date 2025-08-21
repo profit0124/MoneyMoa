@@ -63,6 +63,9 @@ protocol DIContainer {
     /// CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase
     
+    /// ImportRecommendedCategoriesUseCase를 생성합니다
+    func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase
+    
     // MARK: - PaymentMethod UseCase Factory Methods
     
     /// GetActivePaymentMethodsUseCase를 생성합니다
@@ -97,6 +100,7 @@ protocol DIContainer {
     
     /// TransactionEventPublisher를 생성합니다
     func makeTransactionEventPublisher() -> TransactionEventPublisher
+    
 }
 
 // MARK: - Default Implementation
@@ -202,4 +206,5 @@ extension DIContainer {
     func makeTransactionEventPublisher() -> TransactionEventPublisher {
         return DefaultTransactionEventPublisher.shared
     }
+    
 }
