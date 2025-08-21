@@ -120,6 +120,16 @@ final class AppDIContainer: DIContainer {
         return CreateSubCategoryUseCaseImpl(subCategoryRepository: repository)
     }
     
+    /// Production ImportRecommendedCategoriesUseCase를 생성합니다
+    func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {
+        let categoryRepository = makeCategoryRepository()
+        let subCategoryRepository = makeSubCategoryRepository()
+        return ImportRecommendedCategoriesUseCaseImpl(
+            categoryRepository: categoryRepository,
+            subCategoryRepository: subCategoryRepository
+        )
+    }
+    
     // MARK: - PaymentMethod UseCase Factory Methods
     
     /// Production GetActivePaymentMethodsUseCase를 생성합니다

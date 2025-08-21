@@ -84,6 +84,11 @@ final class MockDIContainer: DIContainer {
         return MockCreateSubCategoryUseCase()
     }
     
+    /// Mock ImportRecommendedCategoriesUseCase를 생성합니다
+    func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {
+        return MockImportRecommendedCategoriesUseCase()
+    }
+    
     // MARK: - PaymentMethod UseCase Factory Methods
     
     /// Mock GetActivePaymentMethodsUseCase를 생성합니다
