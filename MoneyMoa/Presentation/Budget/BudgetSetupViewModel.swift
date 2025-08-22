@@ -8,21 +8,28 @@
 import Foundation
 import Observation
 
+enum BudgetSetupViewModelError: Error {
+    case noBudgetToUpdate
+}
+
 @Observable
 final class BudgetSetupViewModel {
     
     // MARK: - Original Data
-    var budget: BudgetTemplateDTO?
+    var budget: BudgetDTO?
 
     // MARK: - Form State
+    let yearMonth: YearMonth
     var totalAmount: Decimal?
-    var categoryBudgetTemplates: [CategoryBudgetTemplateDTO] = []
+    var categoryBudgets: [CategoryBudgetDTO] = []
     var categories: [CategoryDTO] = []
     
     // MARK: - UI State
     var isLoading: Bool = false
     var errorMessage: String?
     var showError: Bool = false
+    var showingCategorySelection: Bool = false
+    var showUpdateConfirmation: Bool = false
 
     // MARK: - Computed Properties
     
@@ -30,20 +37,20 @@ final class BudgetSetupViewModel {
     var isValid: Bool {
         guard let totalAmount = totalAmount, totalAmount > 0 else { return false }
         guard totalCategoryBudgetTemplate <= totalAmount else { return false }
-        guard totalCategoryBudgetTemplate > 0 else { return false }
+        guard totalCategoryBudgetTemplate >= 0 else { return false }
         return hasChanges
     }
     
     /// 변경사항이 있는지 확인
     private var hasChanges: Bool {
         let totalAmountChanged = budget?.totalAmount != totalAmount
-        let categoryBudgetsChanged = !areEqual(budget?.categoryBudgetTemplates ?? [], categoryBudgetTemplates)
+        let categoryBudgetsChanged = !areEqual(budget?.categoryBudgets ?? [], categoryBudgets)
         return totalAmountChanged || categoryBudgetsChanged
     }
     
     /// 카테고리별 예산 총합
     var totalCategoryBudgetTemplate: Decimal {
-        categoryBudgetTemplates.reduce(0) { $0 + $1.amount }
+        categoryBudgets.reduce(0) { $0 + $1.amount }
     }
     
     /// 남은 예산
@@ -59,51 +66,53 @@ final class BudgetSetupViewModel {
     /// 추가 가능한 카테고리 목록 (중복 제거)
     var availableCategories: [CategoryDTO] {
         categories.filter { category in
-            !categoryBudgetTemplates.contains { $0.categoryID == category.id }
+            !categoryBudgets.contains { $0.categoryID == category.id }
         }
     }
 
     // MARK: - Dependencies
-    private let getBudgetTemplateUseCase: GetBudgetTemplateUseCase
-    private let getCategoriesByTypeUseCase: GetCategoriesByTypeUseCase  
-    private let createBudgetTemplateUseCase: CreateBudgetTemplateUseCase
-    private let updateBudgetTemplateUseCase: UpdateBudgetTemplateUseCase
-    private let createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase
-    private let updateBudgetUseCase: UpdateBudgetUseCase
+    private let getBudgetUseCase: GetMonthlyBudgetUseCase
+    private let getCategoriesByTypeUseCase: GetCategoriesByTypeUseCase
+    private let createTemplateFromBudgetUseCase: CreateTemplateFromBudgetUseCase
+    private let updateBudgetTemplateUseCase: UpdateTemplateFromBudgetUseCase
+    private let createBudgetUseCase: CreateBudgetUseCase
+    private let updateBudgetRangeUseCase: UpdateBudgetRangeUseCase
     
     // MARK: - Initialization
     
     init(
-        getBudgetTemplateUseCase: GetBudgetTemplateUseCase,
+        yearMonth: YearMonth = .current,
+        getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase,
         getCategoriesByTypeUseCase: GetCategoriesByTypeUseCase,
-        createBudgetTemplateUseCase: CreateBudgetTemplateUseCase,
-        updateBudgetTemplateUseCase: UpdateBudgetTemplateUseCase,
-        createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase,
-        updateBudgetUseCase: UpdateBudgetUseCase
+        createTemplateFromBudgetUseCase: CreateTemplateFromBudgetUseCase,
+        updateBudgetTemplateUseCase: UpdateTemplateFromBudgetUseCase,
+        createBudgetUseCase: CreateBudgetUseCase,
+        updateBudgetRangeUseCase: UpdateBudgetRangeUseCase
     ) {
-        self.getBudgetTemplateUseCase = getBudgetTemplateUseCase
+        self.yearMonth = yearMonth
+        self.getBudgetUseCase = getMonthlyBudgetUseCase
         self.getCategoriesByTypeUseCase = getCategoriesByTypeUseCase
-        self.createBudgetTemplateUseCase = createBudgetTemplateUseCase
+        self.createTemplateFromBudgetUseCase = createTemplateFromBudgetUseCase
         self.updateBudgetTemplateUseCase = updateBudgetTemplateUseCase
-        self.createBudgetFromTemplateUseCase = createBudgetFromTemplateUseCase
-        self.updateBudgetUseCase = updateBudgetUseCase
+        self.createBudgetUseCase = createBudgetUseCase
+        self.updateBudgetRangeUseCase = updateBudgetRangeUseCase
     }
 
     // MARK: - Types
 
-    enum CreateBudgetType {
-        case create                    // 최초 생성
-        case updateWithTemplate       // 템플릿 포함 업데이트
-        case updateWithoutTemplate    // 현재월만 업데이트
+    enum UpdateType {
+        case withTemplate
+        case withoutTemplate
     }
 
     enum Action {
         case onAppear
-        case createBudgetTemplate
-        case deleteCategoryBudgetTemplate(CategoryBudgetTemplateDTO)
-        case addCategoryBudgetTemplate([CategoryDTO])
-        case updateCategoryBudgetAmount(CategoryBudgetTemplateDTO, Decimal)
+        case doneButtonTapped(() -> Void)
+        case removeCategoryBudgetDTO(CategoryBudgetDTO)
+        case addCategoryBudgets([CategoryDTO])
+        case updateCategoryBudgetAmount(CategoryBudgetDTO, Decimal)
         case resetForm
+        case updateBudget(UpdateType, () -> Void)
     }
 
     // MARK: - Public Methods
@@ -112,18 +121,28 @@ final class BudgetSetupViewModel {
         switch action {
         case .onAppear:
             handleOnAppear()
-        case .createBudgetTemplate:
-            Task {
-                await handleCreateBudgetTemplate()
+        case .doneButtonTapped(let completion):
+            if budget != nil {
+                showUpdateConfirmation = true
+            } else {
+                Task {
+                    await createBudgetWithTemplate()
+                    completion()
+                }
             }
-        case .deleteCategoryBudgetTemplate(let template):
-            deleteCategoryBudgetTemplate(template)
-        case .addCategoryBudgetTemplate(let categories):
-            addCategoryBudgetTemplate(categories)
-        case .updateCategoryBudgetAmount(let template, let amount):
-            updateCategoryBudgetAmount(template, amount)
+        case .removeCategoryBudgetDTO(let categoryBudget):
+            removeCategoryBudgetDTO(categoryBudget)
+        case .addCategoryBudgets(let categories):
+            addCategoryBudget(categories)
+        case .updateCategoryBudgetAmount(let categoryBudget, let amount):
+            updateCategoryBudgetAmount(categoryBudget, amount)
         case .resetForm:
             resetForm()
+        case .updateBudget(let type, let completion):
+            Task {
+                await handleUpdateBudget(type)
+                completion()
+            }
         }
     }
 
@@ -142,12 +161,12 @@ final class BudgetSetupViewModel {
         
         do {
             // 1. Budget Template 불러오기
-            budget = try await getBudgetTemplateUseCase.execute()
-            
+            budget = try await getBudgetUseCase.execute(yearMonth: yearMonth)
+
             // 2. 불러온 후 데이터를 Form에 적용
             if let budget = budget {
                 totalAmount = budget.totalAmount
-                categoryBudgetTemplates = budget.categoryBudgetTemplates
+                categoryBudgets = budget.categoryBudgets
             }
             
             // 3. Category 정보 불러오기 (지출 카테고리만)
@@ -162,128 +181,129 @@ final class BudgetSetupViewModel {
     }
     
     @MainActor
-    private func handleCreateBudgetTemplate() async {
+    private func createBudgetWithTemplate() async {
         guard isValid else { return }
         
         isLoading = true
         defer { isLoading = false }
         
         do {
-            let type = determineBudgetType()
-            
-            switch type {
-            case .create:
-                try await createBudgetTemplate()
-                try await createBudgetFromTemplate()
-                
-            case .updateWithTemplate:
-                try await updateBudgetTemplate()
-                try await updateCurrentMonthBudget()
-                
-            case .updateWithoutTemplate:
-                try await updateCurrentMonthBudget()
-            }
-            
+            let newBudgetDTO = makeBudgetDTOData()
+            try await createBudgetTemplate(newBudgetDTO)
+            try await createBudget(newBudgetDTO)
         } catch {
             errorMessage = "예산 저장 중 오류가 발생했습니다: \(error.localizedDescription)"
             showError = true
         }
     }
-    
-    private func determineBudgetType() -> CreateBudgetType {
-        if budget == nil {
-            return .create
+
+    private func handleUpdateBudget(_ updateType: UpdateType) async {
+        guard isValid else { return }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            if updateType == .withTemplate {
+                try await updateBudgetTemplate()
+            }
+            try await updateBudget()
+        } catch {
+            errorMessage = "예산 수정 중 오류가 발생했습니다: \(error.localizedDescription)"
+            showError = true
         }
-        
-        // TODO: 사용자 선택에 따른 분기 로직 구현
-        // 현재는 임시로 updateWithTemplate 반환
-        return .updateWithTemplate
     }
-    
-    private func createBudgetTemplate() async throws {
-        let templateDTO = BudgetTemplateDTO(
-            totalAmount: totalAmount ?? 0,
-            categoryBudgetTemplates: categoryBudgetTemplates
-        )
-        budget = try await createBudgetTemplateUseCase.execute(templateDTO)
+
+    // MARK: BudgetTemplate + CategoryBudgetTemplate
+
+    private func createBudgetTemplate(_ budget: BudgetDTO) async throws {
+        try await createTemplateFromBudgetUseCase.execute(budget)
     }
     
     private func updateBudgetTemplate() async throws {
-        guard let existingBudget = budget else { return }
-        
-        let updatedTemplate = BudgetTemplateDTO(
+        guard let existingBudget = budget else { throw BudgetSetupViewModelError.noBudgetToUpdate }
+
+        let updatedTemplate = BudgetDTO(
             id: existingBudget.id,
+            month: existingBudget.month,
             totalAmount: totalAmount ?? 0,
-            categoryBudgetTemplates: categoryBudgetTemplates
+            categoryBudgets: categoryBudgets
         )
-        budget = try await updateBudgetTemplateUseCase.execute(updatedTemplate)
-    }
-    
-    private func createBudgetFromTemplate() async throws {
-        guard let budget = budget else { return }
-        
-        let currentYearMonth = YearMonth.current
-        _ = try await createBudgetFromTemplateUseCase.execute(
-            template: budget,
-            yearMonth: currentYearMonth
-        )
-    }
-    
-    private func updateCurrentMonthBudget() async throws {
-        let currentYearMonth = YearMonth.current
-        
-        // BudgetTemplateDTO를 현재 월의 BudgetDTO로 변환
-        let templateDTO = BudgetTemplateDTO(
-            totalAmount: totalAmount ?? 0,
-            categoryBudgetTemplates: categoryBudgetTemplates
-        )
-        let budgetDTO = templateDTO.toBudgetDTO(for: currentYearMonth)
-        
-        // UpdateBudgetUseCase를 통해 현재 월 예산 업데이트
-        try await updateBudgetUseCase.execute(for: currentYearMonth, budget: budgetDTO)
-    }
-    
-    private func deleteCategoryBudgetTemplate(_ template: CategoryBudgetTemplateDTO) {
-        categoryBudgetTemplates.removeAll { $0.id == template.id }
+
+        try await updateBudgetTemplateUseCase.execute(updatedTemplate)
     }
 
-    private func addCategoryBudgetTemplate(_ categories: [CategoryDTO]) {
-        let newTemplates = categories.map { category in
-            CategoryBudgetTemplateDTO(
+    // MARK: Budget + CategoryBudget
+
+    private func createBudget(_ budget: BudgetDTO) async throws {
+        self.budget = try await createBudgetUseCase.execute(budget)
+    }
+    
+    private func updateBudget() async throws {
+        guard let existingBudget = budget else { throw BudgetSetupViewModelError.noBudgetToUpdate }
+
+        let updateBudget = BudgetDTO(
+            id: existingBudget.id,
+            month: existingBudget.month,
+            totalAmount: totalAmount ?? 0,
+            categoryBudgets: categoryBudgets
+        )
+
+        // UpdateBudgetUseCase를 통해 현재 월 예산 업데이트
+        try await updateBudgetRangeUseCase.execute(from: yearMonth, budget: updateBudget)
+    }
+
+    private func addCategoryBudget(_ categories: [CategoryDTO]) {
+        let newBudgets = categories.map { category in
+            CategoryBudgetDTO(
+                id: UUID(),
                 amount: 0,
                 categoryID: category.id,
                 categoryName: category.name,
-                budgetTemplateId: UUID() // 임시 ID
+                budgetId: UUID() // 임시 ID
             )
         }
-        categoryBudgetTemplates.append(contentsOf: newTemplates)
+        categoryBudgets.append(contentsOf: newBudgets)
     }
     
-    private func updateCategoryBudgetAmount(_ template: CategoryBudgetTemplateDTO, _ amount: Decimal) {
-        if let index = categoryBudgetTemplates.firstIndex(where: { $0.id == template.id }) {
-            var updatedTemplate = categoryBudgetTemplates[index]
-            updatedTemplate = CategoryBudgetTemplateDTO(
-                id: updatedTemplate.id,
+    private func updateCategoryBudgetAmount(_ categoryBudget: CategoryBudgetDTO, _ amount: Decimal) {
+        if let index = categoryBudgets.firstIndex(where: { $0.id == categoryBudget.id }) {
+            var updatedBudget = categoryBudgets[index]
+            updatedBudget = CategoryBudgetDTO(
+                id: updatedBudget.id,
                 amount: amount,
-                categoryID: updatedTemplate.categoryID,
-                categoryName: updatedTemplate.categoryName,
-                budgetTemplateId: updatedTemplate.budgetTemplateId
+                categoryID: updatedBudget.categoryID,
+                categoryName: updatedBudget.categoryName,
+                budgetId: updatedBudget.budgetId
             )
-            categoryBudgetTemplates[index] = updatedTemplate
+            categoryBudgets[index] = updatedBudget
         }
     }
-    
+
+    private func removeCategoryBudgetDTO(_ categoryBudget: CategoryBudgetDTO) {
+        categoryBudgets.removeAll { $0.id == categoryBudget.id }
+    }
+
     private func resetForm() {
         totalAmount = nil
-        categoryBudgetTemplates.removeAll()
+        categoryBudgets.removeAll()
         errorMessage = nil
         showError = false
+    }
+
+    private func makeBudgetDTOData() -> BudgetDTO {
+        BudgetDTO(
+            id: UUID(),
+            month: yearMonth,
+            totalAmount: totalAmount ?? 0,
+            categoryBudgets: categoryBudgets
+        )
     }
 
     // MARK: - Helper Methods
     
     /// 배열의 순서를 무시하고 내용이 같은지 비교
-    private func areEqual(_ lhs: [CategoryBudgetTemplateDTO], _ rhs: [CategoryBudgetTemplateDTO]) -> Bool {
+    private func areEqual(_ lhs: [CategoryBudgetDTO], _ rhs: [CategoryBudgetDTO]) -> Bool {
         guard lhs.count == rhs.count else { return false }
         
         let lhsSet = Set(lhs.map { "\($0.categoryID)_\($0.amount)" })

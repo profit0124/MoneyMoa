@@ -143,6 +143,22 @@ extension BudgetTemplateDTO {
     }
 }
 
+extension BudgetDTO {
+    func toBudgetTemplateDTO() -> BudgetTemplateDTO {
+        let budgetId = UUID()
+
+        let categoryBudgetTemplates = categoryBudgets.map {
+            CategoryBudgetTemplateDTO(amount: $0.amount, categoryID: $0.categoryID, categoryName: $0.categoryName, budgetTemplateId: budgetId)
+        }
+
+        return BudgetTemplateDTO(
+            id: budgetId,
+            totalAmount: totalAmount,
+            categoryBudgetTemplates: categoryBudgetTemplates
+        )
+    }
+}
+
 extension CategoryBudgetTemplateDTO {
     /// CategoryBudgetTemplateDTO를 CategoryBudgetDTO로 변환합니다
     /// - Parameter budgetId: 상위 예산의 ID

@@ -23,8 +23,8 @@ struct ViewFactory {
         case .settings(.root):
             SettingsView()
             
-        case .settings(.budget):
-            BudgetSetupView(viewModel: container.makeBudgetSetupViewModel())
+        case .settings(.budget(let yearMonth)):
+            BudgetSetupView(viewModel: container.makeBudgetSetupViewModel(yearMonth: yearMonth))
             
         // MARK: - Transactions Routes
         case .transactions(.add):

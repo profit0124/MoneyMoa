@@ -60,22 +60,28 @@ final class AppDIContainer: DIContainer {
         return CreateBudgetFromTemplateUseCaseImpl(budgetRepository: repository)
     }
     
-    /// Production CreateBudgetTemplateUseCase를 생성합니다
-    func makeCreateBudgetTemplateUseCase() -> CreateBudgetTemplateUseCase {
+    /// Production CreateBudgetUseCase를 생성합니다
+    func makeCreateBudgetUseCase() -> CreateBudgetUseCase {
         let repository = makeBudgetRepository()
-        return CreateBudgetTemplateUseCaseImpl(budgetRepository: repository)
+        return CreateBudgetUseCaseImpl(budgetRepository: repository)
+    }
+    
+    /// Production CreateBudgetTemplateUseCase를 생성합니다
+    func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase {
+        let repository = makeBudgetRepository()
+        return CreateTemplateFromBudgetUseCaseImpl(budgetRepository: repository)
     }
     
     /// Production UpdateBudgetTemplateUseCase를 생성합니다
-    func makeUpdateBudgetTemplateUseCase() -> UpdateBudgetTemplateUseCase {
+    func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase {
         let repository = makeBudgetRepository()
-        return UpdateBudgetTemplateUseCaseImpl(budgetRepository: repository)
+        return UpdateTemplateFromBudgetUseCaseImpl(budgetRepository: repository)
     }
     
-    /// Production UpdateBudgetUseCase를 생성합니다
-    func makeUpdateBudgetUseCase() -> UpdateBudgetUseCase {
+    /// Production UpdateBudgetRangeUseCase를 생성합니다
+    func makeUpdateBudgetRangeUseCase() -> UpdateBudgetRangeUseCase {
         let repository = makeBudgetRepository()
-        return UpdateBudgetUseCaseImpl(budgetRepository: repository)
+        return UpdateBudgetRangeUseCaseImpl(budgetRepository: repository)
     }
     
     // MARK: - Transaction UseCase Factory Methods

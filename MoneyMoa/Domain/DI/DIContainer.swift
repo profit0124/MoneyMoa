@@ -35,14 +35,17 @@ protocol DIContainer {
     /// CreateBudgetFromTemplateUseCase를 생성합니다
     func makeCreateBudgetFromTemplateUseCase() -> CreateBudgetFromTemplateUseCase
     
+    /// CreateBudgetUseCase를 생성합니다
+    func makeCreateBudgetUseCase() -> CreateBudgetUseCase
+    
     /// CreateBudgetTemplateUseCase를 생성합니다
-    func makeCreateBudgetTemplateUseCase() -> CreateBudgetTemplateUseCase
+    func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase
     
     /// UpdateBudgetTemplateUseCase를 생성합니다
-    func makeUpdateBudgetTemplateUseCase() -> UpdateBudgetTemplateUseCase
+    func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase
     
-    /// UpdateBudgetUseCase를 생성합니다
-    func makeUpdateBudgetUseCase() -> UpdateBudgetUseCase
+    /// UpdateBudgetRangeUseCase를 생성합니다
+    func makeUpdateBudgetRangeUseCase() -> UpdateBudgetRangeUseCase
     
     // MARK: - Transaction UseCase Factory Methods
     
@@ -95,7 +98,7 @@ protocol DIContainer {
     func makeUpdateTransactionViewModel(transaction: TransactionDTO) -> UpdateTransactionViewModel
 
     /// BudgetSetupViewModel을 생성합니다.
-    func makeBudgetSetupViewModel() -> BudgetSetupViewModel
+    func makeBudgetSetupViewModel(yearMonth: YearMonth) -> BudgetSetupViewModel
 
     // MARK: - TransactionForm ViewModel Factory Methods
     
@@ -168,14 +171,15 @@ extension DIContainer {
         )
     }
 
-    func makeBudgetSetupViewModel() -> BudgetSetupViewModel {
+    func makeBudgetSetupViewModel(yearMonth: YearMonth) -> BudgetSetupViewModel {
         BudgetSetupViewModel(
-            getBudgetTemplateUseCase: makeGetBudgetTemplateUseCase(),
+            yearMonth: yearMonth,
+            getMonthlyBudgetUseCase: makeGetMonthlyBudgetUseCase(),
             getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
-            createBudgetTemplateUseCase: makeCreateBudgetTemplateUseCase(),
+            createTemplateFromBudgetUseCase: makeCreateBudgetTemplateUseCase(),
             updateBudgetTemplateUseCase: makeUpdateBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: makeCreateBudgetFromTemplateUseCase(),
-            updateBudgetUseCase: makeUpdateBudgetUseCase()
+            createBudgetUseCase: makeCreateBudgetUseCase(),
+            updateBudgetRangeUseCase: makeUpdateBudgetRangeUseCase()
         )
     }
 

@@ -72,7 +72,8 @@ public class BudgetRepositoryImpl: BudgetRepository {
             try context.save()
         }
     }
-    
+
+    @discardableResult
     public func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
         try await database.withModelContext { context in
             let newTemplate = template.toModelWithCategories()
@@ -82,13 +83,12 @@ public class BudgetRepositoryImpl: BudgetRepository {
             return newTemplate.toDTO(includeCategoryBudgets: true)
         }
     }
-    
+
+    @discardableResult
     public func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
         try await database.withModelContext { context in
             // 기존 템플릿 찾기
-            let id = template.id
-            let predicate = #Predicate<BudgetTemplate> { $0.id == id }
-            let descriptor = FetchDescriptor<BudgetTemplate>(predicate: predicate)
+            let descriptor = FetchDescriptor<BudgetTemplate>()
             
             guard let existingTemplate = try context.fetch(descriptor).first else {
                 throw RepositoryError.budgetTemplateNotFound
@@ -254,6 +254,45 @@ public class BudgetRepositoryImpl: BudgetRepository {
             }
             
             try context.save()
+        }
+    }
+    
+    public func createBudget(_ budget: BudgetDTO) async throws -> BudgetDTO {
+        try await database.withModelContext { context in
+            let year = budget.month.year
+            let month = budget.month.month
+            // 기존 예산이 있는지 확인
+            let predicate = #Predicate<Budget> { $0.month.year == year && $0.month.month == month }
+            let descriptor = FetchDescriptor<Budget>(predicate: predicate)
+            let existingBudgets = try context.fetch(descriptor)
+            
+            // 기존 예산이 있으면 에러 발생
+            if !existingBudgets.isEmpty {
+                throw RepositoryError.budgetAlreadyExists
+            }
+            
+            // 새로운 예산 생성
+            let newBudget = Budget(
+                month: budget.month,
+                totalAmount: budget.totalAmount
+            )
+            context.insert(newBudget)
+            
+            // 카테고리별 예산 생성
+            for categoryBudgetDTO in budget.categoryBudgets {
+                let categoryBudget = CategoryBudget(
+                    amount: categoryBudgetDTO.amount,
+                    categoryID: categoryBudgetDTO.categoryID,
+                    categoryName: categoryBudgetDTO.categoryName,
+                    budget: newBudget
+                )
+                context.insert(categoryBudget)
+            }
+            
+            try context.save()
+            
+            // 생성된 예산 반환
+            return budget
         }
     }
     

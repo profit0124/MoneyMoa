@@ -7,9 +7,9 @@
 
 import Foundation
 
-public protocol UpdateBudgetTemplateUseCase {
+public protocol UpdateTemplateFromBudgetUseCase {
     /// 기존 예산 템플릿을 업데이트합니다
     /// - Parameter template: 업데이트할 예산 템플릿 정보
     /// - Returns: 업데이트된 예산 템플릿 DTO
-    func execute(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
+    func execute(_ budget: BudgetDTO) async throws
 }

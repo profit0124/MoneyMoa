@@ -97,6 +97,7 @@ public enum RepositoryError: Error, Sendable {
     case paymentMethodNotFound
     case budgetTemplateNotFound
     case budgetNotFound
+    case budgetAlreadyExists
     case categoryBudgetNotFound
     case categoryBudgetsExceedTotalAmount
     case cannotDeleteActiveCategory

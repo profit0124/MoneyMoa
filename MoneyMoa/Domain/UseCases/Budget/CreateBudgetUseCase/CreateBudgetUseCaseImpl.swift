@@ -1,5 +1,5 @@
 //
-//  UpdateBudgetUseCaseImpl.swift
+//  CreateBudgetUseCaseImpl.swift
 //  MoneyMoa
 //
 //  Created by Claude on 8/22/25.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct UpdateBudgetUseCaseImpl: UpdateBudgetUseCase {
+public struct CreateBudgetUseCaseImpl: CreateBudgetUseCase {
     
     private let budgetRepository: BudgetRepository
     
@@ -15,7 +15,7 @@ public struct UpdateBudgetUseCaseImpl: UpdateBudgetUseCase {
         self.budgetRepository = budgetRepository
     }
     
-    public func execute(for month: YearMonth, budget: BudgetDTO) async throws {
-        try await budgetRepository.updateBudget(for: month, budget: budget)
+    public func execute(_ budget: BudgetDTO) async throws -> BudgetDTO {
+        return try await budgetRepository.createBudget(budget)
     }
 }

@@ -15,7 +15,7 @@ enum MainRoute: Hashable {
 
 enum SettingsRoute: Hashable {
     case root
-    case budget
+    case budget(YearMonth)
 }
 
 enum TransactionsRoute: Hashable {
@@ -42,10 +42,13 @@ enum AppRoute: Hashable {
 extension AppRoute {
     static let mainHome = AppRoute.main(.home)
     static let settingsRoot = AppRoute.settings(.root)
-    static let settingsBudget = AppRoute.settings(.budget)
     static let transactionsAdd = AppRoute.transactions(.add)
     static let chartsOverview = AppRoute.charts(.overview)
-    
+
+    static func settingsBudget(_ yearMonth: YearMonth) -> AppRoute {
+        return .settings(.budget(yearMonth))
+    }
+
     static func transactionDetail(_ transaction: TransactionDTO) -> AppRoute {
         return .transactions(.detail(transaction))
     }

@@ -28,13 +28,13 @@ public protocol BudgetRepository {
     /// 새로운 예산 템플릿 생성
     /// - Parameter template: 생성할 예산 템플릿 정보
     /// - Returns: 생성된 예산 템플릿 DTO
-    func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
+    @discardableResult func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
     
     /// 기존 예산 템플릿 업데이트
     /// - Parameter template: 업데이트할 예산 템플릿 정보
     /// - Returns: 업데이트된 예산 템플릿 DTO
-    func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
-    
+    @discardableResult func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
+
     /// 카테고리별 예산 템플릿 업데이트
     /// - Parameters:
     ///   - categoryBudgetTemplates: 업데이트할 카테고리별 예산 목록
@@ -70,6 +70,11 @@ public protocol BudgetRepository {
     ///   - month: 생성할 년월
     ///   - budget: 생성할 예산 정보
     func createBudget(for month: YearMonth, budget: BudgetDTO) async throws
+    
+    /// 예산 생성
+    /// - Parameter budget: 생성할 예산 정보 (월 정보 포함)
+    /// - Returns: 생성된 예산 DTO
+    func createBudget(_ budget: BudgetDTO) async throws -> BudgetDTO
     
     /// 월별 예산 목록 조회 (최근 N개월)
     /// - Parameter months: 조회할 개월 수 (기본값: 12개월)
