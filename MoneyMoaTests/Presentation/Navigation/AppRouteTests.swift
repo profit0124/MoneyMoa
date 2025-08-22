@@ -59,7 +59,7 @@ final class AppRouteTests: XCTestCase {
         // Then
         XCTAssertEqual(AppRoute.mainHome, .main(.home))
         XCTAssertEqual(AppRoute.settingsRoot, .settings(.root))
-        XCTAssertEqual(AppRoute.settingsBudget, .settings(.budget))
+        XCTAssertEqual(AppRoute.settingsBudget(.current), .settings(.budget(YearMonth.current)))
         XCTAssertEqual(AppRoute.transactionsAdd, .transactions(.add))
         XCTAssertEqual(AppRoute.chartsOverview, .charts(.overview))
     }
@@ -100,8 +100,8 @@ final class AppRouteTests: XCTestCase {
     
     func testSettingsRoute_AllCasesAreHashable() {
         // Given
-        let routes: [SettingsRoute] = [.root, .budget]
-        
+        let routes: [SettingsRoute] = [.root, .budget(.current)]
+
         // When & Then
         routes.forEach { route in
             XCTAssertNotNil(route.hashValue)
@@ -141,7 +141,7 @@ final class AppRouteTests: XCTestCase {
         let routes: [AppRoute] = [
             .mainHome,
             .settingsRoot,
-            .settingsBudget,
+            .settingsBudget(.current),
             .transactionsAdd,
             .chartsOverview
         ]

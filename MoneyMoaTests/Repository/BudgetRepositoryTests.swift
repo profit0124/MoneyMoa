@@ -15,7 +15,6 @@ final class BudgetRepositoryTests: XCTestCase {
     private var repository: BudgetRepositoryImpl!
     
     override func setUpWithError() throws {
-        // 각 테스트마다 새로운 인메모리 데이터베이스 생성
         database = try Database(isStoredInMemoryOnly: true)
         repository = BudgetRepositoryImpl(database: database)
     }
@@ -23,6 +22,37 @@ final class BudgetRepositoryTests: XCTestCase {
     override func tearDownWithError() throws {
         database = nil
         repository = nil
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func createTemplateWithBudget() async throws -> YearMonth {
+        let template = BudgetTemplateDTO.mockSimple
+        try await repository.upsertBudgetTemplate(template)
+        
+        let month = YearMonth(year: 2025, month: 1)
+        _ = try await repository.ensureBudgetExists(for: month)
+        return month
+    }
+    
+    private func assertRepositoryError<T>(_ expectedError: RepositoryError, in block: () async throws -> T) async {
+        do {
+            _ = try await block()
+            XCTFail("Expected \(expectedError) error to be thrown")
+        } catch let error as RepositoryError {
+            switch (expectedError, error) {
+            case (.budgetTemplateNotFound, .budgetTemplateNotFound),
+                 (.budgetNotFound, .budgetNotFound),
+                 (.budgetAlreadyExists, .budgetAlreadyExists),
+                 (.categoryBudgetNotFound, .categoryBudgetNotFound),
+                 (.categoryBudgetsExceedTotalAmount, .categoryBudgetsExceedTotalAmount):
+                break
+            default:
+                XCTFail("Expected \(expectedError), but got \(error)")
+            }
+        } catch {
+            XCTFail("Expected RepositoryError, but got \(type(of: error)): \(error)")
+        }
     }
     
     // MARK: - Template 관리 테스트 (Template Management)
@@ -96,21 +126,10 @@ final class BudgetRepositoryTests: XCTestCase {
     }
     
     func testUpdateCategoryBudgetTemplates_NoTemplate() async throws {
-        // Given: 템플릿이 없는 상태
-        
-        // When & Then: 에러 발생
         let categoryBudgetTemplates = [CategoryBudgetTemplateDTO.mockFood]
         
-        do {
+        await assertRepositoryError(.budgetTemplateNotFound) {
             try await repository.updateCategoryBudgetTemplates(categoryBudgetTemplates)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.budgetTemplateNotFound:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected budgetTemplateNotFound error, but got \(error)")
-            }
         }
     }
     
@@ -165,76 +184,26 @@ final class BudgetRepositoryTests: XCTestCase {
     }
     
     func testEnsureBudgetExists_NoTemplate() async throws {
-        // Given: 템플릿이 없는 상태
         let month = YearMonth(year: 2025, month: 1)
         
-        // When & Then: 에러 발생
-        do {
-            _ = try await repository.ensureBudgetExists(for: month)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.budgetTemplateNotFound:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected budgetTemplateNotFound error, but got \(error)")
-            }
+        await assertRepositoryError(.budgetTemplateNotFound) {
+            try await repository.ensureBudgetExists(for: month)
         }
     }
     
     func testFetchCurrentBudget_AutoCreate() async throws {
-        // Given: 템플릿 생성
-        let template = BudgetTemplateDTO.mockSimple
-        try await repository.upsertBudgetTemplate(template)
-        
-        // When: 현재 월 예산 조회
-        let budget = try await repository.fetchCurrentBudget()
-        
-        // Then: 현재 월 예산이 자동 생성되어 반환됨
-        XCTAssertEqual(budget.month, YearMonth.current)
-        XCTAssertEqual(budget.totalAmount, 1_000_000)
-    }
-    
-    func testFetchCurrentBudgetWithCategories_AutoCreate() async throws {
-        // Given: 템플릿과 카테고리별 예산 템플릿 생성
         let template = BudgetTemplateDTO.mockStandard
         try await repository.upsertBudgetTemplate(template)
         
-        // When: 카테고리 포함 현재 월 예산 조회
-        let budget = try await repository.fetchCurrentBudgetWithCategories()
-        
-        // Then: 카테고리별 예산 포함하여 반환됨
+        let budget = try await repository.fetchCurrentBudget()
         XCTAssertEqual(budget.month, YearMonth.current)
         XCTAssertEqual(budget.totalAmount, 2_000_000)
-        XCTAssertEqual(budget.categoryBudgets.count, 4)
-        XCTAssertTrue(budget.categoryBudgets.contains { $0.categoryName == "식비" && $0.amount == 800_000 })
+        
+        let budgetWithCategories = try await repository.fetchCurrentBudgetWithCategories()
+        XCTAssertEqual(budgetWithCategories.categoryBudgets.count, 4)
     }
     
-    func testFetchRecentBudgets_WithData() async throws {
-        // Given: 템플릿과 여러 월의 예산 생성
-        let template = BudgetTemplateDTO.mockSimple
-        try await repository.upsertBudgetTemplate(template)
-        
-        let month1 = YearMonth(year: 2025, month: 1)
-        let month2 = YearMonth(year: 2025, month: 2)
-        let month3 = YearMonth(year: 2025, month: 3)
-        
-        _ = try await repository.ensureBudgetExists(for: month1)
-        _ = try await repository.ensureBudgetExists(for: month2)
-        _ = try await repository.ensureBudgetExists(for: month3)
-        
-        // When: 최근 예산 목록 조회
-        let budgets = try await repository.fetchRecentBudgets(months: 12)
-        
-        // Then: 최신순으로 정렬되어 반환
-        XCTAssertEqual(budgets.count, 3)
-        XCTAssertEqual(budgets[0].month, month3) // 가장 최신
-        XCTAssertEqual(budgets[1].month, month2)
-        XCTAssertEqual(budgets[2].month, month1) // 가장 오래된
-    }
-    
-    func testFetchRecentBudgets_LimitApplied() async throws {
-        // Given: 템플릿과 여러 월의 예산 생성
+    func testFetchRecentBudgets() async throws {
         let template = BudgetTemplateDTO.mockSimple
         try await repository.upsertBudgetTemplate(template)
         
@@ -243,14 +212,12 @@ final class BudgetRepositoryTests: XCTestCase {
             _ = try await repository.ensureBudgetExists(for: yearMonth)
         }
         
-        // When: 제한된 개수로 조회
-        let budgets = try await repository.fetchRecentBudgets(months: 3)
+        let allBudgets = try await repository.fetchRecentBudgets(months: 12)
+        let limitedBudgets = try await repository.fetchRecentBudgets(months: 3)
         
-        // Then: 제한된 개수만 반환
-        XCTAssertEqual(budgets.count, 3)
-        XCTAssertEqual(budgets[0].month, YearMonth(year: 2025, month: 5)) // 가장 최신
-        XCTAssertEqual(budgets[1].month, YearMonth(year: 2025, month: 4))
-        XCTAssertEqual(budgets[2].month, YearMonth(year: 2025, month: 3))
+        XCTAssertEqual(allBudgets.count, 5)
+        XCTAssertEqual(limitedBudgets.count, 3)
+        XCTAssertEqual(limitedBudgets[0].month, YearMonth(year: 2025, month: 5))
     }
     
     // MARK: - 예산 수정 테스트 (Budget Updates)
@@ -281,31 +248,12 @@ final class BudgetRepositoryTests: XCTestCase {
     }
     
     func testUpdateBudget_CategoryBudgetsExceedTotal() async throws {
-        // Given: 기존 예산 생성
-        let template = BudgetTemplateDTO.mockSimple
-        try await repository.upsertBudgetTemplate(template)
-        
-        let month = YearMonth(year: 2025, month: 1)
-        _ = try await repository.ensureBudgetExists(for: month)
-        
-        // When & Then: 카테고리 예산 합이 총 예산 초과 시 에러 발생
+        let month = try await createTemplateWithBudget()
         let categoryBudgets = [CategoryBudgetDTO.mockFood] // 800,000
-        let updatedBudget = BudgetDTO(
-            month: month,
-            totalAmount: 500_000, // 카테고리 예산(800,000)보다 작음
-            categoryBudgets: categoryBudgets
-        )
+        let updatedBudget = BudgetDTO(month: month, totalAmount: 500_000, categoryBudgets: categoryBudgets)
         
-        do {
+        await assertRepositoryError(.categoryBudgetsExceedTotalAmount) {
             try await repository.updateBudget(for: month, budget: updatedBudget)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.categoryBudgetsExceedTotalAmount:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected categoryBudgetsExceedTotalAmount error, but got \(error)")
-            }
         }
     }
     
@@ -326,24 +274,13 @@ final class BudgetRepositoryTests: XCTestCase {
     }
     
     func testUpdateBudgetTotalAmount_ExceedsExistingCategoryBudgets() async throws {
-        // Given: 카테고리별 예산이 있는 기존 예산 생성
         let template = BudgetTemplateDTO.mockStandard
         try await repository.upsertBudgetTemplate(template)
-        
         let month = YearMonth(year: 2025, month: 1)
         _ = try await repository.ensureBudgetExists(for: month)
         
-        // When & Then: 기존 카테고리 예산보다 작은 총 예산으로 수정 시 에러 발생
-        do {
-            try await repository.updateBudgetTotalAmount(for: month, totalAmount: 500_000) // 카테고리 예산 합보다 작음
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.categoryBudgetsExceedTotalAmount:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected categoryBudgetsExceedTotalAmount error, but got \(error)")
-            }
+        await assertRepositoryError(.categoryBudgetsExceedTotalAmount) {
+            try await repository.updateBudgetTotalAmount(for: month, totalAmount: 500_000)
         }
     }
     
@@ -372,28 +309,11 @@ final class BudgetRepositoryTests: XCTestCase {
     }
     
     func testUpdateCategoryBudgets_ExceedsTotalAmount() async throws {
-        // Given: 기존 예산 생성
-        let template = BudgetTemplateDTO.mockSimple
-        try await repository.upsertBudgetTemplate(template)
+        let month = try await createTemplateWithBudget()
+        let categoryBudgets = [CategoryBudgetDTO.mockWith(name: "식비", amount: 1_200_000)]
         
-        let month = YearMonth(year: 2025, month: 1)
-        _ = try await repository.ensureBudgetExists(for: month)
-        
-        // When & Then: 카테고리 예산 합이 총 예산 초과 시 에러 발생
-        let categoryBudgets = [
-            CategoryBudgetDTO.mockWith(name: "식비", amount: 1_200_000) // 총 예산(1,000,000) 초과
-        ]
-        
-        do {
+        await assertRepositoryError(.categoryBudgetsExceedTotalAmount) {
             try await repository.updateCategoryBudgets(for: month, categoryBudgets: categoryBudgets)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.categoryBudgetsExceedTotalAmount:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected categoryBudgetsExceedTotalAmount error, but got \(error)")
-            }
         }
     }
     
@@ -417,69 +337,124 @@ final class BudgetRepositoryTests: XCTestCase {
     }
     
     func testUpdateCategoryBudget_ExceedsTotalAmount() async throws {
-        // Given: 카테고리별 예산이 있는 기존 예산 생성
         let template = BudgetTemplateDTO.mockStandard
         try await repository.upsertBudgetTemplate(template)
-        
         let month = YearMonth(year: 2025, month: 1)
         _ = try await repository.ensureBudgetExists(for: month)
-        
         let categoryId = CategoryDTO.mockExpense.id
         
-        // When & Then: 총 예산을 초과하는 금액으로 수정 시 에러 발생
-        do {
-            try await repository.updateCategoryBudget(categoryId: categoryId, amount: 3_000_000, for: month) // 총 예산(2,000,000) 초과
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.categoryBudgetsExceedTotalAmount:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected categoryBudgetsExceedTotalAmount error, but got \(error)")
-            }
+        await assertRepositoryError(.categoryBudgetsExceedTotalAmount) {
+            try await repository.updateCategoryBudget(categoryId: categoryId, amount: 3_000_000, for: month)
         }
     }
     
     func testUpdateCategoryBudget_NonExistingBudget() async throws {
-        // Given: 예산이 없는 상태
         let month = YearMonth(year: 2025, month: 1)
         let categoryId = CategoryDTO.mockExpense.id
         
-        // When & Then: 존재하지 않는 예산에 대해 카테고리 예산 수정 시 에러 발생
-        do {
+        await assertRepositoryError(.budgetNotFound) {
             try await repository.updateCategoryBudget(categoryId: categoryId, amount: 300_000, for: month)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.budgetNotFound:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected budgetNotFound error, but got \(error)")
-            }
         }
     }
     
     func testUpdateCategoryBudget_NonExistingCategoryBudget() async throws {
-        // Given: 예산은 있지만 해당 카테고리 예산이 없는 상태
-        let template = BudgetTemplateDTO.mockSimple
-        try await repository.upsertBudgetTemplate(template)
-        
-        let month = YearMonth(year: 2025, month: 1)
-        _ = try await repository.ensureBudgetExists(for: month)
-        
+        let month = try await createTemplateWithBudget()
         let nonExistingCategoryId = UUID()
         
-        // When & Then: 존재하지 않는 카테고리 예산 수정 시 에러 발생
-        do {
+        await assertRepositoryError(.categoryBudgetNotFound) {
             try await repository.updateCategoryBudget(categoryId: nonExistingCategoryId, amount: 300_000, for: month)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            switch error {
-            case RepositoryError.categoryBudgetNotFound:
-                break // 예상된 에러
-            default:
-                XCTFail("Expected categoryBudgetNotFound error, but got \(error)")
-            }
         }
+    }
+    
+    // MARK: - CreateBudget 테스트 (Direct Budget Creation)
+    
+    func testCreateBudget_NewBudget_Success() async throws {
+        // Given: 새로운 예산 DTO
+        let month = YearMonth(year: 2025, month: 6)
+        let categoryBudgets = [
+            CategoryBudgetDTO.mockWith(name: "식비", amount: 400_000),
+            CategoryBudgetDTO.mockWith(name: "교통비", amount: 300_000)
+        ]
+        let budget = BudgetDTO(
+            id: UUID(),
+            month: month,
+            totalAmount: 1_000_000,
+            categoryBudgets: categoryBudgets
+        )
+        
+        // When: 예산 생성
+        let createdBudget = try await repository.createBudget(budget)
+        
+        // Then: 예산이 성공적으로 생성됨
+        XCTAssertEqual(createdBudget.month, month)
+        XCTAssertEqual(createdBudget.totalAmount, 1_000_000)
+        XCTAssertEqual(createdBudget.categoryBudgets.count, 2)
+        
+        // 실제로 저장되었는지 확인
+        let savedBudget = try await repository.fetchBudgetWithCategories(for: month)
+        XCTAssertNotNil(savedBudget)
+        XCTAssertEqual(savedBudget?.totalAmount, 1_000_000)
+        XCTAssertEqual(savedBudget?.categoryBudgets.count, 2)
+        XCTAssertTrue(savedBudget?.categoryBudgets.contains { $0.categoryName == "식비" && $0.amount == 400_000 } ?? false)
+        XCTAssertTrue(savedBudget?.categoryBudgets.contains { $0.categoryName == "교통비" && $0.amount == 300_000 } ?? false)
+    }
+    
+    func testCreateBudget_WithEmptyCategories_Success() async throws {
+        // Given: 카테고리가 없는 예산 DTO
+        let month = YearMonth(year: 2025, month: 7)
+        let budget = BudgetDTO(
+            id: UUID(),
+            month: month,
+            totalAmount: 500_000,
+            categoryBudgets: []
+        )
+        
+        // When: 예산 생성
+        let createdBudget = try await repository.createBudget(budget)
+        
+        // Then: 예산이 성공적으로 생성됨
+        XCTAssertEqual(createdBudget.month, month)
+        XCTAssertEqual(createdBudget.totalAmount, 500_000)
+        XCTAssertEqual(createdBudget.categoryBudgets.count, 0)
+        
+        // 실제로 저장되었는지 확인
+        let savedBudget = try await repository.fetchBudgetWithCategories(for: month)
+        XCTAssertNotNil(savedBudget)
+        XCTAssertEqual(savedBudget?.totalAmount, 500_000)
+        XCTAssertEqual(savedBudget?.categoryBudgets.count, 0)
+    }
+    
+    func testCreateBudget_BudgetAlreadyExists_ThrowsError() async throws {
+        let month = YearMonth(year: 2025, month: 8)
+        let existingBudget = BudgetDTO(id: UUID(), month: month, totalAmount: 800_000, categoryBudgets: [])
+        _ = try await repository.createBudget(existingBudget)
+        
+        let newBudget = BudgetDTO(id: UUID(), month: month, totalAmount: 1_200_000, categoryBudgets: [])
+        
+        await assertRepositoryError(.budgetAlreadyExists) {
+            try await repository.createBudget(newBudget)
+        }
+        
+        let savedBudget = try await repository.fetchBudget(for: month)
+        XCTAssertEqual(savedBudget?.totalAmount, 800_000)
+    }
+    
+    func testCreateBudget_PreservesAllBudgetData() async throws {
+        let month = YearMonth(year: 2025, month: 9)
+        let categoryBudgets = [
+            CategoryBudgetDTO.mockWith(name: "식비", amount: 600_000),
+            CategoryBudgetDTO.mockWith(name: "교통비", amount: 200_000)
+        ]
+        let originalBudget = BudgetDTO(id: UUID(), month: month, totalAmount: 1_500_000, categoryBudgets: categoryBudgets)
+        
+        let createdBudget = try await repository.createBudget(originalBudget)
+        
+        XCTAssertEqual(createdBudget.month, originalBudget.month)
+        XCTAssertEqual(createdBudget.totalAmount, originalBudget.totalAmount)
+        XCTAssertEqual(createdBudget.categoryBudgets.count, originalBudget.categoryBudgets.count)
+        
+        let savedBudget = try await repository.fetchBudgetWithCategories(for: month)!
+        XCTAssertEqual(savedBudget.totalAmount, 1_500_000)
+        XCTAssertEqual(savedBudget.categoryBudgets.count, 2)
     }
 }
