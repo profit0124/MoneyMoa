@@ -35,6 +35,15 @@ protocol DIContainer {
     /// CreateBudgetFromTemplateUseCase를 생성합니다
     func makeCreateBudgetFromTemplateUseCase() -> CreateBudgetFromTemplateUseCase
     
+    /// CreateBudgetTemplateUseCase를 생성합니다
+    func makeCreateBudgetTemplateUseCase() -> CreateBudgetTemplateUseCase
+    
+    /// UpdateBudgetTemplateUseCase를 생성합니다
+    func makeUpdateBudgetTemplateUseCase() -> UpdateBudgetTemplateUseCase
+    
+    /// UpdateBudgetUseCase를 생성합니다
+    func makeUpdateBudgetUseCase() -> UpdateBudgetUseCase
+    
     // MARK: - Transaction UseCase Factory Methods
     
     /// CreateTransactionUseCase를 생성합니다
@@ -84,6 +93,9 @@ protocol DIContainer {
 
     /// UpdateTransactionViewModel을 생성합니다
     func makeUpdateTransactionViewModel(transaction: TransactionDTO) -> UpdateTransactionViewModel
+
+    /// BudgetSetupViewModel을 생성합니다.
+    func makeBudgetSetupViewModel() -> BudgetSetupViewModel
 
     // MARK: - TransactionForm ViewModel Factory Methods
     
@@ -153,6 +165,17 @@ extension DIContainer {
             amountPlacePaymentViewModel: amounPlacePaymentMethodFormViewModel,
             transactionTypeSelectionViewModel: transactionTypeCategoryFormViewModel,
             dateAdditionalFormViewModel: dateAdditionalFormViewModel
+        )
+    }
+
+    func makeBudgetSetupViewModel() -> BudgetSetupViewModel {
+        BudgetSetupViewModel(
+            getBudgetTemplateUseCase: makeGetBudgetTemplateUseCase(),
+            getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
+            createBudgetTemplateUseCase: makeCreateBudgetTemplateUseCase(),
+            updateBudgetTemplateUseCase: makeUpdateBudgetTemplateUseCase(),
+            createBudgetFromTemplateUseCase: makeCreateBudgetFromTemplateUseCase(),
+            updateBudgetUseCase: makeUpdateBudgetUseCase()
         )
     }
 

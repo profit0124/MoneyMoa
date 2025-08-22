@@ -117,6 +117,46 @@ extension CategoryBudgetTemplateDTO: Comparable {
     }
 }
 
+// MARK: - Conversion Extensions
+
+extension BudgetTemplateDTO {
+    /// BudgetTemplateDTO를 특정 월의 BudgetDTO로 변환합니다
+    /// - Parameter month: 적용할 연월
+    /// - Returns: 변환된 BudgetDTO
+    func toBudgetDTO(for month: YearMonth) -> BudgetDTO {
+        let budgetId = UUID()
+        let categoryBudgets = categoryBudgetTemplates.map { template in
+            CategoryBudgetDTO(
+                amount: template.amount,
+                categoryID: template.categoryID,
+                categoryName: template.categoryName,
+                budgetId: budgetId
+            )
+        }
+        
+        return BudgetDTO(
+            id: budgetId,
+            month: month,
+            totalAmount: totalAmount,
+            categoryBudgets: categoryBudgets
+        )
+    }
+}
+
+extension CategoryBudgetTemplateDTO {
+    /// CategoryBudgetTemplateDTO를 CategoryBudgetDTO로 변환합니다
+    /// - Parameter budgetId: 상위 예산의 ID
+    /// - Returns: 변환된 CategoryBudgetDTO
+    func toCategoryBudgetDTO(budgetId: UUID) -> CategoryBudgetDTO {
+        CategoryBudgetDTO(
+            amount: amount,
+            categoryID: categoryID,
+            categoryName: categoryName,
+            budgetId: budgetId
+        )
+    }
+}
+
 #if DEBUG
 // MARK: - Mock Data Extensions
 

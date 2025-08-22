@@ -60,6 +60,24 @@ final class AppDIContainer: DIContainer {
         return CreateBudgetFromTemplateUseCaseImpl(budgetRepository: repository)
     }
     
+    /// Production CreateBudgetTemplateUseCase를 생성합니다
+    func makeCreateBudgetTemplateUseCase() -> CreateBudgetTemplateUseCase {
+        let repository = makeBudgetRepository()
+        return CreateBudgetTemplateUseCaseImpl(budgetRepository: repository)
+    }
+    
+    /// Production UpdateBudgetTemplateUseCase를 생성합니다
+    func makeUpdateBudgetTemplateUseCase() -> UpdateBudgetTemplateUseCase {
+        let repository = makeBudgetRepository()
+        return UpdateBudgetTemplateUseCaseImpl(budgetRepository: repository)
+    }
+    
+    /// Production UpdateBudgetUseCase를 생성합니다
+    func makeUpdateBudgetUseCase() -> UpdateBudgetUseCase {
+        let repository = makeBudgetRepository()
+        return UpdateBudgetUseCaseImpl(budgetRepository: repository)
+    }
+    
     // MARK: - Transaction UseCase Factory Methods
     
     /// Production CreateTransactionUseCase를 생성합니다

@@ -73,6 +73,47 @@ public class BudgetRepositoryImpl: BudgetRepository {
         }
     }
     
+    public func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
+        try await database.withModelContext { context in
+            let newTemplate = template.toModelWithCategories()
+            context.insert(newTemplate)
+            try context.save()
+            
+            return newTemplate.toDTO(includeCategoryBudgets: true)
+        }
+    }
+    
+    public func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
+        try await database.withModelContext { context in
+            // 기존 템플릿 찾기
+            let id = template.id
+            let predicate = #Predicate<BudgetTemplate> { $0.id == id }
+            let descriptor = FetchDescriptor<BudgetTemplate>(predicate: predicate)
+            
+            guard let existingTemplate = try context.fetch(descriptor).first else {
+                throw RepositoryError.budgetTemplateNotFound
+            }
+            
+            // 템플릿 업데이트
+            existingTemplate.totalAmount = template.totalAmount
+            
+            // 기존 카테고리 예산 템플릿들 삭제
+            for existingCategoryBudget in existingTemplate.categoryBudgetTemplates {
+                context.delete(existingCategoryBudget)
+            }
+            
+            // 새 카테고리 예산 템플릿들 추가
+            for categoryBudgetTemplateDTO in template.categoryBudgetTemplates {
+                let categoryBudgetTemplate = categoryBudgetTemplateDTO.toModel(budgetTemplate: existingTemplate)
+                context.insert(categoryBudgetTemplate)
+            }
+            
+            try context.save()
+            
+            return existingTemplate.toDTO(includeCategoryBudgets: true)
+        }
+    }
+    
     public func updateCategoryBudgetTemplates(_ categoryBudgetTemplates: [CategoryBudgetTemplateDTO]) async throws {
         try await database.withModelContext { context in
             guard let template = try context.fetch(FetchDescriptor<BudgetTemplate>()).first else {

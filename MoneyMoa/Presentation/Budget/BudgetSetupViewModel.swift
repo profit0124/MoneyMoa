@@ -63,11 +63,37 @@ final class BudgetSetupViewModel {
         }
     }
 
-    // MARK: - Types
+    // MARK: - Dependencies
+    private let getBudgetTemplateUseCase: GetBudgetTemplateUseCase
+    private let getCategoriesByTypeUseCase: GetCategoriesByTypeUseCase  
+    private let createBudgetTemplateUseCase: CreateBudgetTemplateUseCase
+    private let updateBudgetTemplateUseCase: UpdateBudgetTemplateUseCase
+    private let createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase
+    private let updateBudgetUseCase: UpdateBudgetUseCase
     
+    // MARK: - Initialization
+    
+    init(
+        getBudgetTemplateUseCase: GetBudgetTemplateUseCase,
+        getCategoriesByTypeUseCase: GetCategoriesByTypeUseCase,
+        createBudgetTemplateUseCase: CreateBudgetTemplateUseCase,
+        updateBudgetTemplateUseCase: UpdateBudgetTemplateUseCase,
+        createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase,
+        updateBudgetUseCase: UpdateBudgetUseCase
+    ) {
+        self.getBudgetTemplateUseCase = getBudgetTemplateUseCase
+        self.getCategoriesByTypeUseCase = getCategoriesByTypeUseCase
+        self.createBudgetTemplateUseCase = createBudgetTemplateUseCase
+        self.updateBudgetTemplateUseCase = updateBudgetTemplateUseCase
+        self.createBudgetFromTemplateUseCase = createBudgetFromTemplateUseCase
+        self.updateBudgetUseCase = updateBudgetUseCase
+    }
+
+    // MARK: - Types
+
     enum CreateBudgetType {
         case create                    // 최초 생성
-        case updateWithTemplate       // 템플릿 포함 업데이트 
+        case updateWithTemplate       // 템플릿 포함 업데이트
         case updateWithoutTemplate    // 현재월만 업데이트
     }
 
@@ -79,13 +105,6 @@ final class BudgetSetupViewModel {
         case updateCategoryBudgetAmount(CategoryBudgetTemplateDTO, Decimal)
         case resetForm
     }
-    
-    // MARK: - Dependencies (TODO: DI Container에서 주입받도록 수정 예정)
-    // private let getBudgetTemplateUseCase: GetBudgetTemplateUseCase
-    // private let getCategoriesByTypeUseCase: GetCategoriesByTypeUseCase  
-    // private let createBudgetTemplateUseCase: CreateBudgetTemplateUseCase
-    // private let updateBudgetTemplateUseCase: UpdateBudgetTemplateUseCase
-    // private let createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase
 
     // MARK: - Public Methods
     
@@ -122,20 +141,19 @@ final class BudgetSetupViewModel {
         defer { isLoading = false }
         
         do {
-            // TODO: UseCase 구현 후 연결
             // 1. Budget Template 불러오기
-            // budget = try await getBudgetTemplateUseCase.execute()
+            budget = try await getBudgetTemplateUseCase.execute()
             
             // 2. 불러온 후 데이터를 Form에 적용
-            // if let budget = budget {
-            //     totalAmount = budget.totalAmount
-            //     categoryBudgetTemplates = budget.categoryBudgetTemplates
-            // }
+            if let budget = budget {
+                totalAmount = budget.totalAmount
+                categoryBudgetTemplates = budget.categoryBudgetTemplates
+            }
             
             // 3. Category 정보 불러오기 (지출 카테고리만)
-            // let variableExpenseCategories = try await getCategoriesByTypeUseCase.execute(.variableExpense)
-            // let fixedExpenseCategories = try await getCategoriesByTypeUseCase.execute(.fixedExpense)
-            // categories = (variableExpenseCategories + fixedExpenseCategories).sorted()
+            let variableExpenseCategories = try await getCategoriesByTypeUseCase.execute(.variableExpense)
+            let fixedExpenseCategories = try await getCategoriesByTypeUseCase.execute(.fixedExpense)
+            categories = (variableExpenseCategories + fixedExpenseCategories).sorted()
             
         } catch {
             errorMessage = "데이터를 불러오는 중 오류가 발생했습니다: \(error.localizedDescription)"
@@ -183,46 +201,46 @@ final class BudgetSetupViewModel {
     }
     
     private func createBudgetTemplate() async throws {
-        // TODO: UseCase 구현 후 연결
-        // let templateDTO = BudgetTemplateDTO(
-        //     totalAmount: totalAmount ?? 0,
-        //     categoryBudgetTemplates: categoryBudgetTemplates
-        // )
-        // budget = try await createBudgetTemplateUseCase.execute(templateDTO)
+        let templateDTO = BudgetTemplateDTO(
+            totalAmount: totalAmount ?? 0,
+            categoryBudgetTemplates: categoryBudgetTemplates
+        )
+        budget = try await createBudgetTemplateUseCase.execute(templateDTO)
     }
     
     private func updateBudgetTemplate() async throws {
         guard let existingBudget = budget else { return }
         
-        // TODO: UseCase 구현 후 연결
-        // let updatedTemplate = BudgetTemplateDTO(
-        //     id: existingBudget.id,
-        //     totalAmount: totalAmount ?? 0,
-        //     categoryBudgetTemplates: categoryBudgetTemplates
-        // )
-        // budget = try await updateBudgetTemplateUseCase.execute(updatedTemplate)
+        let updatedTemplate = BudgetTemplateDTO(
+            id: existingBudget.id,
+            totalAmount: totalAmount ?? 0,
+            categoryBudgetTemplates: categoryBudgetTemplates
+        )
+        budget = try await updateBudgetTemplateUseCase.execute(updatedTemplate)
     }
     
     private func createBudgetFromTemplate() async throws {
         guard let budget = budget else { return }
         
-        // TODO: UseCase 구현 후 연결
-        // let currentYearMonth = YearMonth.current
-        // try await createBudgetFromTemplateUseCase.execute(
-        //     template: budget,
-        //     yearMonth: currentYearMonth
-        // )
+        let currentYearMonth = YearMonth.current
+        _ = try await createBudgetFromTemplateUseCase.execute(
+            template: budget,
+            yearMonth: currentYearMonth
+        )
     }
     
     private func updateCurrentMonthBudget() async throws {
-        // TODO: UseCase 구현 후 연결
-        // let currentYearMonth = YearMonth.current
-        // let budgetDTO = BudgetDTO(
-        //     month: currentYearMonth,
-        //     totalAmount: totalAmount ?? 0,
-        //     categoryBudgets: categoryBudgetTemplates.map { /* CategoryBudgetDTO 변환 */ }
-        // )
-        // try await updateBudgetUseCase.execute(for: currentYearMonth, budget: budgetDTO)
+        let currentYearMonth = YearMonth.current
+        
+        // BudgetTemplateDTO를 현재 월의 BudgetDTO로 변환
+        let templateDTO = BudgetTemplateDTO(
+            totalAmount: totalAmount ?? 0,
+            categoryBudgetTemplates: categoryBudgetTemplates
+        )
+        let budgetDTO = templateDTO.toBudgetDTO(for: currentYearMonth)
+        
+        // UpdateBudgetUseCase를 통해 현재 월 예산 업데이트
+        try await updateBudgetUseCase.execute(for: currentYearMonth, budget: budgetDTO)
     }
     
     private func deleteCategoryBudgetTemplate(_ template: CategoryBudgetTemplateDTO) {

@@ -9,7 +9,11 @@ import SwiftUI
 
 struct BudgetSetupView: View {
     @Environment(AppRouter.self) private var router
-    @State private var viewModel = BudgetSetupViewModel()
+    @State private var viewModel: BudgetSetupViewModel
+    
+    init(viewModel: BudgetSetupViewModel) {
+        self._viewModel = State(initialValue: viewModel)
+    }
     
     var body: some View {
         NavigationView {
@@ -412,7 +416,7 @@ private struct CategorySelectionView: View {
 
 #Preview {
     NavigationStack {
-        BudgetSetupView()
+        BudgetSetupView(viewModel: MockDIContainer().makeBudgetSetupViewModel())
             .environment(AppRouter())
     }
 }

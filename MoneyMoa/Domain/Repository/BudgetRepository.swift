@@ -25,6 +25,16 @@ public protocol BudgetRepository {
     /// - Parameter template: 새로운 예산 템플릿 정보
     func upsertBudgetTemplate(_ template: BudgetTemplateDTO) async throws
     
+    /// 새로운 예산 템플릿 생성
+    /// - Parameter template: 생성할 예산 템플릿 정보
+    /// - Returns: 생성된 예산 템플릿 DTO
+    func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
+    
+    /// 기존 예산 템플릿 업데이트
+    /// - Parameter template: 업데이트할 예산 템플릿 정보
+    /// - Returns: 업데이트된 예산 템플릿 DTO
+    func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
+    
     /// 카테고리별 예산 템플릿 업데이트
     /// - Parameters:
     ///   - categoryBudgetTemplates: 업데이트할 카테고리별 예산 목록
