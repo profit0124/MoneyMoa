@@ -100,7 +100,7 @@ struct MainView: View {
     }
     
     private func handleBudgetSetupTap() {
-        router.push(.settingsBudget)
+        router.push(.settingsBudget(viewModel.currentYearMonth))
     }
     
     private func handleChartTap() {

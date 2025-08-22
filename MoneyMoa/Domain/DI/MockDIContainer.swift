@@ -40,6 +40,26 @@ final class MockDIContainer: DIContainer {
         return MockCreateBudgetFromTemplateUseCase()
     }
     
+    /// Mock CreateBudgetUseCase를 생성합니다
+    func makeCreateBudgetUseCase() -> CreateBudgetUseCase {
+        return MockCreateBudgetUseCase()
+    }
+    
+    /// Mock CreateBudgetTemplateUseCase를 생성합니다
+    func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase {
+        return MockCreateTemplateFromBudgetUseCase()
+    }
+    
+    /// Mock UpdateBudgetTemplateUseCase를 생성합니다
+    func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase {
+        return MockUpdateTemplateFromBudgetUseCase()
+    }
+    
+    /// Mock UpdateBudgetRangeUseCase를 생성합니다
+    func makeUpdateBudgetRangeUseCase() -> UpdateBudgetRangeUseCase {
+        return MockUpdateBudgetRangeUseCase()
+    }
+    
     // MARK: - Transaction UseCase Factory Methods
     
     /// Mock CreateTransactionUseCase를 생성합니다

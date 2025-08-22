@@ -24,6 +24,6 @@ public final class GetMonthlyBudgetUseCaseImpl: GetMonthlyBudgetUseCase {
     // MARK: - Public Methods
     
     public func execute(yearMonth: YearMonth) async throws -> BudgetDTO? {
-        return try await budgetRepository.fetchBudget(for: yearMonth)
+        return try await budgetRepository.fetchBudgetWithCategories(for: yearMonth)
     }
 }

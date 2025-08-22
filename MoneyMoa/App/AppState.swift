@@ -32,7 +32,9 @@ final class AppState {
             if !hasInitialized {
                 let importUseCase = diContainer.makeImportRecommendedCategoriesUseCase()
                 try await importUseCase.execute()
+                #if !DEBUG
                 UserDefaults.standard.set(true, forKey: "hasInitializedCategories")
+                #endif
             }
         } catch {
             print("추천 카테고리 초기화 실패: \(error)")

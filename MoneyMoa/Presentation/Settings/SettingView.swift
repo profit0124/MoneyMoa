@@ -17,7 +17,7 @@ struct SettingsView: View {
                 .padding()
             
             Button("Budget Template") {
-                router.push(.settingsBudget)
+                router.push(.settingsBudget(YearMonth.current))
             }
             .padding()
             

@@ -75,7 +75,7 @@ final class MainViewNavigationTests: XCTestCase {
         
         // Then
         XCTAssertEqual(mockRouter.pushCallCount, 1)
-        XCTAssertEqual(mockRouter.lastPushedRoute, .settings(.budget))
+        XCTAssertEqual(mockRouter.lastPushedRoute, .settings(.budget(YearMonth.current)))
     }
     
     func testHandleAddTransactionTap_CallsRouterPresent() {
@@ -191,7 +191,7 @@ private extension MainViewNavigationTests {
     }
     
     func testHandleBudgetSetupTap() {
-        mockRouter.push(.settings(.budget))
+        mockRouter.push(.settings(.budget(YearMonth.current)))
     }
     
     func testHandleAddTransactionTap() {

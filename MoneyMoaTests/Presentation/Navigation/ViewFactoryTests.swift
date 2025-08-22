@@ -55,7 +55,8 @@ final class ViewFactoryTests: XCTestCase {
     
     func testMakeView_SettingsBudget_ReturnsBudgetTemplateView() {
         // Given
-        let route = AppRoute.settings(.budget)
+        let yearMonth = YearMonth.current
+        let route = AppRoute.settings(.budget(yearMonth))
         
         // When
         let view = sut.makeView(for: route)
@@ -168,10 +169,11 @@ final class ViewFactoryTests: XCTestCase {
     func testMakeView_AllRoutes_ReturnsNonNilViews() {
         // Given
         let transaction = TransactionDTO.mockSalary
+        let yearMonth = YearMonth.current
         let allRoutes: [AppRoute] = [
             .main(.home),
             .settings(.root),
-            .settings(.budget),
+            .settings(.budget(yearMonth)),
             .transactions(.add),
             .transactions(.detail(transaction)),
             .transactions(.update(transaction)),
