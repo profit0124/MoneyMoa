@@ -72,6 +72,9 @@ protocol DIContainer {
     /// CreateCategoryUseCase를 생성합니다
     func makeCreateCategoryUseCase() -> CreateCategoryUseCase
     
+    /// UpdateCategoryUseCase를 생성합니다
+    func makeUpdateCategoryUseCase() -> UpdateCategoryUseCase
+    
     /// CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase
 
@@ -261,6 +264,7 @@ extension DIContainer {
         return NewCategoryFormViewModel(
             createCategoryUseCase: makeCreateCategoryUseCase(),
             createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
+            updateCategoryUseCase: makeUpdateCategoryUseCase(),
             mode: mode,
             selectedCategory: category
         )

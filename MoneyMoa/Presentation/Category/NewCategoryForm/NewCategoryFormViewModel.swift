@@ -14,7 +14,7 @@ final class NewCategoryFormViewModel {
     // MARK: UseCase
     private var createCategoryUseCase: CreateCategoryUseCase
     private var createSubCategoryUseCase: CreateSubCategoryUseCase
-//    private var updateCategoryUseCase: UpdateCategoryUseCase
+    private var updateCategoryUseCase: UpdateCategoryUseCase
 
     let mode: CategoryListMode
     private let id: UUID
@@ -61,12 +61,14 @@ final class NewCategoryFormViewModel {
 
     init(createCategoryUseCase: CreateCategoryUseCase,
          createSubCategoryUseCase: CreateSubCategoryUseCase,
+         updateCategoryUseCase: UpdateCategoryUseCase,
          mode: CategoryListMode,
          selectedTransactionType: TransactionType = .income,
          selectedCategory: CategoryDTO? = nil
     ) {
         self.createCategoryUseCase = createCategoryUseCase
         self.createSubCategoryUseCase = createSubCategoryUseCase
+        self.updateCategoryUseCase = updateCategoryUseCase
         self.mode = mode
         self.id = selectedCategory?.id ?? UUID()
         self.selectedTransactionType = selectedTransactionType
@@ -118,7 +120,6 @@ final class NewCategoryFormViewModel {
                 } else {
                     // Configuration 모드: Create/Update
                     if let selectedCategory = selectedCategory {
-                        // Update 모드: 카테고리 수정 (TODO: UpdateCategoryUseCase 구현 필요)
                         try await handleUpdateMode(selectedCategory: selectedCategory, categoryIconName: categoryIconName, categoryName: trimmedCategoryName)
                     } else {
                         // Create 모드: 카테고리 + 여러 서브카테고리 생성
@@ -199,7 +200,18 @@ final class NewCategoryFormViewModel {
     }
     
     private func handleUpdateMode(selectedCategory: CategoryDTO, categoryIconName: String, categoryName: String) async throws {
-        // TODO: UpdateCategoryUseCase 구현 후 카테고리 업데이트 로직 추가
+        // 카테고리 정보 업데이트
+        let updatedCategory = CategoryDTO(
+            id: selectedCategory.id,
+            name: categoryName,
+            iconName: categoryIconName,
+            transactionType: selectedTransactionType,
+            isActive: selectedCategory.isActive,
+            orderIndex: selectedCategory.orderIndex,
+            subCategories: selectedCategory.subCategories
+        )
+        
+        try await updateCategoryUseCase.execute(updatedCategory)
         
         // 새로 추가된 서브카테고리들 생성
         for subCategory in addedSubCategories {

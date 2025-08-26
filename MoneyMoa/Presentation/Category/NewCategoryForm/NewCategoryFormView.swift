@@ -7,9 +7,6 @@
 
 import SwiftUI
 
-// viewModel 의 모드가 selection 일때는 Category + SubCategory 추가만 가능
-// selection 에서는 한번에 한 SubCategory 추가만 가능 이때는 기존 TransactionTypeCategoryFormView 레이아웃 유지
-// 그렇지 않으면 Category 추가 혹은 업데이트 기능으로, 한번에 여러개가 가능함, TransactionType, Category, SubCategories 영역으로 나누어져서, submit 버튼을 추가하기 전까지 SubCategory 를 추가할 수 있음
 struct NewCategoryFormView: View {
 
     @Environment(AppRouter.self) private var router
@@ -115,11 +112,11 @@ struct NewCategoryFormView: View {
                 
                 Button(action: {
                     viewModel.send(.showAddSubCategoryAlert)
-                }) {
+                }, label: {
                     Image(systemName: "plus.circle.fill")
                         .foregroundStyle(viewModel.selectedTransactionType.color)
                         .font(.title3)
-                }
+                })
             }
             
             // 추가된 서브카테고리 목록
@@ -164,11 +161,11 @@ struct NewCategoryFormView: View {
                     withAnimation(.spring(response: 0.3)) {
                         viewModel.addedSubCategories.removeAll { $0.id == subCategory.id }
                     }
-                }) {
+                }, label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
                         .font(.caption)
-                }
+                })
             }
         }
         .padding(.horizontal, 12)
