@@ -99,7 +99,7 @@ final class MockDIContainer: DIContainer {
         return MockCreateCategoryUseCase()
     }
 
-    func makeUpdateSubCategoryUseCase() -> any UpdateSubCategoryUseCase {
+    func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase {
         return MockUpdateSubCategoryUseCase()
     }
 

@@ -109,6 +109,8 @@ protocol DIContainer {
     /// CategorySelectorViewModel을 생성합니다.
     func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel
 
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?) -> NewCategoryFormViewModel
+
     /// SubCategoryFormViewModel을 생성합니다.
     func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel
 
@@ -252,6 +254,15 @@ extension DIContainer {
             getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
             selectedCategory: selectedCategory,
             selectCategoryPublisher: DefaultSelectCategoryEventPublisher.shared
+        )
+    }
+
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?) -> NewCategoryFormViewModel {
+        return NewCategoryFormViewModel(
+            createCategoryUseCase: makeCreateCategoryUseCase(),
+            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
+            mode: mode,
+            selectedCategory: category
         )
     }
 

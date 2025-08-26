@@ -1,0 +1,277 @@
+//
+//  NewCategoryFormViewModel.swift
+//  MoneyMoa
+//
+//  Created by Sooik Kim on 8/26/25.
+//
+
+import Foundation
+import Observation
+
+@Observable
+final class NewCategoryFormViewModel {
+
+    // MARK: UseCase
+    private var createCategoryUseCase: CreateCategoryUseCase
+    private var createSubCategoryUseCase: CreateSubCategoryUseCase
+//    private var updateCategoryUseCase: UpdateCategoryUseCase
+
+    let mode: CategoryListMode
+    private let id: UUID
+    var selectedTransactionType: TransactionType
+    var selectedCategory: CategoryDTO?
+    var categoryName: String
+    var categoryIconName: String?
+    var newSubCategoryName: String
+    var subCategories: [SubCategoryDTO]
+    var addedSubCategories: [SubCategoryDTO] = []
+    
+    // Alert 관련 상태
+    var showingAddSubCategoryAlert: Bool = false
+    var alertErrorMessage: String?
+
+    var isChanged: Bool = false
+
+    var isValid: Bool {
+        let basicValidation = !categoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
+                             !(categoryIconName ?? "").isEmpty
+        
+        if mode == .selection {
+            // Selection 모드: 카테고리 + 서브카테고리 1개 필수 (기존 CategoryFormViewModel과 동일)
+            return basicValidation && !newSubCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        } else {
+            // Configuration 모드
+            if selectedCategory != nil {
+                // Update 모드: 기본 검증 + 변경사항 존재
+                return basicValidation && hasChanges
+            } else {
+                // Create 모드: 기본 검증만 (서브카테고리는 선택사항)
+                return basicValidation
+            }
+        }
+    }
+    
+    private var hasChanges: Bool {
+        guard let selectedCategory = selectedCategory else { return true }
+        return selectedTransactionType != selectedCategory.transactionType ||
+               categoryName.trimmingCharacters(in: .whitespacesAndNewlines) != selectedCategory.name ||
+               categoryIconName != selectedCategory.iconName ||
+               !addedSubCategories.isEmpty
+    }
+
+    init(createCategoryUseCase: CreateCategoryUseCase,
+         createSubCategoryUseCase: CreateSubCategoryUseCase,
+         mode: CategoryListMode,
+         selectedTransactionType: TransactionType = .income,
+         selectedCategory: CategoryDTO? = nil
+    ) {
+        self.createCategoryUseCase = createCategoryUseCase
+        self.createSubCategoryUseCase = createSubCategoryUseCase
+        self.mode = mode
+        self.id = selectedCategory?.id ?? UUID()
+        self.selectedTransactionType = selectedTransactionType
+        self.selectedCategory = selectedCategory
+        self.categoryName = selectedCategory?.name ?? ""
+        self.categoryIconName = selectedCategory?.iconName ?? ""
+        // selectedCategory가 nil 이면 자동으로 바로 추가형태
+        self.newSubCategoryName = ""
+        self.subCategories = selectedCategory?.subCategories ?? []
+    }
+
+    enum Action {
+        case tappedSubmitButton(AppRouter)
+        case showAddSubCategoryAlert
+        case addSubCategory
+        case cancelAddSubCategory
+        case handleError(Error)
+    }
+
+    func send(_ action: Action) {
+        switch action {
+        case .tappedSubmitButton(let router):
+            handleTappedSubmitButton(router)
+
+        case .showAddSubCategoryAlert:
+            showingAddSubCategoryAlert = true
+            
+        case .addSubCategory:
+            addSubCategory()
+
+        case .cancelAddSubCategory:
+            cancelAddSubCategory()
+
+        case .handleError(let error):
+            handleError(error)
+        }
+    }
+
+    private func handleTappedSubmitButton(_ router: AppRouter) {
+        Task {
+            do {
+                guard let categoryIconName = categoryIconName else { return }
+                
+                let trimmedCategoryName = categoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                if mode == .selection {
+                    // Selection 모드: 카테고리 + 서브카테고리 1개 생성 (기존 CategoryFormViewModel과 동일)
+                    try await handleSelectionMode(categoryIconName: categoryIconName, categoryName: trimmedCategoryName)
+                } else {
+                    // Configuration 모드: Create/Update
+                    if let selectedCategory = selectedCategory {
+                        // Update 모드: 카테고리 수정 (TODO: UpdateCategoryUseCase 구현 필요)
+                        try await handleUpdateMode(selectedCategory: selectedCategory, categoryIconName: categoryIconName, categoryName: trimmedCategoryName)
+                    } else {
+                        // Create 모드: 카테고리 + 여러 서브카테고리 생성
+                        try await handleCreateMode(categoryIconName: categoryIconName, categoryName: trimmedCategoryName)
+                    }
+                }
+                
+                await router.dismissModal()
+            } catch {
+                self.send(.handleError(error))
+            }
+        }
+    }
+    
+    private func handleSelectionMode(categoryIconName: String, categoryName: String) async throws {
+        // 카테고리 생성
+        let category = CategoryDTO(
+            id: id,
+            name: categoryName,
+            iconName: categoryIconName,
+            transactionType: selectedTransactionType,
+            subCategories: []
+        )
+        try await createCategoryUseCase.execute(category)
+        
+        // 서브카테고리 1개 생성 (필수)
+        let trimmedSubCategoryName = newSubCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let subCategory = SubCategoryDTO(
+            name: trimmedSubCategoryName,
+            transactionType: selectedTransactionType,
+            categoryId: id,
+            categoryName: categoryName,
+            categoryIconName: categoryIconName
+        )
+        try await createSubCategoryUseCase.execute(subCategory)
+        
+        // Category 추가 event publish (TODO: CategoryEventPublisher 구현)
+    }
+    
+    private func handleCreateMode(categoryIconName: String, categoryName: String) async throws {
+        // 카테고리 생성
+        let category = CategoryDTO(
+            id: id,
+            name: categoryName,
+            iconName: categoryIconName,
+            transactionType: selectedTransactionType,
+            subCategories: []
+        )
+        try await createCategoryUseCase.execute(category)
+        
+        // 추가된 서브카테고리들 생성
+        for subCategory in addedSubCategories {
+            let newSubCategory = SubCategoryDTO(
+                id: subCategory.id,
+                name: subCategory.name,
+                transactionType: selectedTransactionType,
+                categoryId: id,
+                categoryName: categoryName,
+                categoryIconName: categoryIconName
+            )
+            try await createSubCategoryUseCase.execute(newSubCategory)
+        }
+        
+        // 입력 필드의 서브카테고리가 있다면 생성 (선택사항)
+        let trimmedSubCategoryName = newSubCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedSubCategoryName.isEmpty {
+            let subCategory = SubCategoryDTO(
+                name: trimmedSubCategoryName,
+                transactionType: selectedTransactionType,
+                categoryId: id,
+                categoryName: categoryName,
+                categoryIconName: categoryIconName
+            )
+            try await createSubCategoryUseCase.execute(subCategory)
+        }
+        
+        // Category 추가 event publish (TODO: CategoryEventPublisher 구현)
+    }
+    
+    private func handleUpdateMode(selectedCategory: CategoryDTO, categoryIconName: String, categoryName: String) async throws {
+        // TODO: UpdateCategoryUseCase 구현 후 카테고리 업데이트 로직 추가
+        
+        // 새로 추가된 서브카테고리들 생성
+        for subCategory in addedSubCategories {
+            let newSubCategory = SubCategoryDTO(
+                id: subCategory.id,
+                name: subCategory.name,
+                transactionType: selectedTransactionType,
+                categoryId: selectedCategory.id,
+                categoryName: categoryName,
+                categoryIconName: categoryIconName
+            )
+            try await createSubCategoryUseCase.execute(newSubCategory)
+        }
+        
+        // 입력 필드의 서브카테고리가 있다면 생성 (선택사항)
+        let trimmedSubCategoryName = newSubCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedSubCategoryName.isEmpty {
+            let subCategory = SubCategoryDTO(
+                name: trimmedSubCategoryName,
+                transactionType: selectedTransactionType,
+                categoryId: selectedCategory.id,
+                categoryName: categoryName,
+                categoryIconName: categoryIconName
+            )
+            try await createSubCategoryUseCase.execute(subCategory)
+        }
+        
+        // Category 업데이트 event publish (TODO: CategoryEventPublisher 구현)
+    }
+
+    private func addSubCategory() {
+        let trimmedName = newSubCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // 빈 이름 검증
+        guard !trimmedName.isEmpty else {
+            alertErrorMessage = "서브카테고리명을 입력해주세요."
+            return
+        }
+        
+        // 중복 검사: 기존 서브카테고리와 추가된 서브카테고리 모두 확인
+        let isDuplicateInExisting = subCategories.contains { $0.name.lowercased() == trimmedName.lowercased() }
+        let isDuplicateInAdded = addedSubCategories.contains { $0.name.lowercased() == trimmedName.lowercased() }
+        
+        if isDuplicateInExisting || isDuplicateInAdded {
+            alertErrorMessage = "이미 존재하는 서브카테고리명입니다."
+            return
+        }
+        
+        // 서브카테고리 추가
+        let subCategory = SubCategoryDTO(
+            name: trimmedName,
+            transactionType: selectedTransactionType,
+            categoryId: id,
+            categoryName: categoryName,
+            categoryIconName: categoryIconName ?? ""
+        )
+        addedSubCategories.append(subCategory)
+        
+        // Alert 닫기 및 초기화
+        showingAddSubCategoryAlert = false
+        newSubCategoryName = ""
+        alertErrorMessage = nil
+    }
+    
+    private func cancelAddSubCategory() {
+        // Alert 닫기 및 입력 내용 초기화
+        showingAddSubCategoryAlert = false
+        newSubCategoryName = ""
+        alertErrorMessage = nil
+    }
+
+    private func handleError(_ error: Error) {
+        print(error.localizedDescription)
+    }
+}

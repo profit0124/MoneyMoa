@@ -18,6 +18,7 @@ enum SettingsRoute: Hashable {
     case budget(YearMonth)
     case category
     case categorySelector(CategoryDTO)
+    case categoryForm(CategoryListMode, CategoryDTO?)
     case subCategoryForm(CategoryDTO, SubCategoryDTO?)
 }
 
@@ -63,6 +64,10 @@ extension AppRoute {
 
     static func categorySelector(_ category: CategoryDTO) -> AppRoute {
         return .settings(.categorySelector(category))
+    }
+
+    static func categoryForm(from mode: CategoryListMode, category: CategoryDTO?) -> AppRoute {
+        return .settings(.categoryForm(mode, category))
     }
 
     static func subCategoryForm(
