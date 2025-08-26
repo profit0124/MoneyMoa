@@ -143,7 +143,13 @@ final class AppDIContainer: DIContainer {
         let repository = makeSubCategoryRepository()
         return CreateSubCategoryUseCaseImpl(subCategoryRepository: repository)
     }
-    
+
+    /// Production UpdateSubCategoryUseCase를 생성합니다
+    func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase {
+        let repository = makeSubCategoryRepository()
+        return UpdateSubCategoryUseCaseImpl(subCategoryRepository: repository)
+    }
+
     /// Production ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {
         let categoryRepository = makeCategoryRepository()

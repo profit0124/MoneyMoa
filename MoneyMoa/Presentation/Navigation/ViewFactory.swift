@@ -39,6 +39,15 @@ struct ViewFactory {
         // MARK: - Charts Routes
         case .charts(.overview):
             ChartView()
+
+        case .settings(.category):
+            CategorySetupView(viewModel: container.makeCategoryListViewModel(mode: .configuration))
+
+        case .settings(.categorySelector(let category)):
+            CategorySelectorView(viewModel: container.makeCategorySelectorViewModel(selectedCategory: category))
+
+        case .settings(.subCategoryForm(let category, let subCategory)):
+            SubCategoryFormView(viewModel: container.makeSubCategoryFormViewModel(category: category, subCategory: subCategory))
         }
     }
 }

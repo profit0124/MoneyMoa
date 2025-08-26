@@ -1,0 +1,119 @@
+//
+//  SubCategoryFormViewModel.swift
+//  MoneyMoa
+//
+//  Created by Sooik Kim on 8/25/25.
+//
+
+import Foundation
+import Observation
+import Combine
+
+@Observable
+final class SubCategoryFormViewModel {
+
+    private var createSubCategoryUseCase: CreateSubCategoryUseCase
+    private var updateSubCategoryUseCase: UpdateSubCategoryUseCase
+    private var subCategoryEventPublisher: any SubCategoryEventPublisher
+
+    var selectedCategory: CategoryDTO
+    var selectedSubCategoryDTO: SubCategoryDTO?
+    var subCategoryName: String = ""
+
+    var cancellables: Set<AnyCancellable> = []
+
+    var isValid: Bool {
+        !subCategoryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        (selectedSubCategoryDTO?.categoryId != selectedCategory.id ||
+         (selectedSubCategoryDTO?.name ?? "") != subCategoryName)
+    }
+
+    init(createSubCategoryUseCase: CreateSubCategoryUseCase,
+         updateSubCategoryUseCase: UpdateSubCategoryUseCase,
+         subCategoryEventPublisher: any SubCategoryEventPublisher,
+         selectedCategory: CategoryDTO,
+         selectedSubCategory: SubCategoryDTO? = nil
+    ) {
+        self.createSubCategoryUseCase = createSubCategoryUseCase
+        self.updateSubCategoryUseCase = updateSubCategoryUseCase
+        self.subCategoryEventPublisher = subCategoryEventPublisher
+        self.selectedCategory = selectedCategory
+        self.selectedSubCategoryDTO = selectedSubCategory
+        self.subCategoryName = selectedSubCategory?.name ?? ""
+    }
+
+    enum Action {
+        case submit(AppRouter)
+        case showCategorySelector(AppRouter)
+        case selectCategory(CategoryDTO)
+        case unsubscribe
+    }
+
+    func send(_ action: Action) {
+        switch action {
+        case .submit(let router):
+            submit(router)
+        case .showCategorySelector(let router):
+            Task {
+                subscribeSelectCategoryEventPublisher()
+                await router.present(.settings(.categorySelector(selectedCategory)), as: .sheet)
+            }
+        case .selectCategory(let category):
+            self.selectedCategory = category
+
+        case .unsubscribe:
+            self.cancellables.removeAll()
+        }
+    }
+
+    private func subscribeSelectCategoryEventPublisher() {
+        let publisher = DefaultSelectCategoryEventPublisher.shared
+
+        publisher.selectCategoryEvent
+            .receive(on: DispatchQueue.main)
+            .sink(receiveValue: { [weak self] in
+                self?.send(.selectCategory($0))
+            })
+            .store(in: &cancellables)
+    }
+
+    private func submit(_ router: AppRouter) {
+        Task {
+            do {
+                let trimmedName = subCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                if let existingSubCategory = selectedSubCategoryDTO {
+                    // 수정 모드
+                    let updatedSubCategory = SubCategoryDTO(
+                        id: existingSubCategory.id,
+                        name: trimmedName,
+                        transactionType: selectedCategory.transactionType,
+                        categoryId: selectedCategory.id,
+                        categoryName: selectedCategory.name,
+                        categoryIconName: selectedCategory.iconName
+                    )
+                    
+                    try await updateSubCategoryUseCase.execute(updatedSubCategory)
+                    subCategoryEventPublisher.publish(.init(type: .updated, subCategory: updatedSubCategory))
+                } else {
+                    // 생성 모드
+                    let newSubCategory = SubCategoryDTO(
+                        id: UUID(),
+                        name: trimmedName,
+                        transactionType: selectedCategory.transactionType,
+                        categoryId: selectedCategory.id,
+                        categoryName: selectedCategory.name,
+                        categoryIconName: selectedCategory.iconName
+                    )
+                    
+                    try await createSubCategoryUseCase.execute(newSubCategory)
+                    subCategoryEventPublisher.publish(.init(type: .created, subCategory: newSubCategory))
+                }
+
+                await router.dismissModal()
+            } catch {
+                print("서브카테고리 처리 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+}

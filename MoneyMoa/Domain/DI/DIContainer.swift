@@ -74,7 +74,10 @@ protocol DIContainer {
     
     /// CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase
-    
+
+    /// UpdateSubCategoryUseCase를 생성합니다
+    func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase
+
     /// ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase
     
@@ -99,6 +102,15 @@ protocol DIContainer {
 
     /// BudgetSetupViewModel을 생성합니다.
     func makeBudgetSetupViewModel(yearMonth: YearMonth) -> BudgetSetupViewModel
+
+    /// makeCategoryListViewModel을 생성합니다.
+    func makeCategoryListViewModel(mode: CategoryListMode) -> CategoryListViewModel
+
+    /// CategorySelectorViewModel을 생성합니다.
+    func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel
+
+    /// SubCategoryFormViewModel을 생성합니다.
+    func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel
 
     // MARK: - TransactionForm ViewModel Factory Methods
     
@@ -225,7 +237,34 @@ extension DIContainer {
             isFavorite: isFavorite
         )
     }
-    
+
+    // MARK: CategorySetting
+
+    func makeCategoryListViewModel(mode: CategoryListMode) -> CategoryListViewModel {
+        return CategoryListViewModel(
+            getCategoriesUseCase: makeGetCategoriesByTypeUseCase(),
+            mode: mode
+        )
+    }
+
+    func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel {
+        return CategorySelectorViewModel(
+            getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
+            selectedCategory: selectedCategory,
+            selectCategoryPublisher: DefaultSelectCategoryEventPublisher.shared
+        )
+    }
+
+    func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel {
+        return SubCategoryFormViewModel(
+            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
+            updateSubCategoryUseCase: makeUpdateSubCategoryUseCase(),
+            subCategoryEventPublisher: DefaultSubCategoryEventPublisher.shared,
+            selectedCategory: category,
+            selectedSubCategory: subCategory
+        )
+    }
+
     // MARK: - Service Default Implementation
     
     /// TransactionEventPublisher를 생성합니다 (기본 구현)

@@ -98,7 +98,11 @@ final class MockDIContainer: DIContainer {
     func makeCreateCategoryUseCase() -> CreateCategoryUseCase {
         return MockCreateCategoryUseCase()
     }
-    
+
+    func makeUpdateSubCategoryUseCase() -> any UpdateSubCategoryUseCase {
+        return MockUpdateSubCategoryUseCase()
+    }
+
     /// Mock CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase {
         return MockCreateSubCategoryUseCase()
