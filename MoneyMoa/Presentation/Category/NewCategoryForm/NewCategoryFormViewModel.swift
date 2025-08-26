@@ -15,6 +15,7 @@ final class NewCategoryFormViewModel {
     private var createCategoryUseCase: CreateCategoryUseCase
     private var createSubCategoryUseCase: CreateSubCategoryUseCase
     private var updateCategoryUseCase: UpdateCategoryUseCase
+    private var categoryEventPublisher: any CategoryEventPublisher
 
     let mode: CategoryListMode
     private let id: UUID
@@ -62,6 +63,7 @@ final class NewCategoryFormViewModel {
     init(createCategoryUseCase: CreateCategoryUseCase,
          createSubCategoryUseCase: CreateSubCategoryUseCase,
          updateCategoryUseCase: UpdateCategoryUseCase,
+         categoryEventPublisher: any CategoryEventPublisher,
          mode: CategoryListMode,
          selectedTransactionType: TransactionType = .income,
          selectedCategory: CategoryDTO? = nil
@@ -69,9 +71,10 @@ final class NewCategoryFormViewModel {
         self.createCategoryUseCase = createCategoryUseCase
         self.createSubCategoryUseCase = createSubCategoryUseCase
         self.updateCategoryUseCase = updateCategoryUseCase
+        self.categoryEventPublisher = categoryEventPublisher
         self.mode = mode
         self.id = selectedCategory?.id ?? UUID()
-        self.selectedTransactionType = selectedTransactionType
+        self.selectedTransactionType = selectedCategory?.transactionType ?? selectedTransactionType
         self.selectedCategory = selectedCategory
         self.categoryName = selectedCategory?.name ?? ""
         self.categoryIconName = selectedCategory?.iconName ?? ""
@@ -156,7 +159,15 @@ final class NewCategoryFormViewModel {
         )
         try await createSubCategoryUseCase.execute(subCategory)
         
-        // Category 추가 event publish (TODO: CategoryEventPublisher 구현)
+        // 서브카테고리가 포함된 카테고리로 업데이트하여 이벤트 발행
+        let categoryWithSubCategory = CategoryDTO(
+            id: id,
+            name: categoryName,
+            iconName: categoryIconName,
+            transactionType: selectedTransactionType,
+            subCategories: [subCategory]
+        )
+        categoryEventPublisher.publish(.init(type: .created, category: categoryWithSubCategory))
     }
     
     private func handleCreateMode(categoryIconName: String, categoryName: String) async throws {
@@ -170,6 +181,8 @@ final class NewCategoryFormViewModel {
         )
         try await createCategoryUseCase.execute(category)
         
+        var createdSubCategories: [SubCategoryDTO] = []
+        
         // 추가된 서브카테고리들 생성
         for subCategory in addedSubCategories {
             let newSubCategory = SubCategoryDTO(
@@ -181,6 +194,7 @@ final class NewCategoryFormViewModel {
                 categoryIconName: categoryIconName
             )
             try await createSubCategoryUseCase.execute(newSubCategory)
+            createdSubCategories.append(newSubCategory)
         }
         
         // 입력 필드의 서브카테고리가 있다면 생성 (선택사항)
@@ -194,9 +208,18 @@ final class NewCategoryFormViewModel {
                 categoryIconName: categoryIconName
             )
             try await createSubCategoryUseCase.execute(subCategory)
+            createdSubCategories.append(subCategory)
         }
         
-        // Category 추가 event publish (TODO: CategoryEventPublisher 구현)
+        // 생성된 서브카테고리들이 포함된 카테고리로 이벤트 발행
+        let categoryWithSubCategories = CategoryDTO(
+            id: id,
+            name: categoryName,
+            iconName: categoryIconName,
+            transactionType: selectedTransactionType,
+            subCategories: createdSubCategories
+        )
+        categoryEventPublisher.publish(.init(type: .created, category: categoryWithSubCategories))
     }
     
     private func handleUpdateMode(selectedCategory: CategoryDTO, categoryIconName: String, categoryName: String) async throws {
@@ -213,6 +236,8 @@ final class NewCategoryFormViewModel {
         
         try await updateCategoryUseCase.execute(updatedCategory)
         
+        var newSubCategories: [SubCategoryDTO] = []
+        
         // 새로 추가된 서브카테고리들 생성
         for subCategory in addedSubCategories {
             let newSubCategory = SubCategoryDTO(
@@ -224,6 +249,7 @@ final class NewCategoryFormViewModel {
                 categoryIconName: categoryIconName
             )
             try await createSubCategoryUseCase.execute(newSubCategory)
+            newSubCategories.append(newSubCategory)
         }
         
         // 입력 필드의 서브카테고리가 있다면 생성 (선택사항)
@@ -237,9 +263,20 @@ final class NewCategoryFormViewModel {
                 categoryIconName: categoryIconName
             )
             try await createSubCategoryUseCase.execute(subCategory)
+            newSubCategories.append(subCategory)
         }
         
-        // Category 업데이트 event publish (TODO: CategoryEventPublisher 구현)
+        // 기존 서브카테고리 + 새로 추가된 서브카테고리를 포함한 업데이트된 카테고리로 이벤트 발행
+        let updatedCategoryWithSubCategories = CategoryDTO(
+            id: selectedCategory.id,
+            name: categoryName,
+            iconName: categoryIconName,
+            transactionType: selectedTransactionType,
+            isActive: selectedCategory.isActive,
+            orderIndex: selectedCategory.orderIndex,
+            subCategories: selectedCategory.subCategories + newSubCategories
+        )
+        categoryEventPublisher.publish(.init(type: .updated, category: updatedCategoryWithSubCategories))
     }
 
     private func addSubCategory() {

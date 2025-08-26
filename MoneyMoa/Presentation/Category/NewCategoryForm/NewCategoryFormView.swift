@@ -184,14 +184,14 @@ struct NewCategoryFormView: View {
 #Preview("ADD") {
     CoordinatorHost(
         container: MockDIContainer(),
-        start: .settings(.categoryForm(.configuration, nil))
+        start: .settings(.categoryForm(.configuration, nil, .variableExpense))
     )
 }
 
 #Preview("Updagte") {
-    CoordinatorHost(container: MockDIContainer(), start: .settings(.categoryForm(.configuration, .mockExpense)))
+    CoordinatorHost(container: MockDIContainer(), start: .settings(.categoryForm(.configuration, .mockExpense, .variableExpense)))
 }
 
 #Preview("ADD From Selection") {
-    CoordinatorHost(container: MockDIContainer(), start: .settings(.categoryForm(.selection, nil)))
+    CoordinatorHost(container: MockDIContainer(), start: .settings(.categoryForm(.selection, nil, .variableExpense)))
 }

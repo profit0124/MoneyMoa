@@ -22,6 +22,7 @@ final class CategoryListViewModel {
     private let getCategoriesUseCase: GetCategoriesByTypeUseCase
 
     private var subCategoryEventPublisher: (any SubCategoryEventPublisher)?
+    private var categoryEventPublisher: (any CategoryEventPublisher)?
 
     let mode: CategoryListMode
     var selectedTransactionType: TransactionType
@@ -31,12 +32,16 @@ final class CategoryListViewModel {
     private var cancellables: Set<AnyCancellable> = []
 
     init(getCategoriesUseCase: GetCategoriesByTypeUseCase,
+         categoryEventPublisher: (any CategoryEventPublisher)? = nil,
          mode: CategoryListMode = .configuration,
     ) {
         self.getCategoriesUseCase = getCategoriesUseCase
+        self.categoryEventPublisher = categoryEventPublisher
 
         self.mode = mode
         self.selectedTransactionType = mode == .selection ? .variableExpense : .income
+        
+        setupCategoryEventSubscription()
     }
 
     enum Action {
@@ -115,6 +120,39 @@ final class CategoryListViewModel {
                     Task {
                         await self?.fetchCategories()
                     }
+                }
+            })
+            .store(in: &cancellables)
+    }
+    
+    private func setupCategoryEventSubscription() {
+        guard let categoryEventPublisher = categoryEventPublisher else { return }
+        
+        categoryEventPublisher.categoryEvents
+            .receive(on: DispatchQueue.main)
+            .sink(receiveValue: { [weak self] categoryEvent in
+                guard let self = self else { return }
+                
+                switch categoryEvent.type {
+                case .created:
+                    if self.mode == .selection {
+                        self.send(.selectTransactionType(categoryEvent.category.transactionType))
+                        self.selectedSubCategory = categoryEvent.category.subCategories.first
+                    } else {
+                        // 같은 거래 유형인 경우에만 카테고리 목록 갱신
+                        if self.selectedTransactionType == categoryEvent.category.transactionType {
+                            Task {
+                                await self.fetchCategories()
+                            }
+                        }
+                    }
+                case .updated:
+                    Task {
+                        await self.fetchCategories()
+                    }
+                case .deleted:
+                    // 삭제된 카테고리를 목록에서 제거
+                    self.categories.removeAll { $0.id == categoryEvent.category.id }
                 }
             })
             .store(in: &cancellables)

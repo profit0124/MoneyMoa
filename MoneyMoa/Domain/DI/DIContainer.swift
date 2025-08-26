@@ -112,7 +112,7 @@ protocol DIContainer {
     /// CategorySelectorViewModel을 생성합니다.
     func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel
 
-    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?) -> NewCategoryFormViewModel
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> NewCategoryFormViewModel
 
     /// SubCategoryFormViewModel을 생성합니다.
     func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel
@@ -132,6 +132,9 @@ protocol DIContainer {
     
     /// TransactionEventPublisher를 생성합니다
     func makeTransactionEventPublisher() -> TransactionEventPublisher
+    
+    /// CategoryEventPublisher를 생성합니다
+    func makeCategoryEventPublisher() -> CategoryEventPublisher
     
 }
 
@@ -248,6 +251,7 @@ extension DIContainer {
     func makeCategoryListViewModel(mode: CategoryListMode) -> CategoryListViewModel {
         return CategoryListViewModel(
             getCategoriesUseCase: makeGetCategoriesByTypeUseCase(),
+            categoryEventPublisher: makeCategoryEventPublisher(),
             mode: mode
         )
     }
@@ -260,12 +264,14 @@ extension DIContainer {
         )
     }
 
-    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?) -> NewCategoryFormViewModel {
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> NewCategoryFormViewModel {
         return NewCategoryFormViewModel(
             createCategoryUseCase: makeCreateCategoryUseCase(),
             createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
             updateCategoryUseCase: makeUpdateCategoryUseCase(),
+            categoryEventPublisher: makeCategoryEventPublisher(),
             mode: mode,
+            selectedTransactionType: transactionType ?? .income,
             selectedCategory: category
         )
     }
@@ -286,6 +292,12 @@ extension DIContainer {
     /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
     func makeTransactionEventPublisher() -> TransactionEventPublisher {
         return DefaultTransactionEventPublisher.shared
+    }
+    
+    /// CategoryEventPublisher를 생성합니다 (기본 구현)
+    /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
+    func makeCategoryEventPublisher() -> CategoryEventPublisher {
+        return DefaultCategoryEventPublisher.shared
     }
     
 }
