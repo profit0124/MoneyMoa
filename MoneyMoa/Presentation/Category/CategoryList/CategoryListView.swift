@@ -92,9 +92,14 @@ struct CategoryListView: View {
         .padding(16)
         .background {
             Color(.systemBackground)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if viewModel.mode == .configuration {
+                        router.present(.settings(.categoryForm(viewModel.mode, category)), as: .sheet)
+                    }
+                }
         }
         .cornerRadius(12)
-
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
 
@@ -115,9 +120,6 @@ struct CategoryListView: View {
                 .fontWeight(.medium)
 
             Spacer()
-        }
-        .onTapGesture {
-            // configuration mode 일 경우 categoryUpdate Sheet opne
         }
         .overlay(alignment: .trailing) {
             addActionButton {
@@ -149,7 +151,7 @@ struct CategoryListView: View {
     @ViewBuilder
     private var categoryCreationButton: some View {
         Button("새 카테고리 + 서브카테고리 만들기") {
-//            viewModel.send(.presentCategoryForm(nil))
+            router.present(.settings(.categoryForm(viewModel.mode, nil)), as: .sheet)
         }
         .font(.subheadline)
         .foregroundColor(.blue)
