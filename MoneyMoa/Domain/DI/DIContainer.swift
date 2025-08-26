@@ -112,7 +112,7 @@ protocol DIContainer {
     /// CategorySelectorViewModel을 생성합니다.
     func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel
 
-    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> NewCategoryFormViewModel
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> CategoryFormViewModel
 
     /// SubCategoryFormViewModel을 생성합니다.
     func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel
@@ -224,13 +224,16 @@ extension DIContainer {
         transactionType: TransactionType = .variableExpense,
         subCategory: SubCategoryDTO? = nil
     ) -> TransactionTypeCategoryFormViewModel {
-        return TransactionTypeCategoryFormViewModel(
-            getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
-            createCategoryUseCase: makeCreateCategoryUseCase(),
-            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
-            selectedTransactionType: transactionType,
-            selectedSubCategory: subCategory
-        )
+        // Selection 모드의 CategoryListViewModel 생성
+        let categoryListViewModel = makeCategoryListViewModel(mode: .selection)
+        
+        // 초기값 설정
+        categoryListViewModel.send(.selectTransactionType(transactionType))
+        if let subCategory = subCategory {
+            categoryListViewModel.selectedSubCategory = subCategory
+        }
+        
+        return TransactionTypeCategoryFormViewModel(categoryListViewModel: categoryListViewModel)
     }
     
     /// DateAdditionalFormViewModel을 생성합니다 (기본 구현)
@@ -264,8 +267,8 @@ extension DIContainer {
         )
     }
 
-    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> NewCategoryFormViewModel {
-        return NewCategoryFormViewModel(
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> CategoryFormViewModel {
+        return CategoryFormViewModel(
             createCategoryUseCase: makeCreateCategoryUseCase(),
             createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
             updateCategoryUseCase: makeUpdateCategoryUseCase(),

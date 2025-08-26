@@ -56,7 +56,7 @@ struct ViewFactory {
             CategorySelectorView(viewModel: container.makeCategorySelectorViewModel(selectedCategory: category))
 
         case .categoryForm(let mode, let category, let transactionType):
-            NewCategoryFormView(viewModel: container.makeCategoryFormViewModel(from: mode, category: category, transactionType: transactionType))
+            CategoryFormView(viewModel: container.makeCategoryFormViewModel(from: mode, category: category, transactionType: transactionType))
 
         case .subCategoryForm(let category, let subCategory):
             SubCategoryFormView(viewModel: container.makeSubCategoryFormViewModel(category: category, subCategory: subCategory))

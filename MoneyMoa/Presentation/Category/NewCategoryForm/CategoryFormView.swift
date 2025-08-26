@@ -1,5 +1,5 @@
 //
-//  NewCategoryFormView.swift
+//  CategoryFormView.swift
 //  MoneyMoa
 //
 //  Created by Sooik Kim on 8/26/25.
@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct NewCategoryFormView: View {
+struct CategoryFormView: View {
 
     @Environment(AppRouter.self) private var router
-    @State private var viewModel: NewCategoryFormViewModel
+    @State private var viewModel: CategoryFormViewModel
 
-    init(viewModel: NewCategoryFormViewModel) {
+    init(viewModel: CategoryFormViewModel) {
         self._viewModel = State(initialValue: viewModel)
     }
 

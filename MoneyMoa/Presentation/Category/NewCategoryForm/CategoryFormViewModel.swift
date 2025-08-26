@@ -1,5 +1,5 @@
 //
-//  NewCategoryFormViewModel.swift
+//  CategoryFormViewModel.swift
 //  MoneyMoa
 //
 //  Created by Sooik Kim on 8/26/25.
@@ -9,7 +9,7 @@ import Foundation
 import Observation
 
 @Observable
-final class NewCategoryFormViewModel {
+final class CategoryFormViewModel {
 
     // MARK: UseCase
     private var createCategoryUseCase: CreateCategoryUseCase
