@@ -33,7 +33,7 @@ final class CategoryListViewModel {
 
     init(getCategoriesUseCase: GetCategoriesByTypeUseCase,
          categoryEventPublisher: (any CategoryEventPublisher)? = nil,
-         mode: CategoryListMode = .configuration,
+         mode: CategoryListMode = .configuration
     ) {
         self.getCategoriesUseCase = getCategoriesUseCase
         self.categoryEventPublisher = categoryEventPublisher
