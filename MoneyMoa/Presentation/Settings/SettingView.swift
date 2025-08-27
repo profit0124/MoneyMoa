@@ -73,7 +73,7 @@ enum SettingsItem: Hashable {
     
     var icon: String {
         switch self {
-        case .monthlyBudget: return "calendar.badge.clock.fill"
+        case .monthlyBudget: return "dollarsign.circle.fill"
         case .categoryManagement: return "tag.fill"
         case .versionInfo: return "app.badge.fill"
         case .developerInfo: return "person.fill"
