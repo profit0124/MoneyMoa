@@ -65,6 +65,80 @@ final class ViewFactoryTests: XCTestCase {
         XCTAssertNotNil(view, "Expected non-nil view for SettingsBudget route")
     }
     
+    func testMakeView_SettingsCategory_ReturnsCategorySetupView() {
+        // Given
+        let route = AppRoute.settings(.category)
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SettingsCategory route")
+    }
+    
+    func testMakeView_SettingsCategorySelector_ReturnsCategorySelectorView() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let route = AppRoute.settings(.categorySelector(category))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SettingsCategorySelector route")
+    }
+    
+    func testMakeView_SettingsCategoryForm_ReturnsCategoryFormView() {
+        // Given
+        let mode = CategoryListMode.configuration
+        let category = CategoryDTO.mockTransport
+        let transactionType = TransactionType.variableExpense
+        let route = AppRoute.settings(.categoryForm(mode, category, transactionType))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SettingsCategoryForm route")
+    }
+    
+    func testMakeView_SettingsCategoryForm_WithNilValues_ReturnsCategoryFormView() {
+        // Given
+        let mode = CategoryListMode.selection
+        let route = AppRoute.settings(.categoryForm(mode, nil, nil))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SettingsCategoryForm route with nil values")
+    }
+    
+    func testMakeView_SettingsSubCategoryForm_ReturnsSubCategoryFormView() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let subCategory = SubCategoryDTO.mockFoodExpense
+        let route = AppRoute.settings(.subCategoryForm(category, subCategory))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SettingsSubCategoryForm route")
+    }
+    
+    func testMakeView_SettingsSubCategoryForm_WithNilSubCategory_ReturnsSubCategoryFormView() {
+        // Given
+        let category = CategoryDTO.mockTransport
+        let route = AppRoute.settings(.subCategoryForm(category, nil))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SettingsSubCategoryForm route with nil subcategory")
+    }
+    
     // MARK: - Transactions Routes Tests
     
     func testMakeView_TransactionsAdd_ReturnsAddTransactionView() {
@@ -164,16 +238,78 @@ final class ViewFactoryTests: XCTestCase {
         // since UpdateTransactionView requires a transaction parameter
     }
     
+    func testMakeView_CategorySelector_PassesCorrectCategory() {
+        // Given
+        let expectedCategory = CategoryDTO.mockIncome
+        let route = AppRoute.settings(.categorySelector(expectedCategory))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for CategorySelector with category")
+    }
+    
+    func testMakeView_CategoryForm_PassesCorrectParameters() {
+        // Given
+        let mode = CategoryListMode.selection
+        let category = CategoryDTO.mockTransport
+        let transactionType = TransactionType.fixedExpense
+        let route = AppRoute.settings(.categoryForm(mode, category, transactionType))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for CategoryForm with parameters")
+    }
+    
+    func testMakeView_SubCategoryForm_PassesCorrectParameters() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let subCategory = SubCategoryDTO.mockFoodExpense
+        let route = AppRoute.settings(.subCategoryForm(category, subCategory))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for SubCategoryForm with parameters")
+    }
+    
+    func testMakeView_BudgetSetup_PassesCorrectYearMonth() {
+        // Given
+        let yearMonth = YearMonth(year: 2024, month: 12)
+        let route = AppRoute.settings(.budget(yearMonth))
+        
+        // When
+        let view = sut.makeView(for: route)
+        
+        // Then
+        XCTAssertNotNil(view, "Expected non-nil view for BudgetSetup with yearMonth")
+    }
+    
     // MARK: - ViewBuilder Tests
     
     func testMakeView_AllRoutes_ReturnsNonNilViews() {
         // Given
         let transaction = TransactionDTO.mockSalary
         let yearMonth = YearMonth.current
+        let category = CategoryDTO.mockFood
+        let subCategory = SubCategoryDTO.mockFoodExpense
+        let mode = CategoryListMode.configuration
+        let transactionType = TransactionType.variableExpense
+        
         let allRoutes: [AppRoute] = [
             .main(.home),
             .settings(.root),
             .settings(.budget(yearMonth)),
+            .settings(.category),
+            .settings(.categorySelector(category)),
+            .settings(.categoryForm(mode, category, transactionType)),
+            .settings(.categoryForm(mode, nil, nil)),
+            .settings(.subCategoryForm(category, subCategory)),
+            .settings(.subCategoryForm(category, nil)),
             .transactions(.add),
             .transactions(.detail(transaction)),
             .transactions(.update(transaction)),

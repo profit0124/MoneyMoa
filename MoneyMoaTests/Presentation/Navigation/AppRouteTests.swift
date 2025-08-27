@@ -86,6 +86,128 @@ final class AppRouteTests: XCTestCase {
         XCTAssertEqual(route, .transactions(.update(transaction)))
     }
     
+    // MARK: - Category Route Tests
+    
+    func testSettingsRoute_CategorySelector_WithSameCategory_AreEqual() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let route1 = AppRoute.settings(.categorySelector(category))
+        let route2 = AppRoute.settings(.categorySelector(category))
+        
+        // Then
+        XCTAssertEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_CategorySelector_WithDifferentCategories_AreNotEqual() {
+        // Given
+        let category1 = CategoryDTO.mockFood
+        let category2 = CategoryDTO.mockTransport
+        let route1 = AppRoute.settings(.categorySelector(category1))
+        let route2 = AppRoute.settings(.categorySelector(category2))
+        
+        // Then
+        XCTAssertNotEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_CategoryForm_WithSameParameters_AreEqual() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let mode = CategoryListMode.configuration
+        let transactionType = TransactionType.variableExpense
+        
+        let route1 = AppRoute.settings(.categoryForm(mode, category, transactionType))
+        let route2 = AppRoute.settings(.categoryForm(mode, category, transactionType))
+        
+        // Then
+        XCTAssertEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_CategoryForm_WithDifferentModes_AreNotEqual() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let transactionType = TransactionType.variableExpense
+        
+        let route1 = AppRoute.settings(.categoryForm(.configuration, category, transactionType))
+        let route2 = AppRoute.settings(.categoryForm(.selection, category, transactionType))
+        
+        // Then
+        XCTAssertNotEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_CategoryForm_WithNilCategory_AreEqual() {
+        // Given
+        let mode = CategoryListMode.configuration
+        let transactionType = TransactionType.income
+        
+        let route1 = AppRoute.settings(.categoryForm(mode, nil, transactionType))
+        let route2 = AppRoute.settings(.categoryForm(mode, nil, transactionType))
+        
+        // Then
+        XCTAssertEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_SubCategoryForm_WithSameParameters_AreEqual() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let subCategory = SubCategoryDTO.mockFoodExpense
+        
+        let route1 = AppRoute.settings(.subCategoryForm(category, subCategory))
+        let route2 = AppRoute.settings(.subCategoryForm(category, subCategory))
+        
+        // Then
+        XCTAssertEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_SubCategoryForm_WithDifferentSubCategories_AreNotEqual() {
+        // Given
+        let category = CategoryDTO.mockFood
+        let subCategory1 = SubCategoryDTO.mockFoodExpense
+        let subCategory2 = SubCategoryDTO.mockTransportBus
+        
+        let route1 = AppRoute.settings(.subCategoryForm(category, subCategory1))
+        let route2 = AppRoute.settings(.subCategoryForm(category, subCategory2))
+        
+        // Then
+        XCTAssertNotEqual(route1, route2)
+    }
+    
+    func testSettingsRoute_SubCategoryForm_WithNilSubCategory_AreEqual() {
+        // Given
+        let category = CategoryDTO.mockFood
+        
+        let route1 = AppRoute.settings(.subCategoryForm(category, nil))
+        let route2 = AppRoute.settings(.subCategoryForm(category, nil))
+        
+        // Then
+        XCTAssertEqual(route1, route2)
+    }
+    
+    // MARK: - Convenience Extension Tests for Category Routes
+    
+    func testCategoryFormConvenience_ReturnsCorrectRoute() {
+        // Given
+        let mode = CategoryListMode.selection
+        let category = CategoryDTO.mockTransport
+        let transactionType = TransactionType.variableExpense
+        
+        // When
+        let route = AppRoute.categoryForm(from: mode, category: category, transactionType: transactionType)
+        
+        // Then
+        XCTAssertEqual(route, .settings(.categoryForm(mode, category, transactionType)))
+    }
+    
+    func testCategoryFormConvenience_WithNilValues_ReturnsCorrectRoute() {
+        // Given
+        let mode = CategoryListMode.configuration
+        
+        // When
+        let route = AppRoute.categoryForm(from: mode, category: nil, transactionType: nil)
+        
+        // Then
+        XCTAssertEqual(route, .settings(.categoryForm(mode, nil, nil)))
+    }
+    
     // MARK: - Feature Route Tests
     
     func testMainRoute_AllCasesAreHashable() {

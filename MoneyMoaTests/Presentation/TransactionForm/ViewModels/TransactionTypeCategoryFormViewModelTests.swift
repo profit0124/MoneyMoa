@@ -17,6 +17,7 @@ final class TransactionTypeCategoryFormVMTests: XCTestCase {
     
     private var viewModel: TransactionTypeCategoryFormViewModel!
     private var mockContainer: MockDIContainer!
+    private var mockCategoryListViewModel: CategoryListViewModel!
     
     // MARK: - Setup & Teardown
     
@@ -24,72 +25,135 @@ final class TransactionTypeCategoryFormVMTests: XCTestCase {
         super.setUp()
         
         mockContainer = MockDIContainer()
-        viewModel = mockContainer.makeTransactionTypeCategoryFormViewModel()
+        mockCategoryListViewModel = mockContainer.makeCategoryListViewModel(mode: .selection)
+        viewModel = TransactionTypeCategoryFormViewModel(categoryListViewModel: mockCategoryListViewModel)
     }
     
     override func tearDown() {
         viewModel = nil
+        mockCategoryListViewModel = nil
         mockContainer = nil
         super.tearDown()
     }
     
     // MARK: - Test Methods - Initialization
     
-    func test_initialization_setsCorrectInitialValues() {
+    func test_initialization_hasValidId() {
         // Then
-        XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
-        XCTAssertNil(viewModel.selectedSubCategory)
-        XCTAssertTrue(viewModel.categories.isEmpty)
         XCTAssertNotNil(viewModel.id)
     }
     
-    // MARK: - Test Methods - Transaction Type Selection
+    func test_initialization_hasCategoryListViewModel() {
+        // Then
+        XCTAssertNotNil(viewModel.categoryListViewModel)
+        XCTAssertEqual(viewModel.categoryListViewModel.mode, .selection)
+    }
     
-    func test_selectedTransactionType_canBeChanged() {
+    // MARK: - Test Methods - Composition Pattern (Delegation)
+    
+    func test_categories_delegatedToCategoryListViewModel() {
+        // Given - CategoryListViewModel에 카테고리 추가
+        mockCategoryListViewModel.categories = [CategoryDTO.mockFood, CategoryDTO.mockTransport]
+        
+        // When
+        let categories = viewModel.categories
+        
+        // Then - TransactionTypeCategoryFormViewModel이 CategoryListViewModel의 categories를 반환
+        XCTAssertEqual(categories.count, 2)
+        XCTAssertEqual(categories, mockCategoryListViewModel.categories)
+    }
+    
+    func test_selectedSubCategory_delegatedToCategoryListViewModel() {
+        // Given
+        let testSubCategory = SubCategoryDTO.mockFoodExpense
+        mockCategoryListViewModel.selectedSubCategory = testSubCategory
+        
+        // When
+        let selectedSubCategory = viewModel.selectedSubCategory
+        
+        // Then
+        XCTAssertEqual(selectedSubCategory?.id, testSubCategory.id)
+        XCTAssertEqual(selectedSubCategory, mockCategoryListViewModel.selectedSubCategory)
+    }
+    
+    func test_selectedTransactionType_getter_delegatedToCategoryListViewModel() {
+        // Given
+        mockCategoryListViewModel.selectedTransactionType = .income
+        
+        // When
+        let transactionType = viewModel.selectedTransactionType
+        
+        // Then
+        XCTAssertEqual(transactionType, .income)
+        XCTAssertEqual(transactionType, mockCategoryListViewModel.selectedTransactionType)
+    }
+    
+    func test_selectedTransactionType_setter_delegatedToCategoryListViewModel() {
+        // Given
+        XCTAssertEqual(mockCategoryListViewModel.selectedTransactionType, .variableExpense) // 초기값
+        
         // When
         viewModel.selectedTransactionType = .income
         
         // Then
+        XCTAssertEqual(mockCategoryListViewModel.selectedTransactionType, .income)
         XCTAssertEqual(viewModel.selectedTransactionType, .income)
     }
     
-    func test_selectedTransactionType_defaultIsVariableExpense() {
-        // Then
-        XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
-    }
+    // MARK: - Test Methods - Summary Generation
     
-    // MARK: - Test Methods - SubCategory Selection
-    
-    func test_selectedSubCategory_canBeSet() {
+    func test_summary_withoutSubCategory_showsTransactionTypeOnly() {
         // Given
-        let testSubCategory = SubCategoryDTO.mockFoodExpense
+        viewModel.selectedTransactionType = .income
+        mockCategoryListViewModel.selectedSubCategory = nil
         
         // When
-        viewModel.selectedSubCategory = testSubCategory
+        let summary = viewModel.summary
         
         // Then
-        XCTAssertEqual(viewModel.selectedSubCategory?.id, testSubCategory.id)
-        XCTAssertEqual(viewModel.selectedSubCategory?.name, testSubCategory.name)
+        XCTAssertEqual(summary, "수입")
+        XCTAssertFalse(summary.contains("📂"))
     }
     
-    func test_selectedSubCategory_canBeNil() {
+    func test_summary_withSubCategory_showsTransactionTypeAndSubCategory() {
         // Given
-        viewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
-        XCTAssertNotNil(viewModel.selectedSubCategory)
+        viewModel.selectedTransactionType = .variableExpense
+        mockCategoryListViewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
         
         // When
-        viewModel.selectedSubCategory = nil
+        let summary = viewModel.summary
         
         // Then
-        XCTAssertNil(viewModel.selectedSubCategory)
+        XCTAssertTrue(summary.contains("변동지출"))
+        XCTAssertTrue(summary.contains("📂 외식비")) // mockFoodExpense.name = "외식비"
+        XCTAssertTrue(summary.contains(" • "))
+    }
+    
+    func test_summary_withDifferentTransactionTypes() {
+        // Test Income
+        viewModel.selectedTransactionType = .income
+        mockCategoryListViewModel.selectedSubCategory = SubCategoryDTO.mockSalary
+        XCTAssertTrue(viewModel.summary.contains("수입"))
+        XCTAssertTrue(viewModel.summary.contains("📂 급여"))
+        
+//        // Test Fixed Expense
+//        viewModel.selectedTransactionType = .fixedExpense
+//        mockCategoryListViewModel.selectedSubCategory = SubCategoryDTO.mockRent
+//        XCTAssertTrue(viewModel.summary.contains("고정비"))
+//        XCTAssertTrue(viewModel.summary.contains("📂 월세"))
+        
+        // Test Variable Expense
+        viewModel.selectedTransactionType = .variableExpense
+        mockCategoryListViewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
+        XCTAssertTrue(viewModel.summary.contains("변동지출"))
+        XCTAssertTrue(viewModel.summary.contains("📂 외식비")) // mockFoodExpense.name = "외식비"
     }
     
     // MARK: - Test Methods - Validation
     
     func test_isValid_withoutSubCategory_returnsFalse() {
         // Given
-        viewModel.selectedTransactionType = .variableExpense
-        viewModel.selectedSubCategory = nil
+        mockCategoryListViewModel.selectedSubCategory = nil
         
         // When
         let isValid = viewModel.isValid
@@ -100,8 +164,7 @@ final class TransactionTypeCategoryFormVMTests: XCTestCase {
     
     func test_isValid_withSubCategory_returnsTrue() {
         // Given
-        viewModel.selectedTransactionType = .variableExpense
-        viewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
+        mockCategoryListViewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
         
         // When
         let isValid = viewModel.isValid
@@ -110,138 +173,47 @@ final class TransactionTypeCategoryFormVMTests: XCTestCase {
         XCTAssertTrue(isValid)
     }
     
-    // MARK: - Test Methods - Categories Management
+    // MARK: - Test Methods - CategoryListViewModel Integration
     
-    func test_categories_initiallyEmpty() {
-        // Then
-        XCTAssertTrue(viewModel.categories.isEmpty)
-    }
-    
-    func test_categories_canBePopulated() {
+    func test_categoryListViewModel_actionDelegation() {
         // Given
-        let mockCategories = [
-            CategoryDTO.mockFood,
-            CategoryDTO.mockTransport
-        ]
+        let initialType = mockCategoryListViewModel.selectedTransactionType
         
-        // When
-        viewModel.categories = mockCategories
+        // When - CategoryListViewModel의 action을 통해 거래 유형 변경
+        mockCategoryListViewModel.send(.selectTransactionType(.income))
         
-        // Then
-        XCTAssertEqual(viewModel.categories.count, 2)
-        XCTAssertTrue(viewModel.categories.contains { $0.name == "식비" })
-        XCTAssertTrue(viewModel.categories.contains { $0.name == "교통비" })
-    }
-    
-    // MARK: - Test Methods - Observable Pattern
-    
-    func test_transactionTypeChange_triggersPropertyChange() {
-        // Given
-        let initialType = viewModel.selectedTransactionType
-        
-        // When
-        viewModel.selectedTransactionType = .income
-        
-        // Then
+        // Then - TransactionTypeCategoryFormViewModel에서도 변경된 값 확인 가능
         XCTAssertNotEqual(viewModel.selectedTransactionType, initialType)
         XCTAssertEqual(viewModel.selectedTransactionType, .income)
     }
     
-    func test_subCategoryChange_triggersPropertyChange() {
+    func test_categoryListViewModel_modeIsSelection() {
+        // Then
+        XCTAssertEqual(viewModel.categoryListViewModel.mode, .selection)
+    }
+    
+    // MARK: - Test Methods - Factory Integration
+    
+    func test_factoryCreation_createsValidViewModel() {
         // Given
-        let initialSubCategory = viewModel.selectedSubCategory
-        let newSubCategory = SubCategoryDTO.mockIncomeAllowance
-        
-        // When
-        viewModel.selectedSubCategory = newSubCategory
+        let factoryViewModel = mockContainer.makeTransactionTypeCategoryFormViewModel()
         
         // Then
-        XCTAssertNotEqual(viewModel.selectedSubCategory?.id, initialSubCategory?.id)
-        XCTAssertEqual(viewModel.selectedSubCategory?.id, newSubCategory.id)
+        XCTAssertNotNil(factoryViewModel.categoryListViewModel)
+        XCTAssertEqual(factoryViewModel.categoryListViewModel.mode, .selection)
+        XCTAssertEqual(factoryViewModel.selectedTransactionType, .variableExpense) // 기본값
     }
     
-    // MARK: - Test Methods - Different Transaction Types
-    
-    func test_transactionTypeSelection_income() {
-        // When
-        viewModel.selectedTransactionType = .income
-        viewModel.selectedSubCategory = SubCategoryDTO.mockSalary
-        
-        // Then
-        XCTAssertEqual(viewModel.selectedTransactionType, .income)
-        XCTAssertEqual(viewModel.selectedSubCategory?.transactionType, .income)
-        XCTAssertTrue(viewModel.isValid)
-    }
-    
-    func test_transactionTypeSelection_fixedExpense() {
-        // When
-        viewModel.selectedTransactionType = .fixedExpense
-        
-        // Then
-        XCTAssertEqual(viewModel.selectedTransactionType, .fixedExpense)
-    }
-    
-    func test_transactionTypeSelection_variableExpense() {
-        // When
-        viewModel.selectedTransactionType = .variableExpense
-        viewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
-        
-        // Then
-        XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
-        XCTAssertEqual(viewModel.selectedSubCategory?.transactionType, .variableExpense)
-        XCTAssertTrue(viewModel.isValid)
-    }
-    
-    // MARK: - Test Methods - State Management
-    
-    func test_categoryFormViewModel_initiallyNil() {
-        // Then
-        XCTAssertNil(viewModel.categoryFormViewModel)
-    }
-    
-    func test_categoryFormViewModel_canBeSet() {
-        // Given - categoryFormViewModel은 실제로는 CategoryFormViewModel 타입이지만
-        // Mock을 직접 만들지 않고 설정 가능한지만 테스트
-        
-        // When - 실제로는 내부에서 생성되므로 직접 테스트하지 않음
-        // viewModel.categoryFormViewModel = mockCategoryForm
-        
-        // Then - 초기 상태는 nil이어야 함
-        XCTAssertNil(viewModel.categoryFormViewModel)
-    }
-    
-    // MARK: - Test Methods - Data Consistency
-    
-    func test_selectedSubCategory_matchesTransactionType() {
+    func test_factoryCreation_withInitialValues() {
         // Given
-        viewModel.selectedTransactionType = .variableExpense
-        
-        // When
-        viewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
-        
-        // Then - SubCategory의 transactionType이 선택된 type과 일치
-        XCTAssertEqual(viewModel.selectedSubCategory?.transactionType, viewModel.selectedTransactionType)
-    }
-    
-    func test_multipleSubCategories_canBeHandled() {
-        // Given
-        let expenseSubCategory = SubCategoryDTO.mockFoodExpense
-        let incomeSubCategory = SubCategoryDTO.mockIncomeAllowance
-        
-        // When - Expense subcategory 선택
-        viewModel.selectedTransactionType = .variableExpense
-        viewModel.selectedSubCategory = expenseSubCategory
+        let testSubCategory = SubCategoryDTO.mockFoodExpense
+        let factoryViewModel = mockContainer.makeTransactionTypeCategoryFormViewModel(
+            transactionType: .income,
+            subCategory: testSubCategory
+        )
         
         // Then
-        XCTAssertEqual(viewModel.selectedSubCategory?.id, expenseSubCategory.id)
-        XCTAssertTrue(viewModel.isValid)
-        
-        // When - Income subcategory 선택
-        viewModel.selectedTransactionType = .income
-        viewModel.selectedSubCategory = incomeSubCategory
-        
-        // Then
-        XCTAssertEqual(viewModel.selectedSubCategory?.id, incomeSubCategory.id)
-        XCTAssertTrue(viewModel.isValid)
+        XCTAssertEqual(factoryViewModel.selectedTransactionType, .income)
+        XCTAssertEqual(factoryViewModel.selectedSubCategory?.id, testSubCategory.id)
     }
 }

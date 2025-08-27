@@ -150,7 +150,7 @@ final class MockDIContainerTests: XCTestCase {
         XCTAssertNotNil(viewModel)
         XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
         XCTAssertNil(viewModel.selectedSubCategory)
-        XCTAssertTrue(viewModel.categories.isEmpty)
+        XCTAssertNotNil(viewModel.categoryListViewModel)
     }
     
     func test_makeDateAdditionalFormViewModel_returnsValidViewModel() {
