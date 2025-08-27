@@ -20,7 +20,11 @@ struct SettingsView: View {
                 router.push(.settingsBudget(YearMonth.current))
             }
             .padding()
-            
+
+            Button("Category") {
+                router.push(.settings(.category))
+            }
+
             Spacer()
         }
         .navigationTitle("Settings")

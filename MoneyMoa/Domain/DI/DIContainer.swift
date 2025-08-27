@@ -72,9 +72,15 @@ protocol DIContainer {
     /// CreateCategoryUseCase를 생성합니다
     func makeCreateCategoryUseCase() -> CreateCategoryUseCase
     
+    /// UpdateCategoryUseCase를 생성합니다
+    func makeUpdateCategoryUseCase() -> UpdateCategoryUseCase
+    
     /// CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase
-    
+
+    /// UpdateSubCategoryUseCase를 생성합니다
+    func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase
+
     /// ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase
     
@@ -100,6 +106,17 @@ protocol DIContainer {
     /// BudgetSetupViewModel을 생성합니다.
     func makeBudgetSetupViewModel(yearMonth: YearMonth) -> BudgetSetupViewModel
 
+    /// makeCategoryListViewModel을 생성합니다.
+    func makeCategoryListViewModel(mode: CategoryListMode) -> CategoryListViewModel
+
+    /// CategorySelectorViewModel을 생성합니다.
+    func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel
+
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> CategoryFormViewModel
+
+    /// SubCategoryFormViewModel을 생성합니다.
+    func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel
+
     // MARK: - TransactionForm ViewModel Factory Methods
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다
@@ -115,6 +132,9 @@ protocol DIContainer {
     
     /// TransactionEventPublisher를 생성합니다
     func makeTransactionEventPublisher() -> TransactionEventPublisher
+    
+    /// CategoryEventPublisher를 생성합니다
+    func makeCategoryEventPublisher() -> CategoryEventPublisher
     
 }
 
@@ -204,13 +224,16 @@ extension DIContainer {
         transactionType: TransactionType = .variableExpense,
         subCategory: SubCategoryDTO? = nil
     ) -> TransactionTypeCategoryFormViewModel {
-        return TransactionTypeCategoryFormViewModel(
-            getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
-            createCategoryUseCase: makeCreateCategoryUseCase(),
-            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
-            selectedTransactionType: transactionType,
-            selectedSubCategory: subCategory
-        )
+        // Selection 모드의 CategoryListViewModel 생성
+        let categoryListViewModel = makeCategoryListViewModel(mode: .selection)
+        
+        // 초기값 설정
+        categoryListViewModel.send(.selectTransactionType(transactionType))
+        if let subCategory = subCategory {
+            categoryListViewModel.selectedSubCategory = subCategory
+        }
+        
+        return TransactionTypeCategoryFormViewModel(categoryListViewModel: categoryListViewModel)
     }
     
     /// DateAdditionalFormViewModel을 생성합니다 (기본 구현)
@@ -225,13 +248,59 @@ extension DIContainer {
             isFavorite: isFavorite
         )
     }
-    
+
+    // MARK: CategorySetting
+
+    func makeCategoryListViewModel(mode: CategoryListMode) -> CategoryListViewModel {
+        return CategoryListViewModel(
+            getCategoriesUseCase: makeGetCategoriesByTypeUseCase(),
+            categoryEventPublisher: makeCategoryEventPublisher(),
+            mode: mode
+        )
+    }
+
+    func makeCategorySelectorViewModel(selectedCategory: CategoryDTO) -> CategorySelectorViewModel {
+        return CategorySelectorViewModel(
+            getCategoriesByTypeUseCase: makeGetCategoriesByTypeUseCase(),
+            selectedCategory: selectedCategory,
+            selectCategoryPublisher: DefaultSelectCategoryEventPublisher.shared
+        )
+    }
+
+    func makeCategoryFormViewModel(from mode: CategoryListMode, category: CategoryDTO?, transactionType: TransactionType?) -> CategoryFormViewModel {
+        return CategoryFormViewModel(
+            createCategoryUseCase: makeCreateCategoryUseCase(),
+            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
+            updateCategoryUseCase: makeUpdateCategoryUseCase(),
+            categoryEventPublisher: makeCategoryEventPublisher(),
+            mode: mode,
+            selectedTransactionType: transactionType ?? .income,
+            selectedCategory: category
+        )
+    }
+
+    func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel {
+        return SubCategoryFormViewModel(
+            createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
+            updateSubCategoryUseCase: makeUpdateSubCategoryUseCase(),
+            subCategoryEventPublisher: DefaultSubCategoryEventPublisher.shared,
+            selectedCategory: category,
+            selectedSubCategory: subCategory
+        )
+    }
+
     // MARK: - Service Default Implementation
     
     /// TransactionEventPublisher를 생성합니다 (기본 구현)
     /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
     func makeTransactionEventPublisher() -> TransactionEventPublisher {
         return DefaultTransactionEventPublisher.shared
+    }
+    
+    /// CategoryEventPublisher를 생성합니다 (기본 구현)
+    /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
+    func makeCategoryEventPublisher() -> CategoryEventPublisher {
+        return DefaultCategoryEventPublisher.shared
     }
     
 }

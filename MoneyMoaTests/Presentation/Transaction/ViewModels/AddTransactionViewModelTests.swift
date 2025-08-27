@@ -321,7 +321,7 @@ final class AddTransactionViewModelTests: XCTestCase {
     }
     
     private func setupValidTransactionTypeStep() {
-        viewModel.transactionTypeSelectionViewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
+        viewModel.transactionTypeSelectionViewModel.categoryListViewModel.selectedSubCategory = SubCategoryDTO.mockFoodExpense
         viewModel.transactionTypeSelectionViewModel.selectedTransactionType = .variableExpense
     }
     

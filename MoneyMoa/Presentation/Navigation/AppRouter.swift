@@ -73,7 +73,8 @@ final class AppRouter {
     
     func dismissModal() {
         if let parent = parent {
-            parent.dismissModal()
+            parent.sheet = nil
+            parent.fullScreen = nil
         } else {
             // Root router - handle local dismissal
             sheet = nil
@@ -83,7 +84,7 @@ final class AppRouter {
     
     func dismissSheet() {
         if let parent = parent {
-            parent.dismissSheet()
+            parent.sheet = nil
         } else {
             sheet = nil
         }
@@ -91,7 +92,7 @@ final class AppRouter {
     
     func dismissFullScreen() {
         if let parent = parent {
-            parent.dismissFullScreen()
+            parent.fullScreen = nil
         } else {
             fullScreen = nil
         }
