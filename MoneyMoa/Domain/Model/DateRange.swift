@@ -63,3 +63,17 @@ public enum DateRangePreset: Sendable {
         }
     }
 }
+
+// MARK: CalendarExtentions
+public extension Calendar {
+    /// DateRange 내에 포함되는 YearMonth 배열([start, end) 규약)
+    func yearMonths(in range: DateRange) -> [YearMonth] {
+           var months: [YearMonth] = []
+           var cursor = startOfMonth(for: range.start)
+           while cursor < range.end {
+               months.append(YearMonth(date: cursor, calendar: self))
+               cursor = date(byAdding: .month, value: 1, to: cursor)!
+           }
+           return months
+       }
+}

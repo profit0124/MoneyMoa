@@ -16,9 +16,8 @@ public struct BudgetCompletenessServiceImpl: BudgetCompletenessService {
         guard !months.isEmpty else { return [] }
         let required = Set(months)
         var ok: Set<String> = []
-        for (cat, map) in budgets {
-            // 모든 필요한 YearMonth 키가 존재하는지 검사
-            if required.isSubset(of: Set(map.keys)) { ok.insert(cat) }
+        for (cat, map) in budgets where required.isSubset(of: Set(map.keys)) {
+            ok.insert(cat)
         }
         return ok
     }

@@ -72,6 +72,12 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
+
+    /// Date와 Calendar 로부터 YearMonth를 생성합니다
+    public init(date: Date, calendar: Calendar = KST.calendar) {
+        self.year = calendar.component(.year, from: date)
+        self.month = calendar.component(.month, from: date)
+    }
 }
 
 // MARK: - Transaction Type Enum
