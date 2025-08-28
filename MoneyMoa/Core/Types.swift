@@ -106,3 +106,15 @@ public enum RepositoryError: Error, Sendable {
     case databaseError(Error)
     case custom(String)
 }
+
+// MARK: KST
+/// 앱 전역에서 사용하는 KST(Asia/Seoul) 캘린더 유틸
+/// - Locale: ko_KR
+/// - TimeZone: Asia/Seoul
+/// - Calendar: gregorian
+public enum KST {
+    public static let timeZone = TimeZone(identifier: "Asia/Seoul")!
+    public static var calendar: Calendar = {
+        FormatterManager.shared.koreaCalendar
+    }()
+}
