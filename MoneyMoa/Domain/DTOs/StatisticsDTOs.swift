@@ -79,7 +79,6 @@ public struct WeeklyPatternDTO: Sendable, Hashable {
 public struct TransactionTypeRatioDTO: Sendable, Hashable {
     public let income: Double
     public let expense: Double
-    public let transfer: Double
 }
 
 /// 가맹점 랭킹 테이블

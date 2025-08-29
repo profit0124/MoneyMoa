@@ -71,7 +71,7 @@ public final class MockStatisticsRepository: StatisticsRepository {
     }
 
     public func fetchTransactionTypeRatio(range: DateRange) async throws -> TransactionTypeRatioDTO {
-        .init(income: 0.35, expense: 0.6, transfer: 0.05)
+        .init(income: 0.35, expense: 0.6)
     }
 
     public func fetchMerchantRanking(range: DateRange) async throws -> MerchantRankingDTO {

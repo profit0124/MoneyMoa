@@ -27,6 +27,15 @@ public struct DateRange: Equatable, Sendable {
                                              to: calendar.startOfMonth(for: end)).month ?? 0
         self.grouping = months > 1 ? .monthly : .daily
     }
+
+    func inclusiveRange(cal: Calendar = KST.calendar) -> (Date, Date) {
+        let endInclusive = cal.date(byAdding: .second, value: -1, to: self.end) ?? self.end
+        return (self.start, endInclusive)
+    }
+
+    func months(cal: Calendar = KST.calendar) -> [YearMonth] {
+        cal.yearMonths(in: self)
+    }
 }
 
 /// 자주 쓰는 기간 프리셋 (KST 기준)
