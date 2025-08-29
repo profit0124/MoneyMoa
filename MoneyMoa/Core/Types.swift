@@ -72,6 +72,12 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
+
+    /// Date와 Calendar 로부터 YearMonth를 생성합니다
+    public init(date: Date, calendar: Calendar = KST.calendar) {
+        self.year = calendar.component(.year, from: date)
+        self.month = calendar.component(.month, from: date)
+    }
 }
 
 // MARK: - Transaction Type Enum
@@ -105,4 +111,16 @@ public enum RepositoryError: Error, Sendable {
     case cannotDeleteActivePaymentMethod
     case databaseError(Error)
     case custom(String)
+}
+
+// MARK: KST
+/// 앱 전역에서 사용하는 KST(Asia/Seoul) 캘린더 유틸
+/// - Locale: ko_KR
+/// - TimeZone: Asia/Seoul
+/// - Calendar: gregorian
+public enum KST {
+    public static let timeZone = TimeZone(identifier: "Asia/Seoul")!
+    public static var calendar: Calendar = {
+        FormatterManager.shared.koreaCalendar
+    }()
 }
