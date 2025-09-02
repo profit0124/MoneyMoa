@@ -61,7 +61,7 @@ final class AppRouteTests: XCTestCase {
         XCTAssertEqual(AppRoute.settingsRoot, .settings(.root))
         XCTAssertEqual(AppRoute.settingsBudget(.current), .settings(.budget(YearMonth.current)))
         XCTAssertEqual(AppRoute.transactionsAdd, .transactions(.add))
-        XCTAssertEqual(AppRoute.chartsOverview, .charts(.overview))
+        XCTAssertEqual(AppRoute.statisticsOverview, .statistics(.overview))
     }
     
     func testTransactionDetailConvenience_ReturnsCorrectRoute() {
@@ -265,7 +265,7 @@ final class AppRouteTests: XCTestCase {
             .settingsRoot,
             .settingsBudget(.current),
             .transactionsAdd,
-            .chartsOverview
+            .statisticsOverview
         ]
         
         // When & Then

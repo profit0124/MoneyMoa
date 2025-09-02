@@ -61,8 +61,8 @@ final class AppRouterTests: XCTestCase {
     
     func testPush_MultipleRoutes_AddsAllToPath() {
         // Given
-        let routes: [AppRoute] = [.mainHome, .settingsRoot, .chartsOverview]
-        
+        let routes: [AppRoute] = [.mainHome, .settingsRoot, .statisticsOverview]
+
         // When
         routes.forEach { sut.push($0) }
         
@@ -97,7 +97,7 @@ final class AppRouterTests: XCTestCase {
         // Given
         sut.push(.mainHome)
         sut.push(.settingsRoot)
-        sut.push(.chartsOverview)
+        sut.push(.statisticsOverview)
         
         // When
         sut.popToRoot()

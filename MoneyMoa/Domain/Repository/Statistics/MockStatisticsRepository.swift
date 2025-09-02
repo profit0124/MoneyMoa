@@ -14,7 +14,31 @@ public final class MockStatisticsRepository: StatisticsRepository {
     public init() {}
 
     public func fetchMonthlyTotals(range: DateRange) async throws -> [MonthlyPointDTO] {
-        return OverviewPreviewData.monthlyPoints
+        let cal = KST.calendar
+        let months = cal.yearMonths(in: range)
+        
+        return months.enumerated().map { index, ym in
+            let baseIncome = Decimal(3_500_000)
+            let baseExpense = Decimal(2_800_000)
+            
+            let incomeVariation = Decimal(Int.random(in: -500000...500000))
+            let expenseVariation = Decimal(Int.random(in: -400000...600000))
+            
+            let income = baseIncome + incomeVariation
+            let expense = baseExpense + expenseVariation
+            let netIncome = income - expense
+            let savingsRate = income > 0 ? Double(truncating: (netIncome / income) as NSDecimalNumber) * 100 : 0
+            
+            let previousMonthChange = index == 0 ? 0.0 : Double.random(in: -15.0...15.0)
+            
+            return MonthlyPointDTO(
+                monthStart: ym.startDate(calendar: cal),
+                income: income,
+                expense: expense,
+                savingsRate: savingsRate,
+                previousMonthChange: previousMonthChange
+            )
+        }
     }
 
     public func fetchDailyExpenses(range: DateRange) async throws -> [DailyPointDTO] {
@@ -71,6 +95,18 @@ public final class MockStatisticsRepository: StatisticsRepository {
     }
 
     public func fetchBudgetVsExpenseByMonth(range: DateRange) async throws -> [BudgetVsExpenseDTO] {
-        return BudgetPreviewData.budgetVsExpense
+        let cal = KST.calendar
+        let months = cal.yearMonths(in: range)
+        
+        return months.map { ym in
+            let budget = Decimal(2800000 + Int.random(in: -200000...200000))
+            let expense = budget * Decimal(Double.random(in: 0.8...1.2))
+            
+            return BudgetVsExpenseDTO(
+                monthStart: ym.startDate(calendar: cal),
+                budget: budget,
+                expense: expense
+            )
+        }
     }
 }
