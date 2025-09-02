@@ -26,13 +26,22 @@ public struct BurndownServiceImpl: BurndownService {
         // 일자별 지출 합 → 누적
         var dayMap: [Int: Decimal] = [:]
         for p in sorted { dayMap[calendar.component(.day, from: p.date), default: 0] += p.amount }
-        var running: Decimal = 0
+        var actualCumulativeSpent: Decimal = 0
         var out: [BurndownPointDTO] = []
+        
         for d in 1...days {
-            running += dayMap[d, default: 0]
+            actualCumulativeSpent += dayMap[d, default: 0]
+            let dayDate = calendar.date(byAdding: .day, value: d - 1, to: monthStart) ?? monthStart
+            
+            // 누적 지출 계산
+            let expectedCumulative = expectedPerDay * Decimal(d)
+            let actualCumulative = actualCumulativeSpent
+            
             out.append(.init(day: d,
-                             expectedCumulative: expectedPerDay * Decimal(d),
-                             actualCumulative: running))
+                             date: dayDate,
+                             expectedCumulative: expectedCumulative,
+                             actualCumulative: actualCumulative,
+                             monthlyBudget: expectedMonthlyBudget))
         }
         return out
     }

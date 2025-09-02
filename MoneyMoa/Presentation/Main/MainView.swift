@@ -104,7 +104,7 @@ struct MainView: View {
     }
     
     private func handleChartTap() {
-        router.push(.chartsOverview)
+        router.push(.statisticsOverview)
     }
     
     private func handleSettingsTap() {

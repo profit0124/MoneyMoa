@@ -29,9 +29,9 @@ struct ViewFactory {
         case .transactions(.update(let transaction)):
             UpdateTransactionView(viewModel: container.makeUpdateTransactionViewModel(transaction: transaction))
             
-        // MARK: - Charts Routes
-        case .charts(.overview):
-            ChartView()
+        // MARK: - Statistics Routes
+        case .statistics(.overview):
+            StatisticsView(viewModel: container.makeStatisticsViewModel())
 
         case .settings(let settingsRoute):
             handleSetting(settingsRoute: settingsRoute)

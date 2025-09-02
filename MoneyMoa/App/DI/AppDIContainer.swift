@@ -213,4 +213,27 @@ final class AppDIContainer: DIContainer {
     private func makePaymentMethodRepository() -> PaymentMethodRepository {
         return PaymentMethodRepositoryImpl(database: database)
     }
+    
+    // MARK: - Statistics UseCase Factory Methods
+    
+    /// Production GetStatisticsDashboardUseCase를 생성합니다
+    func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase {
+        let repository = makeStatisticsRepository()
+        return GetStatisticsDashboardUseCaseImpl(repo: repository)
+    }
+    
+    // MARK: - Statistics Repository Factory Methods
+    
+    /// StatisticsRepository 구현체를 생성합니다
+    private func makeStatisticsRepository() -> StatisticsRepository {
+        return StatisticsRepositoryImpl(
+            tx: TransactionRepositoryAdapter(
+                repo: makeTransactionRepository()
+            ),
+            budget: BudgetRepositoryAdapter(
+                budgetRepo: makeBudgetRepository(),
+                txRepo: makeTransactionRepository()
+            )
+        )
+    }
 }

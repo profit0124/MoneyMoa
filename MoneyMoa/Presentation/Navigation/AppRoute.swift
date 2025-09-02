@@ -32,13 +32,17 @@ enum ChartsRoute: Hashable {
     case overview
 }
 
+enum StatisticsRoute: Hashable {
+    case overview
+}
+
 // MARK: - App Route (Union)
 
 enum AppRoute: Hashable {
     case main(MainRoute)
     case settings(SettingsRoute)
     case transactions(TransactionsRoute)
-    case charts(ChartsRoute)
+    case statistics(StatisticsRoute)
 }
 
 // MARK: - Convenience Extensions
@@ -47,7 +51,7 @@ extension AppRoute {
     static let mainHome = AppRoute.main(.home)
     static let settingsRoot = AppRoute.settings(.root)
     static let transactionsAdd = AppRoute.transactions(.add)
-    static let chartsOverview = AppRoute.charts(.overview)
+    static let statisticsOverview = AppRoute.statistics(.overview)
     static let categorySetup = AppRoute.settings(.category)
 
     static func settingsBudget(_ yearMonth: YearMonth) -> AppRoute {
