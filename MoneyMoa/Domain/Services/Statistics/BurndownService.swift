@@ -30,7 +30,9 @@ public struct BurndownServiceImpl: BurndownService {
         var out: [BurndownPointDTO] = []
         for d in 1...days {
             running += dayMap[d, default: 0]
+            let dayDate = calendar.date(byAdding: .day, value: d - 1, to: monthStart) ?? monthStart
             out.append(.init(day: d,
+                             date: dayDate,
                              expectedCumulative: expectedPerDay * Decimal(d),
                              actualCumulative: running))
         }
