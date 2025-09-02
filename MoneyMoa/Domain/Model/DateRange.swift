@@ -39,7 +39,7 @@ public struct DateRange: Equatable, Sendable {
 }
 
 /// 자주 쓰는 기간 프리셋 (KST 기준)
-public enum DateRangePreset: Sendable {
+public enum DateRangePreset: Sendable, Equatable, Hashable {
     case thisMonth, lastMonth, threeMonths, sixMonths, thisYear
     case custom(Date, Date)
 

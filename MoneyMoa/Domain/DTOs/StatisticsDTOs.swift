@@ -57,24 +57,27 @@ public struct DailyPointDTO: Identifiable, Sendable, Hashable {
     }
 }
 
-/// 버던 차트용 기대/실제 누적 포인트 (1..N일)
+/// 번다운 차트용 누적 지출 포인트 (1..N일)
 public struct BurndownPointDTO: Identifiable, Sendable, Hashable {
     public let id = UUID()
     public let day: Int
     public let date: Date // UI에서 날짜 축 표시용
-    public let expectedCumulative: Decimal
-    public let actualCumulative: Decimal
+    public let expectedCumulative: Decimal // 예상 누적 지출
+    public let actualCumulative: Decimal   // 실제 누적 지출
+    public let monthlyBudget: Decimal      // 월 총 예산 (기준선용)
     
     public init(
         day: Int,
         date: Date,
         expectedCumulative: Decimal,
-        actualCumulative: Decimal
+        actualCumulative: Decimal,
+        monthlyBudget: Decimal
     ) {
         self.day = day
         self.date = date
         self.expectedCumulative = expectedCumulative
         self.actualCumulative = actualCumulative
+        self.monthlyBudget = monthlyBudget
     }
 }
 
@@ -208,7 +211,8 @@ public struct MerchantRankingDTO: Identifiable, Sendable, Hashable {
 public enum BudgetStatus: Sendable { case exceeded, warning, normal }
 
 /// 월별 예산 vs 지출 (콤보차트)
-public struct BudgetVsExpenseDTO: Sendable, Hashable {
+public struct BudgetVsExpenseDTO: Identifiable, Sendable, Hashable {
+    public let id = UUID()
     public let monthStart: Date
     public let budget: Decimal
     public let expense: Decimal
@@ -294,128 +298,60 @@ public struct StatisticsDashboardDTO: Sendable {
 
 extension MonthlyPointDTO {
     static var previewData: [MonthlyPointDTO] {
-        let calendar = Calendar.current
-        let today = Date()
-        var data: [MonthlyPointDTO] = []
-
-        for monthsBack in 0..<6 {
-            guard
-                let monthStart = calendar.date(
-                    byAdding: .month,
-                    value: -monthsBack,
-                    to: today
-                ),
-                let firstOfMonth = calendar.dateInterval(
-                    of: .month,
-                    for: monthStart
-                )?.start
-            else {
-                continue
-            }
-
-            let baseIncome = Decimal(3_500_000)
-            let baseExpense = Decimal(2_800_000)
-            
-            let incomeVariation = Decimal(Int.random(in: -500000...500000))
-            let expenseVariation = Decimal(Int.random(in: -400000...600000))
-            
-            let income = baseIncome + incomeVariation
-            let expense = baseExpense + expenseVariation
-            let netIncome = income - expense
-            let savingsRate = income > 0 ? Double(truncating: (netIncome / income) as NSDecimalNumber) * 100 : 0
-            
-            let previousMonthChange = data.isEmpty ? 0.0 : Double.random(in: -15.0...15.0)
-
-            data.append(MonthlyPointDTO(
-                monthStart: firstOfMonth,
-                income: income,
-                expense: expense,
-                savingsRate: savingsRate,
-                previousMonthChange: previousMonthChange
-            ))
-        }
-        
-        return data.reversed()
+        return OverviewPreviewData.monthlyPoints
     }
 }
 
 extension DailyPointDTO {
     static var previewData: [DailyPointDTO] {
-        let calendar = Calendar.current
-        let today = Date()
-        var data: [DailyPointDTO] = []
-
-        for daysBack in 0..<30 {
-            guard let date = calendar.date(byAdding: .day, value: -daysBack, to: today) else {
-                continue
-            }
-            
-            let isWeekend = calendar.isDateInWeekend(date)
-            let baseAmount = isWeekend ? Decimal(120000) : Decimal(80000)
-            let variation = Decimal(Int.random(in: -30000...50000))
-            let amount = max(0, baseAmount + variation)
-            
-            let movingAverage = data.count >= 6 ? 
-                data.suffix(6).reduce(amount) { $0 + $1.amount } / 7 : amount
-
-            data.append(DailyPointDTO(
-                date: date,
-                amount: amount,
-                movingAverage: movingAverage,
-                isWeekend: isWeekend
-            ))
-        }
-        
-        return data.reversed()
+        return OverviewPreviewData.dailyPoints
     }
 }
 
 extension BurndownPointDTO {
     static var previewData: [BurndownPointDTO] {
-        let calendar = Calendar.current
-        let today = Date()
-        let monthlyBudget = Decimal(2_500_000)
-        let daysInMonth = 30
-        
-        return (1...daysInMonth).compactMap { day in
-            guard let date = calendar.date(byAdding: .day, value: day - daysInMonth, to: today) else {
-                return nil
-            }
-            
-            let expectedDaily = monthlyBudget / Decimal(daysInMonth)
-            let expectedCumulative = expectedDaily * Decimal(day)
-            let actualCumulative = expectedCumulative * Decimal(Double.random(in: 0.8...1.2))
-            
-            return BurndownPointDTO(
-                day: day,
-                date: date,
-                expectedCumulative: expectedCumulative,
-                actualCumulative: actualCumulative
-            )
-        }
+        return OverviewPreviewData.burndownPoints
     }
 }
 
 extension CategoryRatioDTO {
     static var previewData: [CategoryRatioDTO] {
-        let colors: [Color] = [.red, .blue, .green, .orange, .purple]
-        let categories = [
-            ("식비", Decimal(980000), 0.35),
-            ("교통", Decimal(420000), 0.15),
-            ("쇼핑", Decimal(560000), 0.20),
-            ("문화", Decimal(336000), 0.12),
-            ("기타", Decimal(504000), 0.18)
-        ]
-        
-        return categories.enumerated().map { index, (name, amount, ratio) in
-            CategoryRatioDTO(
-                categoryId: "\(index + 1)",
-                categoryName: name,
-                ratio: ratio,
-                amount: amount,
-                color: colors[index % colors.count],
-                previousMonthChange: Double.random(in: -20.0...20.0)
-            )
-        }
+        return CategoryPreviewData.categoryRatios
+    }
+}
+
+extension PaymentMethodRatioDTO {
+    static var previewData: [PaymentMethodRatioDTO] {
+        return PaymentPreviewData.paymentMethodRatios
+    }
+}
+
+extension WeeklyPatternDTO {
+    static var previewData: WeeklyPatternDTO {
+        return PatternPreviewData.weeklyPattern
+    }
+}
+
+extension TransactionTypeRatioDTO {
+    static var previewData: TransactionTypeRatioDTO {
+        return PatternPreviewData.transactionTypeRatio
+    }
+}
+
+extension MerchantRankingDTO {
+    static var previewData: MerchantRankingDTO {
+        return PaymentPreviewData.merchantRanking
+    }
+}
+
+extension BudgetVsExpenseDTO {
+    static var previewData: [BudgetVsExpenseDTO] {
+        return BudgetPreviewData.budgetVsExpense
+    }
+}
+
+extension CategoryBudgetVsExpenseDTO {
+    static var previewData: [CategoryBudgetVsExpenseDTO] {
+        return BudgetPreviewData.categoryBudgetVsExpense
     }
 }

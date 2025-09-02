@@ -88,6 +88,19 @@ public final class FormatterManager {
         }
     }
     
+    /// 날짜 범위 포맷팅 (통계 제목용)
+    /// - Parameter range: 날짜 범위
+    /// - Returns: "8.1-8.31" 형식의 간단한 문자열
+    public func formatDateRange(_ range: DateRange) -> String {
+        let titleFormatter = DateFormatter()
+        titleFormatter.locale = Locale(identifier: "ko_KR")
+        titleFormatter.dateFormat = "YY.MM.dd"
+
+        let startStr = titleFormatter.string(from: range.start)
+        let endStr = titleFormatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: range.end) ?? range.end)
+        return "\(startStr)-\(endStr)"
+    }
+    
     // MARK: - Calendar
     /// 한국 로케일 캘린더 (날짜 계산용)
     /// 추후 Localization 고려

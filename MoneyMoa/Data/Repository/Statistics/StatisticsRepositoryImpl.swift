@@ -22,18 +22,17 @@ public final class StatisticsRepositoryImpl: StatisticsRepository {
         return calculateMonthlyAnalytics(rows)
     }
     
-    private func calculateMonthlyAnalytics(_ rows: [(monthStart: Date, income: Decimal, expense: Decimal)]) -> [MonthlyPointDTO] {
+    private func calculateMonthlyAnalytics(_ rows: [IncomeExpenseMonthlyRow]) -> [MonthlyPointDTO] {
         var result: [MonthlyPointDTO] = []
         
         for (index, row) in rows.enumerated() {
             let netIncome = row.income - row.expense
             let savingsRate = row.income > 0 ? Double(truncating: (netIncome / row.income) as NSDecimalNumber) * 100 : 0
             
-            // 전월 대비 순수입 변화율 계산
+            // 전월 대비 저축률 변화율 계산 (포인트 차이)
             let previousMonthChange: Double
-            if index > 0, let previousNetIncome = result.last?.netIncome, previousNetIncome != 0 {
-                let changeRate = Double(truncating: ((netIncome - previousNetIncome) / previousNetIncome) as NSDecimalNumber) * 100
-                previousMonthChange = changeRate
+            if index > 0, let previousSavingsRate = result.last?.savingsRate {
+                previousMonthChange = savingsRate - previousSavingsRate
             } else {
                 previousMonthChange = 0.0
             }
@@ -55,7 +54,7 @@ public final class StatisticsRepositoryImpl: StatisticsRepository {
         return calculateDailyAnalytics(rows)
     }
     
-    private func calculateDailyAnalytics(_ rows: [(date: Date, amount: Decimal)]) -> [DailyPointDTO] {
+    private func calculateDailyAnalytics(_ rows: [TransactionRow]) -> [DailyPointDTO] {
         let calendar = Calendar.current
         var result: [DailyPointDTO] = []
         
@@ -91,7 +90,7 @@ public final class StatisticsRepositoryImpl: StatisticsRepository {
         return assignCategoryColors(rows)
     }
     
-    private func assignCategoryColors(_ rows: [(categoryId: String, categoryName: String, monthStart: Date, expense: Decimal)]) -> [CategoryMonthlyPointDTO] {
+    private func assignCategoryColors(_ rows: [CategoryMonthlyRow]) -> [CategoryMonthlyPointDTO] {
         let uniqueCategories = Array(Set(rows.map { $0.categoryName }))
         
         return rows.map { row in
