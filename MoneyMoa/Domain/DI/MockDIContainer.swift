@@ -12,7 +12,6 @@ import Foundation
 /// Mock 구현체들을 제공하는 DI 컨테이너
 /// Presentation Layer 개발 및 테스트 시 사용됩니다
 final class MockDIContainer: DIContainer {
-
     // MARK: - UseCase Factory Methods
     
     /// Mock GetMonthlyTransactionsUseCase를 생성합니다
@@ -135,5 +134,17 @@ final class MockDIContainer: DIContainer {
     /// Mock AddTransactionViewModel을 생성합니다
     func makeAddTransactionViewModel() -> AddTransactionViewModel {
         return AddTransactionViewModel(container: self)
+    }
+
+    func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase {
+        let repo = makeStatisticsRepository()
+        return GetStatisticsDashboardUseCaseImpl(repo: repo)
+    }
+
+    // MARK: - Statistics Repository Factory Methods
+
+    /// StatisticsRepository 구현체를 생성합니다
+    private func makeStatisticsRepository() -> StatisticsRepository {
+        return MockStatisticsRepository()
     }
 }

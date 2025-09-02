@@ -180,8 +180,8 @@ final class ViewFactoryTests: XCTestCase {
     
     func testMakeView_ChartsOverview_ReturnsChartView() {
         // Given
-        let route = AppRoute.charts(.overview)
-        
+        let route = AppRoute.statistics(.overview)
+
         // When
         let view = sut.makeView(for: route)
         
@@ -313,7 +313,7 @@ final class ViewFactoryTests: XCTestCase {
             .transactions(.add),
             .transactions(.detail(transaction)),
             .transactions(.update(transaction)),
-            .charts(.overview)
+            .statistics(.overview)
         ]
         
         // When & Then

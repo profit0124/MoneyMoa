@@ -125,7 +125,7 @@ final class MainViewModelTests: XCTestCase {
             ),
             TestDataFactory.createTransaction(
                 amount: 25000,
-                date: TestDataFactory.dateFromDaysAgo(2),
+                date: Calendar.current.date(byAdding: .day, value: 5, to: currentMonth.startOfMonth) ?? currentMonth.startOfMonth,
                 place: "스타벅스",
                 memo: "커피",
                 transactionType: .variableExpense,

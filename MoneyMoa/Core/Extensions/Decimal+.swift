@@ -70,4 +70,9 @@ extension Decimal {
     public var currencyFormatted: String {
         return FormatterManager.shared.formatCurrency(self)
     }
+
+    // MARK: - Decimal 변환 (차트 경계에서만 Double 변환)
+    var asDouble: Double {
+        NSDecimalNumber(decimal: self).doubleValue
+    }
 }
