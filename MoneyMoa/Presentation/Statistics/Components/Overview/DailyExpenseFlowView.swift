@@ -57,8 +57,7 @@ struct DailyExpenseFlowView: View {
                         if point.isWeekend {
                             PointMark(
                                 x: .value("날짜", point.date, unit: .day),
-                                y: .value("일별 지출", Double(truncating: NSDecimalNumber(decimal: point.amount))),
-
+                                y: .value("일별 지출", Double(truncating: NSDecimalNumber(decimal: point.amount)))
                             )
                             .foregroundStyle(.red)
                             .symbolSize(30)
