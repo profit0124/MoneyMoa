@@ -136,6 +136,14 @@ protocol DIContainer {
     /// CategoryEventPublisher를 생성합니다
     func makeCategoryEventPublisher() -> CategoryEventPublisher
     
+    // MARK: - Statistics Factory Methods
+    
+    /// GetStatisticsDashboardUseCase를 생성합니다
+    func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase
+    
+    /// StatisticsViewModel을 생성합니다
+    func makeStatisticsViewModel() -> StatisticsViewModel
+    
 }
 
 // MARK: - Default Implementation
@@ -301,6 +309,15 @@ extension DIContainer {
     /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
     func makeCategoryEventPublisher() -> CategoryEventPublisher {
         return DefaultCategoryEventPublisher.shared
+    }
+    
+    // MARK: - Statistics Default Implementation
+
+    /// StatisticsViewModel을 생성합니다 (기본 구현)
+    func makeStatisticsViewModel() -> StatisticsViewModel {
+        return StatisticsViewModel(
+            getStatisticsDashboardUseCase: makeGetStatisticsDashboardUseCase()
+        )
     }
     
 }

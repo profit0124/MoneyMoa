@@ -8,7 +8,6 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
 public final class StatisticsViewModel {
     public var selectedDateRange: DateRangePreset = .thisMonth
@@ -93,7 +92,7 @@ public final class StatisticsViewModel {
         
         isLoading = false
     }
-
+    
     private func updateDateRange(_ preset: DateRangePreset) {
         selectedDateRange = preset
         selectedGrouping = preset.resolve().grouping
