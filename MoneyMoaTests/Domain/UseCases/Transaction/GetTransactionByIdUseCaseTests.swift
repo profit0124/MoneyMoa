@@ -8,23 +8,24 @@
 import XCTest
 @testable import MoneyMoa
 
-// MARK: - MockGetTransactionByIdUseCaseTests
-
-final class MockGetTransactionByIdUseCaseTests: XCTestCase {
+final class GetTransactionByIdUseCaseTests: XCTestCase {
     
     // MARK: - Properties
     
-    private var mockUseCase: MockGetTransactionByIdUseCase!
+    private var mockRepository: MockTransactionRepository!
+    private var useCase: GetTransactionByIdUseCaseImpl!
     
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        mockUseCase = MockGetTransactionByIdUseCase()
+        mockRepository = MockTransactionRepository(scenario: .empty)
+        useCase = GetTransactionByIdUseCaseImpl(transactionReader: mockRepository)
     }
     
     override func tearDown() {
-        mockUseCase = nil
+        mockRepository = nil
+        useCase = nil
         super.tearDown()
     }
     
@@ -42,10 +43,10 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
         
-        mockUseCase.setMockTransaction(transaction)
+        try await mockRepository.insertTransaction(transaction)
         
         // When
-        let result = try await mockUseCase.execute(id: transaction.id)
+        let result = try await useCase.execute(id: transaction.id)
         
         // Then
         XCTAssertNotNil(result)
@@ -69,10 +70,10 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
             paymentMethod: PaymentMethodDTO.mockCash
         )
         
-        mockUseCase.setMockTransaction(transaction)
+        try await mockRepository.insertTransaction(transaction)
         
         // When
-        let result = try await mockUseCase.execute(id: transaction.id)
+        let result = try await useCase.execute(id: transaction.id)
         
         // Then
         XCTAssertNotNil(result)
@@ -93,10 +94,10 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
         
-        mockUseCase.setMockTransaction(transaction)
+        try await mockRepository.insertTransaction(transaction)
         
         // When
-        let result = try await mockUseCase.execute(id: transaction.id)
+        let result = try await useCase.execute(id: transaction.id)
         
         // Then
         XCTAssertNotNil(result)
@@ -110,7 +111,7 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
         let nonExistingId = UUID()
         
         // When
-        let result = try await mockUseCase.execute(id: nonExistingId)
+        let result = try await useCase.execute(id: nonExistingId)
         
         // Then
         XCTAssertNil(result)
@@ -118,17 +119,17 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
     
     // MARK: - Test Methods - Error Cases
     
-    func test_execute_withFailureConfiguration_throwsError() async {
+    func test_execute_withRepositoryFailure_throwsError() async {
         // Given
         let transactionId = UUID()
-        mockUseCase.shouldFail = true
+        mockRepository.shouldFail = true
         
         // When & Then
         do {
-            _ = try await mockUseCase.execute(id: transactionId)
+            _ = try await useCase.execute(id: transactionId)
             XCTFail("Expected error to be thrown")
         } catch {
-            XCTAssertTrue(error is GetTransactionByIdError)
+            XCTAssertTrue(error is MockError)
         }
     }
     
@@ -156,12 +157,12 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
             paymentMethod: PaymentMethodDTO.mockCash
         )
         
-        mockUseCase.setMockTransaction(transaction1)
-        mockUseCase.setMockTransaction(transaction2)
+        try await mockRepository.insertTransaction(transaction1)
+        try await mockRepository.insertTransaction(transaction2)
         
         // When
-        let result1 = try await mockUseCase.execute(id: transaction1.id)
-        let result2 = try await mockUseCase.execute(id: transaction2.id)
+        let result1 = try await useCase.execute(id: transaction1.id)
+        let result2 = try await useCase.execute(id: transaction2.id)
         
         // Then
         XCTAssertNotNil(result1)
@@ -171,30 +172,28 @@ final class MockGetTransactionByIdUseCaseTests: XCTestCase {
         XCTAssertNotEqual(result1?.id, result2?.id)
     }
     
-    // MARK: - Test Methods - Reset Functionality
+    // MARK: - Test Methods - Business Logic Validation
     
-    func test_reset_clearsStoredTransactions() async throws {
+    func test_execute_validatesBusinessRules() async throws {
         // Given
         let transaction = TransactionDTO(
-            amount: 10000,
-            place: "테스트",
-            memo: "테스트",
+            amount: 100000,
+            place: "Business Rule Test",
+            memo: "Testing business logic validation",
             transactionType: .variableExpense,
             isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
         
-        mockUseCase.setMockTransaction(transaction)
-        let resultBefore = try await mockUseCase.execute(id: transaction.id)
-        XCTAssertNotNil(resultBefore)
+        try await mockRepository.insertTransaction(transaction)
         
         // When
-        mockUseCase.reset()
+        let result = try await useCase.execute(id: transaction.id)
         
         // Then
-        let resultAfter = try await mockUseCase.execute(id: transaction.id)
-        XCTAssertNil(resultAfter)
-        XCTAssertFalse(mockUseCase.shouldFail)
+        XCTAssertNotNil(result, "실제 UseCase 비즈니스 로직이 실행되어 거래를 반환해야 함")
+        XCTAssertEqual(result?.amount, 100000, "비즈니스 로직이 올바르게 동작해야 함")
+        XCTAssertEqual(result?.place, "Business Rule Test")
     }
 }

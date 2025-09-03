@@ -14,6 +14,19 @@ public enum TransactionFactory {
     
     // MARK: - Basic Builders
     
+    /// Create a simple sample transaction for testing
+    public static func sample() -> TransactionDTO {
+        return create(
+            amount: 50000,
+            place: "Sample Place",
+            memo: "Sample Memo",
+            transactionType: .variableExpense,
+            isFavorite: false,
+            subCategory: .mockFoodExpense,
+            paymentMethod: .mockCreditCard
+        )
+    }
+    
     /// Create a single transaction with specified parameters
     public static func create(
         id: UUID = UUID(),

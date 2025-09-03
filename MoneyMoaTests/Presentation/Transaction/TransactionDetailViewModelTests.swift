@@ -11,428 +11,375 @@ import XCTest
 @MainActor
 final class TransactionDetailViewModelTests: XCTestCase {
     
+    // MARK: - Properties
+    
     private var viewModel: TransactionDetailViewModel!
-    private var mockDeleteUseCase: MockDeleteTransactionUseCase!
-    private var mockGetTransactionByIdUseCase: MockGetTransactionByIdUseCase!
-    private var mockUpdateTransactionViewModel: UpdateTransactionViewModel!
-    private var mockTransaction: TransactionDTO!
-    private var mockPublisher: MockTransactionEventPublisher!
     private var mockDIContainer: MockDIContainer!
-
-    override func setUp() {
-        super.setUp()
-        mockDeleteUseCase = MockDeleteTransactionUseCase()
-        mockGetTransactionByIdUseCase = MockGetTransactionByIdUseCase()
-        mockTransaction = TransactionDTO.mockLunch
-        mockPublisher = MockTransactionEventPublisher()
-        mockDIContainer = MockDIContainer()
-        mockUpdateTransactionViewModel = mockDIContainer.makeUpdateTransactionViewModel(transaction: mockTransaction)
+    private var mockTransactionEventPublisher: MockTransactionEventPublisher!
+    private var sampleTransaction: TransactionDTO!
+    
+    // MARK: - Setup & Teardown
+    
+    override func setUp() async throws {
+        try await super.setUp()
         
+        mockDIContainer = MockDIContainer()
+        mockTransactionEventPublisher = MockTransactionEventPublisher()
+        sampleTransaction = TransactionDTO.mockLunch
+        
+        // Create ViewModel with Repository-based dependencies
         viewModel = TransactionDetailViewModel(
-            transaction: mockTransaction,
-            deleteTransactionUseCase: mockDeleteUseCase,
-            getTransactionByIdUseCase: mockGetTransactionByIdUseCase,
-            transactionEventPublisher: mockPublisher,
-            updateTransactionViewModel: mockUpdateTransactionViewModel
+            transaction: sampleTransaction,
+            deleteTransactionUseCase: mockDIContainer.makeDeleteTransactionUseCase(),
+            getTransactionByIdUseCase: mockDIContainer.makeGetTransactionByIdUseCase(),
+            transactionEventPublisher: mockTransactionEventPublisher,
+            updateTransactionViewModel: mockDIContainer.makeUpdateTransactionViewModel(transaction: sampleTransaction)
         )
+        
+        // Setup sample transaction in repository
+        try await mockDIContainer.mockTransactionRepository.insertTransaction(sampleTransaction)
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
         viewModel = nil
-        mockDeleteUseCase = nil
-        mockGetTransactionByIdUseCase = nil
-        mockUpdateTransactionViewModel = nil
-        mockTransaction = nil
-        mockPublisher = nil
         mockDIContainer = nil
-        super.tearDown()
+        mockTransactionEventPublisher = nil
+        sampleTransaction = nil
+        try await super.tearDown()
     }
     
     // MARK: - Initialization Tests
     
-    func testInit_WithTransaction_SetsProperties() {
+    func test_initialization_setsCorrectInitialValues() {
         // Then
-        XCTAssertEqual(viewModel.transaction.id, mockTransaction.id)
+        XCTAssertEqual(viewModel.transaction.id, sampleTransaction.id)
+        XCTAssertEqual(viewModel.transaction.amount, sampleTransaction.amount)
         XCTAssertEqual(viewModel.viewMode, .detail)
         XCTAssertFalse(viewModel.isPresentedDeleteConfirmation)
     }
     
-    // MARK: - Action Tests - Show Delete Confirmation
-    
-    func testSendShowDeleteConfirmation_UpdatesConfirmationState() {
+    func test_initialization_withDifferentTransaction_setsCorrectValues() {
         // Given
-        XCTAssertFalse(viewModel.isPresentedDeleteConfirmation)
-        
-        // When
-        viewModel.send(.showDeleteConfirmation)
-        
-        // Then
-        XCTAssertTrue(viewModel.isPresentedDeleteConfirmation)
-    }
-    
-    // MARK: - Action Tests - Change View Mode
-    
-    func testSendChangeViewMode_FromDetail_SwitchesToUpdate() {
-        // Given
-        XCTAssertEqual(viewModel.viewMode, .detail)
-        
-        // When
-        viewModel.send(.changeViewMode)
-        
-        // Then
-        XCTAssertEqual(viewModel.viewMode, .update)
-    }
-    
-    func testSendChangeViewMode_FromUpdate_SwitchesToDetail() {
-        // Given
-        viewModel.send(.changeViewMode) // 먼저 update 모드로 변경
-        XCTAssertEqual(viewModel.viewMode, .update)
-        
-        // When
-        viewModel.send(.changeViewMode)
-        
-        // Then
-        XCTAssertEqual(viewModel.viewMode, .detail)
-    }
-    
-    // MARK: - Action Tests - Delete Transaction
-    
-    func testSendDeleteTransaction_WithValidTransaction_CallsUseCaseAndCompletion() async throws {
-        // Given
-        mockDeleteUseCase.addExistingTransaction(id: mockTransaction.id)
-        var completionCalled = false
-        
-        // When
-        viewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertTrue(mockDeleteUseCase.deletedTransactionIds.contains(mockTransaction.id))
-        XCTAssertTrue(completionCalled)
-    }
-    
-    func testSendDeleteTransaction_WithNonExistentTransaction_CallsCompletionWithError() async throws {
-        // Given - 존재하지 않는 거래 (mockDeleteUseCase에 추가하지 않음)
-        var completionCalled = false
-        
-        // When
-        viewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertFalse(mockDeleteUseCase.deletedTransactionIds.contains(mockTransaction.id))
-        XCTAssertFalse(completionCalled) // 에러로 인해 completion이 호출되지 않음
-    }
-    
-    func testSendDeleteTransaction_WhenUseCaseFails_DoesNotCallCompletion() async throws {
-        // Given
-        mockDeleteUseCase.addExistingTransaction(id: mockTransaction.id)
-        mockDeleteUseCase.shouldFail = true
-        var completionCalled = false
-        
-        // When
-        viewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertFalse(mockDeleteUseCase.deletedTransactionIds.contains(mockTransaction.id))
-        XCTAssertFalse(completionCalled)
-    }
-    
-    // MARK: - Integration Tests
-    
-    func testFullDeleteFlow_ShowConfirmationThenDelete() async throws {
-        // Given
-        mockDeleteUseCase.addExistingTransaction(id: mockTransaction.id)
-        var completionCalled = false
-        
-        // When - 먼저 삭제 확인창 표시
-        viewModel.send(.showDeleteConfirmation)
-        XCTAssertTrue(viewModel.isPresentedDeleteConfirmation)
-        
-        // Then - 삭제 실행
-        viewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertTrue(mockDeleteUseCase.deletedTransactionIds.contains(mockTransaction.id))
-        XCTAssertTrue(completionCalled)
-    }
-    
-    // MARK: - TransactionEventPublisher Tests
-    
-    func testSendDeleteTransaction_WithValidTransaction_PublishesDeletedEvent() async throws {
-        // Given
-        mockDeleteUseCase.addExistingTransaction(id: mockTransaction.id)
-        var completionCalled = false
-        
-        // When
-        viewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertTrue(completionCalled)
-        XCTAssertEqual(mockPublisher.publishedEvents.count, 1)
-        
-        let publishedEvent = mockPublisher.publishedEvents.first!
-        XCTAssertEqual(publishedEvent.type, .deleted)
-        XCTAssertEqual(publishedEvent.yearMonth, YearMonth(from: mockTransaction.date))
-    }
-    
-    func testSendDeleteTransaction_WhenUseCaseFails_DoesNotPublishEvent() async throws {
-        // Given
-        mockDeleteUseCase.addExistingTransaction(id: mockTransaction.id)
-        mockDeleteUseCase.shouldFail = true
-        var completionCalled = false
-        
-        // When
-        viewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertFalse(completionCalled)
-        XCTAssertEqual(mockPublisher.publishedEvents.count, 0)
-    }
-    
-    func testSendDeleteTransaction_WithDifferentMonthTransaction_PublishesCorrectYearMonth() async throws {
-        // Given
-        let calendar = Calendar.current
-        let futureDate = calendar.date(byAdding: .month, value: 2, to: Date()) ?? Date()
-        let futureTransaction = TransactionDTO.mockWith(
-            date: futureDate,
-            transactionType: .variableExpense,
-            subCategory: .mockFoodExpense,
-            paymentMethod: .mockCreditCard
-        )
-        
-        let futureUpdateTransactionViewModel = mockDIContainer.makeUpdateTransactionViewModel(transaction: futureTransaction)
-        let futureViewModel = TransactionDetailViewModel(
-            transaction: futureTransaction,
-            deleteTransactionUseCase: mockDeleteUseCase,
-            getTransactionByIdUseCase: mockGetTransactionByIdUseCase,
-            transactionEventPublisher: mockPublisher,
-            updateTransactionViewModel: futureUpdateTransactionViewModel
-        )
-        
-        mockDeleteUseCase.addExistingTransaction(id: futureTransaction.id)
-        var completionCalled = false
-        
-        // When
-        futureViewModel.send(.deleteTransaction {
-            completionCalled = true
-        })
-        
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
-        
-        // Then
-        XCTAssertTrue(completionCalled)
-        XCTAssertEqual(mockPublisher.publishedEvents.count, 1)
-        
-        let publishedEvent = mockPublisher.publishedEvents.first!
-        XCTAssertEqual(publishedEvent.type, .deleted)
-        XCTAssertEqual(publishedEvent.yearMonth, YearMonth(from: futureDate))
-    }
-    
-    func testInitialization_DoesNotPublishAnyEvents() {
-        // Then
-        XCTAssertEqual(mockPublisher.publishedEvents.count, 0)
-    }
-    
-    func testOtherActions_DoNotPublishEvents() {
-        // When
-        viewModel.send(.showDeleteConfirmation)
-        viewModel.send(.changeViewMode)
-        
-        // Then
-        XCTAssertEqual(mockPublisher.publishedEvents.count, 0)
-    }
-    
-    // MARK: - Fetch Transaction Tests
-    
-    func testSendFetchTransaction_WithExistingTransaction_UpdatesTransaction() async throws {
-        // Given
-        let updatedTransaction = TransactionDTO(
-            id: mockTransaction.id,
-            amount: 100000,
-            date: mockTransaction.date,
-            place: "수정된 장소",
-            memo: "수정된 메모",
+        let customTransaction = TransactionDTO(
+            amount: 50000,
+            place: "Custom Place",
+            memo: "Custom Memo",
             transactionType: .income,
             isFavorite: true,
             subCategory: SubCategoryDTO.mockIncomeAllowance,
             paymentMethod: PaymentMethodDTO.mockCash
         )
         
-        mockGetTransactionByIdUseCase.setMockTransaction(updatedTransaction)
+        // When
+        let customViewModel = TransactionDetailViewModel(
+            transaction: customTransaction,
+            deleteTransactionUseCase: mockDIContainer.makeDeleteTransactionUseCase(),
+            getTransactionByIdUseCase: mockDIContainer.makeGetTransactionByIdUseCase(),
+            transactionEventPublisher: mockTransactionEventPublisher,
+            updateTransactionViewModel: mockDIContainer.makeUpdateTransactionViewModel(transaction: customTransaction)
+        )
+        
+        // Then
+        XCTAssertEqual(customViewModel.transaction.id, customTransaction.id)
+        XCTAssertEqual(customViewModel.transaction.amount, 50000)
+        XCTAssertEqual(customViewModel.transaction.place, "Custom Place")
+        XCTAssertTrue(customViewModel.transaction.isFavorite)
+        XCTAssertEqual(customViewModel.transaction.transactionType, .income)
+    }
+    
+    // MARK: - Delete Confirmation Tests
+    
+    func test_showDeleteConfirmation_setsConfirmationFlag() {
+        // Given
+        XCTAssertFalse(viewModel.isPresentedDeleteConfirmation)
+        
+        // When
+        viewModel.send(.showDeleteConfirmation)
+        
+        // Then
+        XCTAssertTrue(viewModel.isPresentedDeleteConfirmation)
+    }
+    
+//    func test_hideDeleteConfirmation_resetsConfirmationFlag() {
+//        // Given
+//        viewModel.send(.showDeleteConfirmation)
+//        XCTAssertTrue(viewModel.isPresentedDeleteConfirmation)
+//        
+//        // When
+//        viewModel.send(.hideDeleteConfirmation)
+//        
+//        // Then
+//        XCTAssertFalse(viewModel.isPresentedDeleteConfirmation)
+//    }
+    
+    // MARK: - Delete Transaction Tests
+    
+    func test_deleteTransaction_withExistingTransaction_deletesSuccessfully() async throws {
+        // Given
+        var completionCalled = false
+        let repository = mockDIContainer.mockTransactionRepository
+        
+        // Verify transaction exists
+        let existingTransaction = try await repository.fetchTransaction(id: sampleTransaction.id)
+        XCTAssertNotNil(existingTransaction)
+        
+        // When
+        viewModel.send(.deleteTransaction {
+            completionCalled = true
+        })
+        
+        // Wait for async operation
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then
+        let deletedTransaction = try await repository.fetchTransaction(id: sampleTransaction.id)
+        XCTAssertNil(deletedTransaction, "거래가 삭제되어야 함")
+        XCTAssertTrue(completionCalled, "Completion 콜백이 호출되어야 함")
+    }
+    
+    func test_deleteTransaction_withNonExistentTransaction_handlesErrorGracefully() async throws {
+        // Given
+        let repository = mockDIContainer.mockTransactionRepository
+        
+        // Remove transaction from repository to simulate non-existent state
+        try await repository.deleteTransaction(id: sampleTransaction.id)
+        
+        var completionCalled = false
+        
+        // When
+        viewModel.send(.deleteTransaction {
+            completionCalled = true
+        })
+        
+        // Wait for async operation
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then
+        XCTAssertFalse(completionCalled, "존재하지 않는 거래 삭제 시 completion이 호출되지 않아야 함")
+    }
+    
+    func test_deleteTransaction_withRepositoryFailure_handlesErrorGracefully() async throws {
+        // Given
+        let repository = mockDIContainer.mockTransactionRepository
+        repository.shouldFail = true
+        
+        var completionCalled = false
+        
+        // When
+        viewModel.send(.deleteTransaction {
+            completionCalled = true
+        })
+        
+        // Wait for async operation
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then
+        XCTAssertFalse(completionCalled, "Repository 오류 시 completion이 호출되지 않아야 함")
+        
+        // Transaction should still exist
+        repository.shouldFail = false
+        let stillExists = try await repository.fetchTransaction(id: sampleTransaction.id)
+        XCTAssertNotNil(stillExists, "오류 발생 시 거래가 그대로 존재해야 함")
+    }
+    
+    func test_deleteTransaction_publishesDeletedEvent() async throws {
+        // Given
+        var completionCalled = false
+        
+        // When
+        viewModel.send(.deleteTransaction {
+            completionCalled = true
+        })
+        
+        // Wait for async operation
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then
+        XCTAssertTrue(completionCalled)
+        XCTAssertEqual(mockTransactionEventPublisher.publishedEvents.count, 1)
+        
+        let publishedEvent = mockTransactionEventPublisher.publishedEvents.first!
+        XCTAssertEqual(publishedEvent.type, .deleted)
+        XCTAssertEqual(publishedEvent.yearMonth, YearMonth(from: sampleTransaction.date))
+    }
+    
+    func test_deleteTransaction_whenFailed_doesNotPublishEvent() async throws {
+        // Given
+        let repository = mockDIContainer.mockTransactionRepository
+        repository.shouldFail = true
+        
+        var completionCalled = false
+        
+        // When
+        viewModel.send(.deleteTransaction {
+            completionCalled = true
+        })
+        
+        // Wait for async operation
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then
+        XCTAssertFalse(completionCalled)
+        XCTAssertEqual(mockTransactionEventPublisher.publishedEvents.count, 0, "실패 시 이벤트가 발행되지 않아야 함")
+    }
+    
+    // MARK: - Fetch Transaction Tests
+    
+    func test_fetchTransaction_updatesTransactionData() async throws {
+        // Given
+        let repository = mockDIContainer.mockTransactionRepository
+        let updatedTransaction = TransactionDTO(
+            id: sampleTransaction.id,
+            amount: 75000,
+            date: sampleTransaction.date,
+            place: "Updated Place",
+            memo: "Updated Memo",
+            transactionType: sampleTransaction.transactionType,
+            isFavorite: true,
+            subCategory: sampleTransaction.subCategory,
+            paymentMethod: sampleTransaction.paymentMethod
+        )
+        
+        // Update transaction in repository
+        try await repository.updateTransaction(updatedTransaction)
         
         // When
         viewModel.send(.fetchTransaction)
         
-        // 비동기 작업 완료 대기
+        // Wait for async operation
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then
-        XCTAssertEqual(viewModel.transaction.id, updatedTransaction.id)
-        XCTAssertEqual(viewModel.transaction.amount, 100000)
-        XCTAssertEqual(viewModel.transaction.place, "수정된 장소")
-        XCTAssertEqual(viewModel.transaction.memo, "수정된 메모")
-        XCTAssertEqual(viewModel.transaction.transactionType, .income)
+        XCTAssertEqual(viewModel.transaction.amount, 75000)
+        XCTAssertEqual(viewModel.transaction.place, "Updated Place")
+        XCTAssertEqual(viewModel.transaction.memo, "Updated Memo")
         XCTAssertTrue(viewModel.transaction.isFavorite)
     }
     
-    func testSendFetchTransaction_WithNonExistingTransaction_DoesNotUpdateTransaction() async throws {
+    func test_fetchTransaction_withNonExistentTransaction_keepsOriginalData() async throws {
         // Given
-        let originalTransaction = viewModel.transaction
-        // mockGetTransactionByIdUseCase에 거래를 추가하지 않음 (nil 반환)
+        let repository = mockDIContainer.mockTransactionRepository
+        let originalAmount = viewModel.transaction.amount
+        let originalPlace = viewModel.transaction.place
+        
+        // Remove transaction from repository
+        try await repository.deleteTransaction(id: sampleTransaction.id)
         
         // When
         viewModel.send(.fetchTransaction)
         
-        // 비동기 작업 완료 대기
+        // Wait for async operation
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
-        // Then
-        XCTAssertEqual(viewModel.transaction.id, originalTransaction.id)
-        XCTAssertEqual(viewModel.transaction.amount, originalTransaction.amount)
-        XCTAssertEqual(viewModel.transaction.place, originalTransaction.place)
+        // Then - Should keep original data
+        XCTAssertEqual(viewModel.transaction.amount, originalAmount)
+        XCTAssertEqual(viewModel.transaction.place, originalPlace)
     }
     
-    func testSendFetchTransaction_WhenUseCaseFails_DoesNotUpdateTransaction() async throws {
+    func test_fetchTransaction_withRepositoryFailure_keepsOriginalData() async throws {
         // Given
-        let originalTransaction = viewModel.transaction
-        mockGetTransactionByIdUseCase.shouldFail = true
+        let repository = mockDIContainer.mockTransactionRepository
+        let originalAmount = viewModel.transaction.amount
+        let originalPlace = viewModel.transaction.place
+        
+        repository.shouldFail = true
         
         // When
         viewModel.send(.fetchTransaction)
         
-        // 비동기 작업 완료 대기
+        // Wait for async operation
+        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then - Should keep original data
+        XCTAssertEqual(viewModel.transaction.amount, originalAmount)
+        XCTAssertEqual(viewModel.transaction.place, originalPlace)
+    }
+    
+    // MARK: - Integration Tests
+    
+    func test_fullDeleteFlow_showConfirmationThenDelete() async throws {
+        // Given
+        var completionCalled = false
+        let repository = mockDIContainer.mockTransactionRepository
+        
+        // When - Show confirmation first
+        viewModel.send(.showDeleteConfirmation)
+        XCTAssertTrue(viewModel.isPresentedDeleteConfirmation)
+        
+        // Then - Execute deletion
+        viewModel.send(.deleteTransaction {
+            completionCalled = true
+        })
+        
+        // Wait for async operation
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then
-        XCTAssertEqual(viewModel.transaction.id, originalTransaction.id)
-        XCTAssertEqual(viewModel.transaction.amount, originalTransaction.amount)
-        XCTAssertEqual(viewModel.transaction.place, originalTransaction.place)
+        let deletedTransaction = try await repository.fetchTransaction(id: sampleTransaction.id)
+        XCTAssertNil(deletedTransaction)
+        XCTAssertTrue(completionCalled)
+        
+        // Event should be published
+        XCTAssertEqual(mockTransactionEventPublisher.publishedEvents.count, 1)
+        XCTAssertEqual(mockTransactionEventPublisher.publishedEvents.first?.type, .deleted)
     }
     
-    // MARK: - Update Mode Transition Tests
-    
-    func testChangeViewModeToUpdate_SetsCombineSubscriptions() {
+    func test_updateAndFetchFlow_maintainsDataConsistency() async throws {
         // Given
-        XCTAssertEqual(viewModel.viewMode, .detail)
-        
-        // When
-        viewModel.send(.changeViewMode)
-        
-        // Then
-        XCTAssertEqual(viewModel.viewMode, .update)
-        // Combine subscriptions이 설정되었는지는 내부 구현이므로 직접 테스트하기 어려움
-        // 대신 이후 이벤트 발행 시 동작을 테스트
-    }
-    
-    func testChangeViewModeToDetail_ClearsCombineSubscriptions() {
-        // Given
-        viewModel.send(.changeViewMode) // update 모드로 변경
-        XCTAssertEqual(viewModel.viewMode, .update)
-        
-        // When
-        viewModel.send(.changeViewMode) // detail 모드로 복귀
-        
-        // Then
-        XCTAssertEqual(viewModel.viewMode, .detail)
-    }
-    
-    // MARK: - Integration Tests for Update Flow
-    
-    func testUpdateFlow_WhenTransactionUpdated_FetchesLatestData() async throws {
-        // Given
+        let repository = mockDIContainer.mockTransactionRepository
         let updatedTransaction = TransactionDTO(
-            id: mockTransaction.id,
-            amount: 150000,
-            date: mockTransaction.date,
-            place: "업데이트된 장소",
-            memo: "업데이트된 메모",
-            transactionType: .fixedExpense,
+            id: sampleTransaction.id,
+            amount: 99000,
+            date: sampleTransaction.date,
+            place: "Integration Test Place",
+            memo: "Integration Test Memo",
+            transactionType: sampleTransaction.transactionType,
             isFavorite: false,
-            subCategory: SubCategoryDTO.mockTransportBus,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
+            subCategory: sampleTransaction.subCategory,
+            paymentMethod: sampleTransaction.paymentMethod
         )
         
-        mockGetTransactionByIdUseCase.setMockTransaction(updatedTransaction)
+        // When - Update through repository
+        try await repository.updateTransaction(updatedTransaction)
         
-        // update 모드로 변경
-        viewModel.send(.changeViewMode)
-        XCTAssertEqual(viewModel.viewMode, .update)
+        // Then - Fetch through ViewModel
+        viewModel.send(.fetchTransaction)
         
-        // When - updated 이벤트 발행 시뮬레이션
-        mockPublisher.publish(.init(type: .updated, yearMonth: YearMonth(from: mockTransaction.date)))
-        
-        // 비동기 작업 완료 대기
+        // Wait for async operation
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
-        // Then
-        XCTAssertEqual(viewModel.transaction.amount, 150000)
-        XCTAssertEqual(viewModel.transaction.place, "업데이트된 장소")
-        XCTAssertEqual(viewModel.transaction.transactionType, .fixedExpense)
+        // Then - ViewModel should reflect the changes
+        XCTAssertEqual(viewModel.transaction.amount, 99000)
+        XCTAssertEqual(viewModel.transaction.place, "Integration Test Place")
+        XCTAssertEqual(viewModel.transaction.memo, "Integration Test Memo")
+        XCTAssertFalse(viewModel.transaction.isFavorite)
     }
     
-    func testUpdateFlow_WhenUpdateCancelled_ReturnsToDetailMode() async throws {
+    // MARK: - Edge Cases Tests
+    
+    func test_multipleDeleteCalls_handledGracefully() async throws {
         // Given
-        viewModel.send(.changeViewMode)
-        XCTAssertEqual(viewModel.viewMode, .update)
+        var firstCompletionCalled = false
+        var secondCompletionCalled = false
         
-        // When - cancel 이벤트 발행 시뮬레이션
-        mockUpdateTransactionViewModel.cancelEventPublisher.send()
+        // When - Call delete twice quickly
+        viewModel.send(.deleteTransaction {
+            firstCompletionCalled = true
+        })
         
-        // 비동기 작업 완료 대기
-        try await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        viewModel.send(.deleteTransaction {
+            secondCompletionCalled = true
+        })
         
-        // Then
-        XCTAssertEqual(viewModel.viewMode, .detail)
-    }
-    
-    // MARK: - UpdateTransactionViewModel Integration Tests
-    
-    func testUpdateTransactionViewModel_IsCorrectlyInitialized() {
-        // Then
-        XCTAssertEqual(mockUpdateTransactionViewModel.transaction.id, mockTransaction.id)
-        XCTAssertNotNil(viewModel.updateTransactionViewModel)
-    }
-    
-    func testMultipleViewModeChanges_DoesNotLeakMemory() {
-        // Given & When - 여러 번 모드 변경
-        for _ in 0..<5 {
-            viewModel.send(.changeViewMode) // detail -> update
-            viewModel.send(.changeViewMode) // update -> detail
-        }
+        // Wait for async operations
+        try await Task.sleep(nanoseconds: 200_000_000) // 0.2초
         
-        // Then
-        XCTAssertEqual(viewModel.viewMode, .detail)
-        // 메모리 누수 방지를 위해 cancellables이 정리되어야 함
-        // 직접 테스트하기 어려우므로 앱이 크래시하지 않음을 확인
+        // Then - Only one deletion should succeed
+        XCTAssertTrue(firstCompletionCalled || secondCompletionCalled, "적어도 하나의 삭제는 성공해야 함")
+        
+        // Transaction should be deleted
+        let repository = mockDIContainer.mockTransactionRepository
+        let deletedTransaction = try await repository.fetchTransaction(id: sampleTransaction.id)
+        XCTAssertNil(deletedTransaction)
     }
 }

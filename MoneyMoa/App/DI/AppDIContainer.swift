@@ -32,14 +32,14 @@ final class AppDIContainer: DIContainer {
     
     /// Production GetMonthlyTransactionsUseCase를 생성합니다
     func makeGetMonthlyTransactionsUseCase() -> GetMonthlyTransactionsUseCase {
-        let repository = makeTransactionRepository()
-        return GetMonthlyTransactionsUseCaseImpl(transactionRepository: repository)
+        let reader = makeTransactionReader()
+        return GetMonthlyTransactionsUseCaseImpl(transactionReader: reader)
     }
     
     /// Production GetExpenseSumUntilDateUseCase를 생성합니다
     func makeGetExpenseSumUntilDateUseCase() -> GetExpenseSumUntilDateUseCase {
-        let repository = makeTransactionRepository()
-        return GetExpenseSumUntilDateUseCaseImpl(transactionRepository: repository)
+        let reader = makeTransactionReader()
+        return GetExpenseSumUntilDateUseCaseImpl(transactionReader: reader)
     }
     
     /// Production GetMonthlyBudgetUseCase를 생성합니다
@@ -88,14 +88,14 @@ final class AppDIContainer: DIContainer {
     
     /// Production CreateTransactionUseCase를 생성합니다
     func makeCreateTransactionUseCase() -> CreateTransactionUseCase {
-        let repository = makeTransactionRepository()
-        return CreateTransactionUseCaseImpl(transactionRepository: repository)
+        let writer = makeTransactionWriter()
+        return CreateTransactionUseCaseImpl(transactionWriter: writer)
     }
     
     /// Production GetFavoriteTransactionsUseCase를 생성합니다
     func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase {
-        let repository = makeTransactionRepository()
-        return GetFavoriteTransactionsUseCaseImpl(transactionRepository: repository)
+        let reader = makeTransactionReader()
+        return GetFavoriteTransactionsUseCaseImpl(transactionReader: reader)
     }
     
     /// Production DeleteTransactionUseCase를 생성합니다
@@ -106,14 +106,14 @@ final class AppDIContainer: DIContainer {
     
     /// Production UpdateTransactionUseCase를 생성합니다
     func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
-        let repository = makeTransactionRepository()
-        return UpdateTransactionUseCaseImpl(transactionRepository: repository)
+        let writer = makeTransactionWriter()
+        return UpdateTransactionUseCaseImpl(transactionWriter: writer)
     }
     
     /// Production GetTransactionByIdUseCase를 생성합니다
     func makeGetTransactionByIdUseCase() -> GetTransactionByIdUseCase {
-        let repository = makeTransactionRepository()
-        return GetTransactionByIdUseCaseImpl(transactionRepository: repository)
+        let reader = makeTransactionReader()
+        return GetTransactionByIdUseCaseImpl(transactionReader: reader)
     }
     
     // MARK: - Category UseCase Factory Methods
@@ -180,17 +180,20 @@ final class AppDIContainer: DIContainer {
         return CreatePaymentMethodUseCaseImpl(paymentMethodRepository: repository)
     }
     
-    // MARK: - ViewModel Factory Methods
-    
-    /// Production AddTransactionViewModel을 생성합니다
-    func makeAddTransactionViewModel() -> AddTransactionViewModel {
-        return AddTransactionViewModel(container: self)
-    }
-    
     // MARK: - Repository Factory Methods
     
-    /// TransactionRepository 구현체를 생성합니다
+    /// TransactionRepository 구현체를 생성합니다 (통합 인터페이스)
     private func makeTransactionRepository() -> TransactionRepository {
+        return TransactionRepositoryImpl(database: database)
+    }
+    
+    /// TransactionReader 구현체를 생성합니다 (읽기 전용)
+    private func makeTransactionReader() -> TransactionReader {
+        return TransactionRepositoryImpl(database: database)
+    }
+    
+    /// TransactionWriter 구현체를 생성합니다 (쓰기 전용)
+    private func makeTransactionWriter() -> TransactionWriter {
         return TransactionRepositoryImpl(database: database)
     }
     

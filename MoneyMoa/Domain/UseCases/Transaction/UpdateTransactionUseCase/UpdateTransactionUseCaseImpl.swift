@@ -8,10 +8,10 @@
 import Foundation
 
 final class UpdateTransactionUseCaseImpl: UpdateTransactionUseCase {
-    private let transactionRepository: TransactionRepository
+    private let transactionWriter: TransactionWriter
     
-    init(transactionRepository: TransactionRepository) {
-        self.transactionRepository = transactionRepository
+    init(transactionWriter: TransactionWriter) {
+        self.transactionWriter = transactionWriter
     }
     
     func execute(_ transaction: TransactionDTO) async throws {
@@ -21,7 +21,7 @@ final class UpdateTransactionUseCaseImpl: UpdateTransactionUseCase {
         }
         
         // 거래 수정 (Repository에서 SubCategory, PaymentMethod 존재 검증 수행)
-        try await transactionRepository.updateTransaction(transaction)
+        try await transactionWriter.updateTransaction(transaction)
     }
 }
 

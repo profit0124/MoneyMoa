@@ -10,16 +10,16 @@ import Foundation
 // MARK: - GetMonthlyTransactionsUseCaseImpl
 
 public class GetMonthlyTransactionsUseCaseImpl: GetMonthlyTransactionsUseCase {
-    private let transactionRepository: TransactionRepository
+    private let transactionReader: TransactionReader
     
-    public init(transactionRepository: TransactionRepository) {
-        self.transactionRepository = transactionRepository
+    public init(transactionReader: TransactionReader) {
+        self.transactionReader = transactionReader
     }
     
     // MARK: - UseCase Methods
     
     public func execute(yearMonth: YearMonth) async throws -> [TransactionDTO] {
-        let transactions = try await transactionRepository.fetchTransactions(for: yearMonth)
+        let transactions = try await transactionReader.fetchTransactions(for: yearMonth)
         return transactions
     }
 }
