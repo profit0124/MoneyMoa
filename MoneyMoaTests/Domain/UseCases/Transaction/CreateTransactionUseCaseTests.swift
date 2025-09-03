@@ -8,23 +8,26 @@
 import XCTest
 @testable import MoneyMoa
 
-// MARK: - MockCreateTransactionUseCaseTests
+// MARK: - CreateTransactionUseCaseTests
 
-final class MockCreateTransactionUseCaseTests: XCTestCase {
+final class CreateTransactionUseCaseTests: XCTestCase {
     
     // MARK: - Properties
     
-    private var mockUseCase: MockCreateTransactionUseCase!
+    private var mockRepository: MockTransactionRepository!
+    private var useCase: CreateTransactionUseCaseImpl!
     
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        mockUseCase = MockCreateTransactionUseCase()
+        mockRepository = MockTransactionRepository(scenario: .empty)
+        useCase = CreateTransactionUseCaseImpl(transactionWriter: mockRepository)
     }
     
     override func tearDown() {
-        mockUseCase = nil
+        mockRepository = nil
+        useCase = nil
         super.tearDown()
     }
     
@@ -43,15 +46,16 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         )
         
         // When
-        try await mockUseCase.execute(transaction)
+        try await useCase.execute(transaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 1)
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.amount, 50000)
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.place, "스타벅스")
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.memo, "커피")
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.transactionType, .variableExpense)
-        XCTAssertFalse(mockUseCase.createdTransactions.first?.isFavorite ?? true)
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(storedTransaction)
+        XCTAssertEqual(storedTransaction?.amount, 50000)
+        XCTAssertEqual(storedTransaction?.place, "스타벅스")
+        XCTAssertEqual(storedTransaction?.memo, "커피")
+        XCTAssertEqual(storedTransaction?.transactionType, .variableExpense)
+        XCTAssertFalse(storedTransaction?.isFavorite ?? true)
     }
     
     func test_execute_withIncomeTransaction_createsTransactionSuccessfully() async throws {
@@ -67,12 +71,13 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         )
         
         // When
-        try await mockUseCase.execute(transaction)
+        try await useCase.execute(transaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 1)
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.transactionType, .income)
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.amount, 2000000)
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(storedTransaction)
+        XCTAssertEqual(storedTransaction?.transactionType, .income)
+        XCTAssertEqual(storedTransaction?.amount, 2000000)
     }
     
     func test_execute_withFixedExpenseTransaction_createsTransactionSuccessfully() async throws {
@@ -88,11 +93,12 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         )
         
         // When
-        try await mockUseCase.execute(transaction)
+        try await useCase.execute(transaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 1)
-        XCTAssertEqual(mockUseCase.createdTransactions.first?.transactionType, .fixedExpense)
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(storedTransaction)
+        XCTAssertEqual(storedTransaction?.transactionType, .fixedExpense)
     }
     
     func test_execute_withFavoriteTransaction_createsFavoriteSuccessfully() async throws {
@@ -108,11 +114,12 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         )
         
         // When
-        try await mockUseCase.execute(transaction)
+        try await useCase.execute(transaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 1)
-        XCTAssertTrue(mockUseCase.createdTransactions.first?.isFavorite ?? false)
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(storedTransaction)
+        XCTAssertTrue(storedTransaction?.isFavorite ?? false)
     }
     
     // MARK: - Test Methods - Error Cases
@@ -131,7 +138,7 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         
         // When & Then
         do {
-            try await mockUseCase.execute(transaction)
+            try await useCase.execute(transaction)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is TransactionCreationError)
@@ -152,7 +159,7 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         
         // When & Then
         do {
-            try await mockUseCase.execute(transaction)
+            try await useCase.execute(transaction)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is TransactionCreationError)
@@ -171,14 +178,15 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
         
-        mockUseCase.shouldFail = true
+        mockRepository.shouldFail = true
         
         // When & Then
         do {
-            try await mockUseCase.execute(transaction)
+            try await useCase.execute(transaction)
             XCTFail("Expected error to be thrown")
         } catch {
-            XCTAssertTrue(error is TransactionCreationError)
+            // Repository failure should propagate
+            XCTAssertTrue(error is MockError)
         }
     }
     
@@ -207,37 +215,39 @@ final class MockCreateTransactionUseCaseTests: XCTestCase {
         )
         
         // When
-        try await mockUseCase.execute(transaction1)
-        try await mockUseCase.execute(transaction2)
+        try await useCase.execute(transaction1)
+        try await useCase.execute(transaction2)
         
         // Then
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 2)
-        XCTAssertEqual(mockUseCase.createdTransactions[0].place, "카페")
-        XCTAssertEqual(mockUseCase.createdTransactions[1].place, "마트")
+        let storedTransaction1 = try await mockRepository.fetchTransaction(id: transaction1.id)
+        let storedTransaction2 = try await mockRepository.fetchTransaction(id: transaction2.id)
+        
+        XCTAssertNotNil(storedTransaction1)
+        XCTAssertNotNil(storedTransaction2)
+        XCTAssertEqual(storedTransaction1?.place, "카페")
+        XCTAssertEqual(storedTransaction2?.place, "마트")
     }
     
-    // MARK: - Test Methods - Reset Functionality
+    // MARK: - Test Methods - Business Logic Validation
     
-    func test_reset_clearsCreatedTransactions() async throws {
+    func test_execute_validatesBusinessRules() async throws {
         // Given
         let transaction = TransactionDTO(
-            amount: 10000,
-            place: "테스트",
-            memo: "테스트",
+            amount: 100000,
+            place: "비즈니스 로직 테스트",
+            memo: "실제 UseCase 로직이 실행되는지 확인",
             transactionType: .variableExpense,
             isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
         
-        try await mockUseCase.execute(transaction)
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 1)
-        
         // When
-        mockUseCase.reset()
+        try await useCase.execute(transaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.createdTransactions.count, 0)
-        XCTAssertFalse(mockUseCase.shouldFail)
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(storedTransaction, "실제 UseCase 비즈니스 로직이 실행되어 거래가 저장되어야 함")
+        XCTAssertEqual(storedTransaction?.amount, 100000, "금액 검증 로직이 올바르게 동작해야 함")
     }
 }

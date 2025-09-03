@@ -58,7 +58,9 @@ public final class TransactionRepositoryAdapter: TransactionQuerying {
         let yms = range.months()
         var out: [IncomeExpenseMonthlyRow] = []
         for ym in yms {
-            let pairs = try await repo.getTotalAmountByType(for: ym)
+            let startDate = ym.startOfMonth
+            let endDate = ym.endOfMonth
+            let pairs = try await repo.getTotalAmountByType(from: startDate, to: endDate)
             let income  = pairs.first(where: { $0.0 == .income })?.1 ?? 0
             let fixed   = pairs.first(where: { $0.0 == .fixedExpense })?.1 ?? 0
             let variable = pairs.first(where: { $0.0 == .variableExpense })?.1 ?? 0
@@ -72,7 +74,9 @@ public final class TransactionRepositoryAdapter: TransactionQuerying {
         let yms = range.months()
         var out: [CategoryMonthlyRow] = []
         for ym in yms {
-            let bySub = try await repo.getTotalAmountBySubCategory(for: ym)
+            let startDate = ym.startOfMonth
+            let endDate = ym.endOfMonth
+            let bySub = try await repo.getTotalAmountBySubCategory(from: startDate, to: endDate)
             var byCat: [String: (name: String, sum: Decimal)] = [:]
             for (sub, amt) in bySub {
                 // NOTE: 프로젝트 DTO에 맞춰 parent category 접근자를 확인하세요.

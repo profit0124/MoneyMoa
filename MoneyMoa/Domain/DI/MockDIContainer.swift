@@ -9,19 +9,47 @@ import Foundation
 
 // MARK: - MockDIContainer
 
-/// Mock 구현체들을 제공하는 DI 컨테이너
+/// Mock Repository 기반 DI 컨테이너
 /// Presentation Layer 개발 및 테스트 시 사용됩니다
+/// 실제 UseCase 로직과 Mock Repository를 조합하여 현실적인 테스트 환경 제공
 final class MockDIContainer: DIContainer {
-    // MARK: - UseCase Factory Methods
     
-    /// Mock GetMonthlyTransactionsUseCase를 생성합니다
-    func makeGetMonthlyTransactionsUseCase() -> GetMonthlyTransactionsUseCase {
-        return MockGetMonthlyTransactionsUseCase()
+    // MARK: - Mock Repository Instances
+    
+    private lazy var _mockTransactionRepository: MockTransactionRepository = {
+        MockTransactionRepository(scenario: .empty)
+    }()
+    
+    /// 테스트에서 직접 접근할 수 있는 MockTransactionRepository
+    var mockTransactionRepository: MockTransactionRepository {
+        return _mockTransactionRepository
     }
     
-    /// Mock GetExpenseSumUntilDateUseCase를 생성합니다
+    // MARK: - Repository Factory Methods
+    
+    private func makeTransactionRepository() -> TransactionRepository {
+        return _mockTransactionRepository
+    }
+    
+    private func makeTransactionReader() -> TransactionReader {
+        return _mockTransactionRepository
+    }
+    
+    private func makeTransactionWriter() -> TransactionWriter {
+        return _mockTransactionRepository
+    }
+    // MARK: - UseCase Factory Methods
+    
+    /// GetMonthlyTransactionsUseCase를 생성합니다 (Mock Repository 기반)
+    func makeGetMonthlyTransactionsUseCase() -> GetMonthlyTransactionsUseCase {
+        let reader = makeTransactionReader()
+        return GetMonthlyTransactionsUseCaseImpl(transactionReader: reader)
+    }
+    
+    /// GetExpenseSumUntilDateUseCase를 생성합니다 (Mock Repository 기반)
     func makeGetExpenseSumUntilDateUseCase() -> GetExpenseSumUntilDateUseCase {
-        return MockGetExpenseSumUntilDateUseCase()
+        let reader = makeTransactionReader()
+        return GetExpenseSumUntilDateUseCaseImpl(transactionReader: reader)
     }
     
     /// Mock GetMonthlyBudgetUseCase를 생성합니다
@@ -61,29 +89,34 @@ final class MockDIContainer: DIContainer {
     
     // MARK: - Transaction UseCase Factory Methods
     
-    /// Mock CreateTransactionUseCase를 생성합니다
+    /// CreateTransactionUseCase를 생성합니다 (Mock Repository 기반)
     func makeCreateTransactionUseCase() -> CreateTransactionUseCase {
-        return MockCreateTransactionUseCase()
+        let writer = makeTransactionWriter()
+        return CreateTransactionUseCaseImpl(transactionWriter: writer)
     }
     
-    /// Mock GetFavoriteTransactionsUseCase를 생성합니다
+    /// GetFavoriteTransactionsUseCase를 생성합니다 (Mock Repository 기반)
     func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase {
-        return MockGetFavoriteTransactionsUseCase()
+        let reader = makeTransactionReader()
+        return GetFavoriteTransactionsUseCaseImpl(transactionReader: reader)
     }
     
-    /// Mock DeleteTransactionUseCase를 생성합니다
+    /// DeleteTransactionUseCase를 생성합니다 (Mock Repository 기반)
     func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase {
-        return MockDeleteTransactionUseCase()
+        let repository = makeTransactionRepository()
+        return DeleteTransactionUseCaseImpl(transactionRepository: repository)
     }
     
-    /// Mock UpdateTransactionUseCase를 생성합니다
+    /// UpdateTransactionUseCase를 생성합니다 (Mock Repository 기반)
     func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
-        return MockUpdateTransactionUseCase()
+        let writer = makeTransactionWriter()
+        return UpdateTransactionUseCaseImpl(transactionWriter: writer)
     }
     
-    /// Mock GetTransactionByIdUseCase를 생성합니다
+    /// GetTransactionByIdUseCase를 생성합니다 (Mock Repository 기반)
     func makeGetTransactionByIdUseCase() -> GetTransactionByIdUseCase {
-        return MockGetTransactionByIdUseCase()
+        let reader = makeTransactionReader()
+        return GetTransactionByIdUseCaseImpl(transactionReader: reader)
     }
     
     // MARK: - Category UseCase Factory Methods
@@ -127,13 +160,6 @@ final class MockDIContainer: DIContainer {
     /// Mock CreatePaymentMethodUseCase를 생성합니다
     func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase {
         return MockCreatePaymentMethodUseCase()
-    }
-    
-    // MARK: - ViewModel Factory Methods
-    
-    /// Mock AddTransactionViewModel을 생성합니다
-    func makeAddTransactionViewModel() -> AddTransactionViewModel {
-        return AddTransactionViewModel(container: self)
     }
 
     func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase {

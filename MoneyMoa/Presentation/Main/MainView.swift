@@ -120,15 +120,8 @@ struct MainView: View {
 
 #Preview {
     // Mock dependencies for preview
-    let viewModel = MainViewModel(
-        getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
-        getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
-        getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
-        getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
-        createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase(),
-        transactionEventPublisher: MockDIContainer().makeTransactionEventPublisher()
-    )
-    
+    let viewModel = MockDIContainer().makeMainViewModel()
+
     MainView(viewModel: viewModel)
         .environment(AppRouter())
 }

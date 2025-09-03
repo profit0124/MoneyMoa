@@ -8,13 +8,13 @@
 import Foundation
 
 final class GetFavoriteTransactionsUseCaseImpl: GetFavoriteTransactionsUseCase {
-    private let transactionRepository: TransactionRepository
+    private let transactionReader: TransactionReader
     
-    init(transactionRepository: TransactionRepository) {
-        self.transactionRepository = transactionRepository
+    init(transactionReader: TransactionReader) {
+        self.transactionReader = transactionReader
     }
     
     func execute() async throws -> [TransactionDTO] {
-        return try await transactionRepository.fetchFavoriteTransactions()
+        return try await transactionReader.fetchFavoriteTransactions()
     }
 }

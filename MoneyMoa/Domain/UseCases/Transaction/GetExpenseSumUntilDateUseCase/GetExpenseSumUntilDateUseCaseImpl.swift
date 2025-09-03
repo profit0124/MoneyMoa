@@ -13,12 +13,12 @@ public class GetExpenseSumUntilDateUseCaseImpl: GetExpenseSumUntilDateUseCase {
     
     // MARK: - Properties
     
-    private let transactionRepository: TransactionRepository
+    private let transactionReader: TransactionReader
     
     // MARK: - Initialization
     
-    public init(transactionRepository: TransactionRepository) {
-        self.transactionRepository = transactionRepository
+    public init(transactionReader: TransactionReader) {
+        self.transactionReader = transactionReader
     }
     
     // MARK: - UseCase Methods
@@ -46,7 +46,7 @@ public class GetExpenseSumUntilDateUseCaseImpl: GetExpenseSumUntilDateUseCase {
         }
         
         // 해당 기간의 거래내역 조회 후 지출만 필터링하여 합계 계산
-        let transactions = try await transactionRepository.fetchTransactions(from: startOfMonth, to: endOfDay)
+        let transactions = try await transactionReader.fetchTransactions(from: startOfMonth, to: endOfDay)
         return transactions
             .filter { $0.transactionType != .income }  // 수입 제외
             .reduce(0) { $0 + $1.amount }              // 지출 합계

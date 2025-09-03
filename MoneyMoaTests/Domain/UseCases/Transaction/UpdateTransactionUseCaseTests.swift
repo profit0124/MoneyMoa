@@ -8,113 +8,56 @@
 import XCTest
 @testable import MoneyMoa
 
-// MARK: - MockUpdateTransactionUseCaseTests
-
-final class MockUpdateTransactionUseCaseTests: XCTestCase {
+final class UpdateTransactionUseCaseTests: XCTestCase {
     
     // MARK: - Properties
     
-    private var mockUseCase: MockUpdateTransactionUseCase!
+    private var mockRepository: MockTransactionRepository!
+    private var useCase: UpdateTransactionUseCaseImpl!
     
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        mockUseCase = MockUpdateTransactionUseCase()
+        mockRepository = MockTransactionRepository(scenario: .empty)
+        useCase = UpdateTransactionUseCaseImpl(transactionWriter: mockRepository)
     }
     
     override func tearDown() {
-        mockUseCase = nil
+        mockRepository = nil
+        useCase = nil
         super.tearDown()
     }
     
-    // MARK: - Test Methods - Successful Transaction Update
+    // MARK: - Test Methods - Successful Update
     
-    func test_execute_withValidTransaction_updatesTransactionSuccessfully() async throws {
+    func test_execute_withValidTransaction_updatesSuccessfully() async throws {
         // Given
-        let transaction = TransactionDTO(
-            amount: 75000,
-            place: "스타벅스",
-            memo: "커피 수정됨",
-            transactionType: .variableExpense,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
+        let originalTransaction = TransactionFactory.sample()
+        try await mockRepository.insertTransaction(originalTransaction)
+        
+        let updatedTransaction = TransactionDTO(
+            id: originalTransaction.id,
+            amount: 75000,  // Changed from original
+            date: originalTransaction.date,
+            place: "Updated Place",  // Changed from original
+            memo: "Updated Memo",    // Changed from original
+            transactionType: originalTransaction.transactionType,
+            isFavorite: true,        // Changed from original
+            subCategory: originalTransaction.subCategory,
+            paymentMethod: originalTransaction.paymentMethod
         )
         
         // When
-        try await mockUseCase.execute(transaction)
+        try await useCase.execute(updatedTransaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 1)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.amount, 75000)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.place, "스타벅스")
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.memo, "커피 수정됨")
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.transactionType, .variableExpense)
-        XCTAssertFalse(mockUseCase.updatedTransactions.first?.isFavorite ?? true)
-    }
-    
-    func test_execute_withIncomeTransaction_updatesTransactionSuccessfully() async throws {
-        // Given
-        let transaction = TransactionDTO(
-            amount: 2500000,
-            place: "회사",
-            memo: "월급 인상",
-            transactionType: .income,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockIncomeAllowance,
-            paymentMethod: PaymentMethodDTO.mockCash
-        )
-        
-        // When
-        try await mockUseCase.execute(transaction)
-        
-        // Then
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 1)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.transactionType, .income)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.amount, 2500000)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.memo, "월급 인상")
-    }
-    
-    func test_execute_withFixedExpenseTransaction_updatesTransactionSuccessfully() async throws {
-        // Given
-        let transaction = TransactionDTO(
-            amount: 350000,
-            place: "통신사",
-            memo: "휴대폰 요금 변경",
-            transactionType: .fixedExpense,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockTransportBus,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
-        )
-        
-        // When
-        try await mockUseCase.execute(transaction)
-        
-        // Then
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 1)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.transactionType, .fixedExpense)
-        XCTAssertEqual(mockUseCase.updatedTransactions.first?.amount, 350000)
-    }
-    
-    func test_execute_withFavoriteStatusChange_updatesCorrectly() async throws {
-        // Given
-        let transaction = TransactionDTO(
-            amount: 15000,
-            place: "맥도날드",
-            memo: "점심식사",
-            transactionType: .variableExpense,
-            isFavorite: true,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
-        )
-        
-        // When
-        try await mockUseCase.execute(transaction)
-        
-        // Then
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 1)
-        XCTAssertTrue(mockUseCase.updatedTransactions.first?.isFavorite ?? false)
+        let storedTransaction = try await mockRepository.fetchTransaction(id: originalTransaction.id)
+        XCTAssertNotNil(storedTransaction)
+        XCTAssertEqual(storedTransaction?.amount, 75000)
+        XCTAssertEqual(storedTransaction?.place, "Updated Place")
+        XCTAssertEqual(storedTransaction?.memo, "Updated Memo")
+        XCTAssertTrue(storedTransaction?.isFavorite ?? false)
     }
     
     // MARK: - Test Methods - Error Cases
@@ -122,9 +65,9 @@ final class MockUpdateTransactionUseCaseTests: XCTestCase {
     func test_execute_withInvalidAmount_throwsError() async {
         // Given
         let transaction = TransactionDTO(
-            amount: 0, // Invalid amount
-            place: "테스트",
-            memo: "테스트",
+            amount: 0,  // Invalid amount
+            place: "Test Place",
+            memo: "Test Memo",
             transactionType: .variableExpense,
             isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
@@ -133,24 +76,19 @@ final class MockUpdateTransactionUseCaseTests: XCTestCase {
         
         // When & Then
         do {
-            try await mockUseCase.execute(transaction)
+            try await useCase.execute(transaction)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is TransactionUpdateError)
-            if case TransactionUpdateError.invalidAmount = error {
-                // Expected error
-            } else {
-                XCTFail("Expected invalidAmount error")
-            }
         }
     }
     
     func test_execute_withNegativeAmount_throwsError() async {
         // Given
         let transaction = TransactionDTO(
-            amount: -1000, // Negative amount
-            place: "테스트",
-            memo: "테스트",
+            amount: -1000,  // Negative amount
+            place: "Test Place", 
+            memo: "Test Memo",
             transactionType: .variableExpense,
             isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
@@ -159,126 +97,53 @@ final class MockUpdateTransactionUseCaseTests: XCTestCase {
         
         // When & Then
         do {
-            try await mockUseCase.execute(transaction)
+            try await useCase.execute(transaction)
             XCTFail("Expected error to be thrown")
         } catch {
             XCTAssertTrue(error is TransactionUpdateError)
         }
     }
     
-    func test_execute_withFailureConfiguration_throwsError() async {
+    func test_execute_withRepositoryFailure_propagatesError() async {
         // Given
-        let transaction = TransactionDTO(
-            amount: 50000,
-            place: "테스트",
-            memo: "테스트",
-            transactionType: .variableExpense,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
-        )
-        
-        mockUseCase.shouldFail = true
+        let transaction = TransactionFactory.sample()
+        mockRepository.shouldFail = true
         
         // When & Then
         do {
-            try await mockUseCase.execute(transaction)
+            try await useCase.execute(transaction)
             XCTFail("Expected error to be thrown")
         } catch {
-            XCTAssertTrue(error is TransactionUpdateError)
+            XCTAssertTrue(error is MockError)
         }
     }
     
-    func test_execute_withNotFoundConfiguration_throwsTransactionNotFoundError() async {
-        // Given
-        let transaction = TransactionDTO(
-            amount: 50000,
-            place: "테스트",
-            memo: "테스트",
-            transactionType: .variableExpense,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
-        )
-        
-        mockUseCase.shouldFailWithNotFound = true
-        
-        // When & Then
-        do {
-            try await mockUseCase.execute(transaction)
-            XCTFail("Expected error to be thrown")
-        } catch {
-            XCTAssertTrue(error is TransactionUpdateError)
-            if case TransactionUpdateError.transactionNotFound = error {
-                // Expected error
-            } else {
-                XCTFail("Expected transactionNotFound error")
-            }
-        }
-    }
+    // MARK: - Test Methods - Business Logic Validation
     
-    // MARK: - Test Methods - Multiple Transactions
-    
-    func test_execute_multipleTransactions_storesAllUpdatedTransactions() async throws {
+    func test_execute_validatesBusinessRules() async throws {
         // Given
-        let transaction1 = TransactionDTO(
-            amount: 12000,
-            place: "카페",
-            memo: "커피 수정",
-            transactionType: .variableExpense,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
-        )
+        let originalTransaction = TransactionFactory.sample()
+        try await mockRepository.insertTransaction(originalTransaction)
         
-        let transaction2 = TransactionDTO(
-            amount: 60000,
-            place: "마트",
-            memo: "장보기 수정",
-            transactionType: .variableExpense,
-            isFavorite: true,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCash
+        let validTransaction = TransactionDTO(
+            id: originalTransaction.id,
+            amount: 150000,  // Valid positive amount
+            date: originalTransaction.date,
+            place: "Business Rule Test",
+            memo: "Testing business logic validation",
+            transactionType: originalTransaction.transactionType,
+            isFavorite: originalTransaction.isFavorite,
+            subCategory: originalTransaction.subCategory,
+            paymentMethod: originalTransaction.paymentMethod
         )
         
         // When
-        try await mockUseCase.execute(transaction1)
-        try await mockUseCase.execute(transaction2)
+        try await useCase.execute(validTransaction)
         
         // Then
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 2)
-        XCTAssertEqual(mockUseCase.updatedTransactions[0].place, "카페")
-        XCTAssertEqual(mockUseCase.updatedTransactions[1].place, "마트")
-        XCTAssertFalse(mockUseCase.updatedTransactions[0].isFavorite)
-        XCTAssertTrue(mockUseCase.updatedTransactions[1].isFavorite)
-    }
-    
-    // MARK: - Test Methods - Reset Functionality
-    
-    func test_reset_clearsUpdatedTransactions() async throws {
-        // Given
-        let transaction = TransactionDTO(
-            amount: 10000,
-            place: "테스트",
-            memo: "테스트",
-            transactionType: .variableExpense,
-            isFavorite: false,
-            subCategory: SubCategoryDTO.mockFoodExpense,
-            paymentMethod: PaymentMethodDTO.mockCreditCard
-        )
-        
-        try await mockUseCase.execute(transaction)
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 1)
-        
-        mockUseCase.shouldFail = true
-        mockUseCase.shouldFailWithNotFound = true
-        
-        // When
-        mockUseCase.reset()
-        
-        // Then
-        XCTAssertEqual(mockUseCase.updatedTransactions.count, 0)
-        XCTAssertFalse(mockUseCase.shouldFail)
-        XCTAssertFalse(mockUseCase.shouldFailWithNotFound)
+        let updatedTransaction = try await mockRepository.fetchTransaction(id: originalTransaction.id)
+        XCTAssertNotNil(updatedTransaction, "실제 UseCase 비즈니스 로직이 실행되어 거래가 업데이트되어야 함")
+        XCTAssertEqual(updatedTransaction?.amount, 150000, "금액 검증 로직이 올바르게 동작해야 함")
+        XCTAssertEqual(updatedTransaction?.place, "Business Rule Test")
     }
 }

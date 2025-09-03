@@ -93,7 +93,7 @@ final class MockDIContainerTests: XCTestCase {
         let useCase = container.makeGetMonthlyTransactionsUseCase()
         
         // Then
-        XCTAssertTrue(useCase is MockGetMonthlyTransactionsUseCase)
+        XCTAssertTrue(useCase is GetMonthlyTransactionsUseCaseImpl)
     }
     
     func test_makeGetExpenseSumUntilDateUseCase_returnsMockUseCase() {
@@ -101,7 +101,7 @@ final class MockDIContainerTests: XCTestCase {
         let useCase = container.makeGetExpenseSumUntilDateUseCase()
         
         // Then
-        XCTAssertTrue(useCase is MockGetExpenseSumUntilDateUseCase)
+        XCTAssertTrue(useCase is GetExpenseSumUntilDateUseCaseImpl)
     }
     
     func test_makeGetMonthlyBudgetUseCase_returnsMockUseCase() {
@@ -191,7 +191,7 @@ final class MockDIContainerTests: XCTestCase {
         let useCase = container.makeCreateTransactionUseCase()
         
         // Then
-        XCTAssertTrue(useCase is MockCreateTransactionUseCase)
+        XCTAssertTrue(useCase is CreateTransactionUseCaseImpl)
     }
     
     func test_makeGetFavoriteTransactionsUseCase_returnsMockUseCase() {
@@ -199,7 +199,7 @@ final class MockDIContainerTests: XCTestCase {
         let useCase = container.makeGetFavoriteTransactionsUseCase()
         
         // Then
-        XCTAssertTrue(useCase is MockGetFavoriteTransactionsUseCase)
+        XCTAssertTrue(useCase is GetFavoriteTransactionsUseCaseImpl)
     }
     
     // MARK: - Test Methods - TransactionEventPublisher

@@ -41,8 +41,10 @@ public final class BudgetRepositoryAdapter: BudgetQuerying {
         var out: [BudgetVsExpenseMonthlyRow] = []
         for ym in yms {
             let monthStart = ym.startDate()
+            let startDate = ym.startOfMonth
+            let endDate = ym.endOfMonth
             let budget = try await budgetRepo.fetchBudget(for: ym)?.totalAmount ?? 0
-            let totals = try await txRepo.getTotalAmountByType(for: ym)
+            let totals = try await txRepo.getTotalAmountByType(from: startDate, to: endDate)
             let fixed   = totals.first(where: { $0.0 == .fixedExpense })?.1 ?? 0
             let variable = totals.first(where: { $0.0 == .variableExpense })?.1 ?? 0
             let expense = fixed + variable

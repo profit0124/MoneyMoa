@@ -8,13 +8,13 @@
 import Foundation
 
 final class GetTransactionByIdUseCaseImpl: GetTransactionByIdUseCase {
-    private let transactionRepository: TransactionRepository
+    private let transactionReader: TransactionReader
     
-    init(transactionRepository: TransactionRepository) {
-        self.transactionRepository = transactionRepository
+    init(transactionReader: TransactionReader) {
+        self.transactionReader = transactionReader
     }
     
     func execute(id: UUID) async throws -> TransactionDTO? {
-        return try await transactionRepository.fetchTransaction(id: id)
+        return try await transactionReader.fetchTransaction(id: id)
     }
 }

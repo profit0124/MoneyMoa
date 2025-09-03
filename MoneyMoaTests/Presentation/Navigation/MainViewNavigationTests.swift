@@ -19,14 +19,15 @@ final class MainViewNavigationTests: XCTestCase {
         super.setUp()
         mockRouter = MockAppRouter()
         
-        // Create MainViewModel with mock dependencies
+        let mockContainer = MockDIContainer()
+        // Create MainViewModel with Repository-based dependencies
         mainViewModel = MainViewModel(
-            getMonthlyTransactionsUseCase: MockGetMonthlyTransactionsUseCase(),
-            getExpenseSumUntilDateUseCase: MockGetExpenseSumUntilDateUseCase(),
-            getMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase(),
-            getBudgetTemplateUseCase: MockGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: MockCreateBudgetFromTemplateUseCase(),
-            transactionEventPublisher: MockDIContainer().makeTransactionEventPublisher()
+            getMonthlyTransactionsUseCase: mockContainer.makeGetMonthlyTransactionsUseCase(),
+            getExpenseSumUntilDateUseCase: mockContainer.makeGetExpenseSumUntilDateUseCase(),
+            getMonthlyBudgetUseCase: mockContainer.makeGetMonthlyBudgetUseCase(),
+            getBudgetTemplateUseCase: mockContainer.makeGetBudgetTemplateUseCase(),
+            createBudgetFromTemplateUseCase: mockContainer.makeCreateBudgetFromTemplateUseCase(),
+            transactionEventPublisher: mockContainer.makeTransactionEventPublisher()
         )
         
     }

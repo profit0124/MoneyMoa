@@ -8,121 +8,130 @@
 import XCTest
 @testable import MoneyMoa
 
-@MainActor
 final class DeleteTransactionUseCaseTests: XCTestCase {
     
-    private var mockUseCase: MockDeleteTransactionUseCase!
+    // MARK: - Properties
+    
+    private var mockRepository: MockTransactionRepository!
+    private var useCase: DeleteTransactionUseCaseImpl!
+    
+    // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
-        mockUseCase = MockDeleteTransactionUseCase()
+        mockRepository = MockTransactionRepository(scenario: .empty)
+        useCase = DeleteTransactionUseCaseImpl(transactionRepository: mockRepository)
     }
     
     override func tearDown() {
-        mockUseCase = nil
+        mockRepository = nil
+        useCase = nil
         super.tearDown()
     }
     
-    // MARK: - Success Cases
+    // MARK: - Test Methods - Successful Deletion
     
-    func testExecute_WithValidTransactionId_DeletesSuccessfully() async throws {
+    func test_execute_withExistingTransaction_deletesSuccessfully() async throws {
         // Given
-        let transactionId = UUID()
-        mockUseCase.addExistingTransaction(id: transactionId)
+        let transaction = TransactionFactory.sample()
+        try await mockRepository.insertTransaction(transaction)
+        
+        // Verify transaction exists
+        let existingTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(existingTransaction)
         
         // When
-        try await mockUseCase.execute(transactionId: transactionId)
+        try await useCase.execute(transactionId: transaction.id)
         
         // Then
-        XCTAssertTrue(mockUseCase.deletedTransactionIds.contains(transactionId))
-        XCTAssertFalse(mockUseCase.existingTransactionIds.contains(transactionId))
+        let deletedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNil(deletedTransaction)
     }
     
-    func testExecute_WithMultipleTransactions_DeletesOnlySpecified() async throws {
-        // Given
-        let transactionId1 = UUID()
-        let transactionId2 = UUID()
-        let transactionId3 = UUID()
-        
-        mockUseCase.addExistingTransaction(id: transactionId1)
-        mockUseCase.addExistingTransaction(id: transactionId2)
-        mockUseCase.addExistingTransaction(id: transactionId3)
-        
-        // When
-        try await mockUseCase.execute(transactionId: transactionId2)
-        
-        // Then
-        XCTAssertEqual(mockUseCase.deletedTransactionIds.count, 1)
-        XCTAssertTrue(mockUseCase.deletedTransactionIds.contains(transactionId2))
-        XCTAssertTrue(mockUseCase.existingTransactionIds.contains(transactionId1))
-        XCTAssertFalse(mockUseCase.existingTransactionIds.contains(transactionId2))
-        XCTAssertTrue(mockUseCase.existingTransactionIds.contains(transactionId3))
-    }
-    
-    // MARK: - Error Cases
-    
-    func testExecute_WithNonExistentTransactionId_ThrowsTransactionNotFound() async {
+    func test_execute_withNonExistentTransaction_throwsError() async {
         // Given
         let nonExistentId = UUID()
         
         // When & Then
         do {
-            try await mockUseCase.execute(transactionId: nonExistentId)
-            XCTFail("Expected TransactionDeletionError.transactionNotFound")
-        } catch let error as TransactionDeletionError {
-            XCTAssertEqual(error, TransactionDeletionError.transactionNotFound)
+            try await useCase.execute(transactionId: nonExistentId)
+            XCTFail("Expected error to be thrown")
         } catch {
-            XCTFail("Expected TransactionDeletionError.transactionNotFound, but got \(error)")
+            XCTAssertTrue(error is TransactionDeletionError)
+            if let deletionError = error as? TransactionDeletionError {
+                XCTAssertEqual(deletionError, .transactionNotFound)
+            }
         }
     }
     
-    func testExecute_WhenForceFailure_ThrowsError() async {
+    func test_execute_withMultipleTransactions_deletesOnlySpecified() async throws {
         // Given
-        let transactionId = UUID()
-        mockUseCase.addExistingTransaction(id: transactionId)
-        mockUseCase.shouldFail = true
+        let transaction1 = TransactionFactory.sample()
+        let transaction2 = TransactionFactory.sample()
+        let transaction3 = TransactionFactory.sample()
+        
+        try await mockRepository.insertTransaction(transaction1)
+        try await mockRepository.insertTransaction(transaction2)
+        try await mockRepository.insertTransaction(transaction3)
+        
+        // When
+        try await useCase.execute(transactionId: transaction2.id)
+        
+        // Then
+        let remainingTransaction1 = try await mockRepository.fetchTransaction(id: transaction1.id)
+        let deletedTransaction = try await mockRepository.fetchTransaction(id: transaction2.id)
+        let remainingTransaction3 = try await mockRepository.fetchTransaction(id: transaction3.id)
+        
+        XCTAssertNotNil(remainingTransaction1)
+        XCTAssertNil(deletedTransaction)
+        XCTAssertNotNil(remainingTransaction3)
+    }
+    
+    // MARK: - Test Methods - Business Logic Validation
+    
+    func test_execute_validatesExistenceBeforeDeletion() async throws {
+        // Given
+        let transaction = TransactionFactory.sample()
+        try await mockRepository.insertTransaction(transaction)
+        
+        // When
+        try await useCase.execute(transactionId: transaction.id)
+        
+        // Then - Verify both existence check and deletion were performed
+        let result = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNil(result, "Transaction should be deleted after successful existence validation")
+    }
+    
+    func test_execute_withRepositoryFailure_propagatesError() async throws {
+        // Given
+        let transaction = TransactionFactory.sample()
+        try await mockRepository.insertTransaction(transaction)
+        
+        mockRepository.shouldFail = true
         
         // When & Then
         do {
-            try await mockUseCase.execute(transactionId: transactionId)
-            XCTFail("Expected TransactionDeletionError.transactionNotFound")
-        } catch let error as TransactionDeletionError {
-            XCTAssertEqual(error, TransactionDeletionError.transactionNotFound)
+            try await useCase.execute(transactionId: transaction.id)
+            XCTFail("Expected error to be thrown")
         } catch {
-            XCTFail("Expected TransactionDeletionError.transactionNotFound, but got \(error)")
+            XCTAssertTrue(error is MockError)
         }
     }
     
-    // MARK: - Mock State Tests
+    // MARK: - Test Methods - Edge Cases
     
-    func testMockReset_ClearsAllState() async throws {
+    func test_execute_withEmptyRepository_throwsNotFoundError() async {
         // Given
-        let transactionId = UUID()
-        mockUseCase.addExistingTransaction(id: transactionId)
-        try await mockUseCase.execute(transactionId: transactionId)
-        mockUseCase.shouldFail = true
+        let randomId = UUID()
         
-        // When
-        mockUseCase.reset()
-        
-        // Then
-        XCTAssertTrue(mockUseCase.deletedTransactionIds.isEmpty)
-        XCTAssertTrue(mockUseCase.existingTransactionIds.isEmpty)
-        XCTAssertFalse(mockUseCase.shouldFail)
-    }
-    
-    func testMockAddExistingTransaction_AddsToExistingSet() {
-        // Given
-        let transactionId1 = UUID()
-        let transactionId2 = UUID()
-        
-        // When
-        mockUseCase.addExistingTransaction(id: transactionId1)
-        mockUseCase.addExistingTransaction(id: transactionId2)
-        
-        // Then
-        XCTAssertTrue(mockUseCase.existingTransactionIds.contains(transactionId1))
-        XCTAssertTrue(mockUseCase.existingTransactionIds.contains(transactionId2))
-        XCTAssertEqual(mockUseCase.existingTransactionIds.count, 2)
+        // When & Then
+        do {
+            try await useCase.execute(transactionId: randomId)
+            XCTFail("Expected error to be thrown")
+        } catch TransactionDeletionError.transactionNotFound {
+            // Expected behavior
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
     }
 }

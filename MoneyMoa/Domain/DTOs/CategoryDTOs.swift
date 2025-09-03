@@ -133,6 +133,48 @@ extension CategoryDTO {
         transactionType: .fixedExpense,
         orderIndex: 0
     )
+    
+    static let mockShopping = CategoryDTO(
+        name: "쇼핑",
+        iconName: "bag.fill",
+        transactionType: .variableExpense,
+        orderIndex: 2
+    )
+    
+    static let mockEntertainment = CategoryDTO(
+        name: "여가",
+        iconName: "gamecontroller.fill",
+        transactionType: .variableExpense,
+        orderIndex: 3
+    )
+    
+    static let mockHealthcare = CategoryDTO(
+        name: "건강",
+        iconName: "cross.fill",
+        transactionType: .variableExpense,
+        orderIndex: 4
+    )
+    
+    static let mockEducation = CategoryDTO(
+        name: "교육",
+        iconName: "book.fill",
+        transactionType: .variableExpense,
+        orderIndex: 5
+    )
+    
+    static let mockHousing = CategoryDTO(
+        name: "주거",
+        iconName: "house.fill",
+        transactionType: .fixedExpense,
+        orderIndex: 0
+    )
+    
+    static let mockUtilities = CategoryDTO(
+        name: "공과금",
+        iconName: "bolt.fill",
+        transactionType: .fixedExpense,
+        orderIndex: 1
+    )
 }
 
 extension SubCategoryDTO {
@@ -174,6 +216,64 @@ extension SubCategoryDTO {
         categoryId: CategoryDTO.mockIncome.id,
         categoryName: CategoryDTO.mockIncome.name,
         categoryIconName: CategoryDTO.mockIncome.iconName
+    )
+    
+    // MARK: - Additional Mock SubCategories
+    
+    static let mockShopping = SubCategoryDTO(
+        name: "의류/잡화",
+        transactionType: .variableExpense,
+        categoryId: CategoryDTO.mockShopping.id,
+        categoryName: CategoryDTO.mockShopping.name,
+        categoryIconName: CategoryDTO.mockShopping.iconName
+    )
+    
+    static let mockEntertainment = SubCategoryDTO(
+        name: "오락/여가",
+        transactionType: .variableExpense,
+        categoryId: CategoryDTO.mockEntertainment.id,
+        categoryName: CategoryDTO.mockEntertainment.name,
+        categoryIconName: CategoryDTO.mockEntertainment.iconName
+    )
+    
+    static let mockHealthcare = SubCategoryDTO(
+        name: "병원/약국",
+        transactionType: .variableExpense,
+        categoryId: CategoryDTO.mockHealthcare.id,
+        categoryName: CategoryDTO.mockHealthcare.name,
+        categoryIconName: CategoryDTO.mockHealthcare.iconName
+    )
+    
+    static let mockEducation = SubCategoryDTO(
+        name: "도서/강의",
+        transactionType: .variableExpense,
+        categoryId: CategoryDTO.mockEducation.id,
+        categoryName: CategoryDTO.mockEducation.name,
+        categoryIconName: CategoryDTO.mockEducation.iconName
+    )
+    
+    static let mockHousingRent = SubCategoryDTO(
+        name: "월세",
+        transactionType: .fixedExpense,
+        categoryId: CategoryDTO.mockHousing.id,
+        categoryName: CategoryDTO.mockHousing.name,
+        categoryIconName: CategoryDTO.mockHousing.iconName
+    )
+    
+    static let mockUtilitiesMobile = SubCategoryDTO(
+        name: "휴대폰",
+        transactionType: .fixedExpense,
+        categoryId: CategoryDTO.mockUtilities.id,
+        categoryName: CategoryDTO.mockUtilities.name,
+        categoryIconName: CategoryDTO.mockUtilities.iconName
+    )
+    
+    static let mockUtilitiesInternet = SubCategoryDTO(
+        name: "인터넷",
+        transactionType: .fixedExpense,
+        categoryId: CategoryDTO.mockUtilities.id,
+        categoryName: CategoryDTO.mockUtilities.name,
+        categoryIconName: CategoryDTO.mockUtilities.iconName
     )
 }
 #endif
