@@ -9,14 +9,9 @@ import Foundation
 
 final class GetCategoriesByTypeUseCaseImpl: GetCategoriesByTypeUseCase {
     private let categoryRepository: CategoryRepository
-    private let subCategoryRepository: SubCategoryRepository
     
-    init(
-        categoryRepository: CategoryRepository,
-        subCategoryRepository: SubCategoryRepository
-    ) {
+    init(categoryRepository: CategoryRepository) {
         self.categoryRepository = categoryRepository
-        self.subCategoryRepository = subCategoryRepository
     }
     
     func execute(_ type: TransactionType) async throws -> [CategoryDTO] {
@@ -27,7 +22,7 @@ final class GetCategoriesByTypeUseCaseImpl: GetCategoriesByTypeUseCase {
         let categoriesWithSubCategories = try await withThrowingTaskGroup(of: CategoryDTO.self) { group in
             for category in categories {
                 group.addTask {
-                    let subCategories = try await self.subCategoryRepository.fetchSubCategories(categoryId: category.id)
+                    let subCategories = try await self.categoryRepository.fetchSubCategories(categoryId: category.id)
                     return CategoryDTO(
                         id: category.id,
                         name: category.name,

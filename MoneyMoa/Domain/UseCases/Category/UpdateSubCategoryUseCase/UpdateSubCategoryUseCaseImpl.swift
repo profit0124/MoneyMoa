@@ -8,10 +8,10 @@
 import Foundation
 
 final class UpdateSubCategoryUseCaseImpl: UpdateSubCategoryUseCase {
-    private let subCategoryRepository: SubCategoryRepository
+    private let categoryRepository: CategoryRepository
     
-    init(subCategoryRepository: SubCategoryRepository) {
-        self.subCategoryRepository = subCategoryRepository
+    init(categoryRepository: CategoryRepository) {
+        self.categoryRepository = categoryRepository
     }
     
     func execute(_ subCategory: SubCategoryDTO) async throws {
@@ -22,7 +22,7 @@ final class UpdateSubCategoryUseCaseImpl: UpdateSubCategoryUseCase {
         }
         
         // 같은 카테고리 내에서 이름 중복 검사
-        let isNameValid = try await subCategoryRepository.validateSubCategoryName(
+        let isNameValid = try await categoryRepository.validateSubCategoryName(
             trimmedName,
             categoryId: subCategory.categoryId,
             excludingId: subCategory.id
@@ -33,7 +33,7 @@ final class UpdateSubCategoryUseCaseImpl: UpdateSubCategoryUseCase {
         }
         
         // 서브카테고리 수정 (Repository에서 추가 검증 수행)
-        try await subCategoryRepository.updateSubCategory(subCategory)
+        try await categoryRepository.updateSubCategory(subCategory)
     }
 }
 

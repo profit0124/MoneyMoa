@@ -17,69 +17,71 @@ public class CategoryRepositoryImpl: CategoryRepository {
         self.database = database
     }
     
+    // MARK: - Private Helper Methods
+    
+    /// Category 정렬 조건 정의
+    private var categorySortDescriptors: [SortDescriptor<Category>] {
+        [SortDescriptor(\.orderIndex), SortDescriptor(\.name)]
+    }
+    
+    /// SubCategory 정렬 조건 정의
+    private var subCategorySortDescriptors: [SortDescriptor<SubCategory>] {
+        [SortDescriptor(\.orderIndex), SortDescriptor(\.name)]
+    }
+    
+    /// Category FetchDescriptor 생성
+    private func createCategoryDescriptor(
+        predicate: Predicate<Category>? = nil,
+        sortBy: [SortDescriptor<Category>]? = nil
+    ) -> FetchDescriptor<Category> {
+        FetchDescriptor<Category>(
+            predicate: predicate,
+            sortBy: sortBy ?? categorySortDescriptors
+        )
+    }
+    
+    /// SubCategory FetchDescriptor 생성
+    private func createSubCategoryDescriptor(
+        predicate: Predicate<SubCategory>? = nil,
+        sortBy: [SortDescriptor<SubCategory>]? = nil
+    ) -> FetchDescriptor<SubCategory> {
+        FetchDescriptor<SubCategory>(
+            predicate: predicate,
+            sortBy: sortBy ?? subCategorySortDescriptors
+        )
+    }
+    
+    /// 단일 Category 조회 헬퍼
+    private func fetchCategoryModel(id: UUID, context: ModelContext) throws -> Category? {
+        let predicate = #Predicate<Category> { $0.id == id }
+        let descriptor = createCategoryDescriptor(predicate: predicate)
+        return try context.fetch(descriptor).first
+    }
+    
+    /// 단일 SubCategory 조회 헬퍼
+    private func fetchSubCategoryModel(id: UUID, context: ModelContext) throws -> SubCategory? {
+        let predicate = #Predicate<SubCategory> { $0.id == id }
+        let descriptor = createSubCategoryDescriptor(predicate: predicate)
+        return try context.fetch(descriptor).first
+    }
+    
     // MARK: - 조회 (Fetch Operations)
     
     public func fetchCategories() async throws -> [CategoryDTO] {
         try await database.withModelContext { context in
-            let descriptor = FetchDescriptor<Category>(
-                sortBy: [SortDescriptor(\.orderIndex), SortDescriptor(\.name)]
-            )
+            let descriptor = self.createCategoryDescriptor()
             let categories = try context.fetch(descriptor)
-            
             return categories.toDTOs(includeSubCategories: false)
         }
     }
-    
-    public func fetchCategory(id: UUID) async throws -> CategoryDTO? {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Category> { $0.id == id }
-            let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            
-            guard let category = try context.fetch(descriptor).first else {
-                return nil
-            }
-            
-            return category.toDTO(includeSubCategories: true)
-        }
-    }
-    
-    public func fetchCategoryWithSubCategories(id: UUID) async throws -> CategoryDTO? {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Category> { $0.id == id }
-            let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            
-            guard let category = try context.fetch(descriptor).first else {
-                return nil
-            }
-            
-            return category.toDTO(includeSubCategories: true)
-        }
-    }
-    
-    public func fetchActiveCategories() async throws -> [CategoryDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Category> { $0.isActive == true }
-            let descriptor = FetchDescriptor<Category>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.orderIndex), SortDescriptor(\.name)]
-            )
-            let categories = try context.fetch(descriptor)
-            
-            return categories.toDTOs(includeSubCategories: true)
-        }
-    }
-    
+
     public func fetchCategoriesByType(_ type: TransactionType) async throws -> [CategoryDTO] {
         try await database.withModelContext { context in
             let predicate = #Predicate<Category> { category in
                 category.transactionTypeRawValue == type.rawValue
             }
-            let descriptor = FetchDescriptor<Category>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.orderIndex), SortDescriptor(\.name)]
-            )
+            let descriptor = self.createCategoryDescriptor(predicate: predicate)
             let categories = try context.fetch(descriptor)
-            
             return categories.toDTOs(includeSubCategories: true)
         }
     }
@@ -88,93 +90,16 @@ public class CategoryRepositoryImpl: CategoryRepository {
     
     public func insertCategory(_ category: CategoryDTO) async throws {
         try await database.withModelContext { context in
-            // DTO를 SwiftData 모델로 변환
-            let newCategory = category.toModel()
-            
-            context.insert(newCategory)
+            context.insert(category.toModel())
             try context.save()
         }
     }
-    
-    public func updateCategory(_ category: CategoryDTO) async throws {
-        let id = category.id
-        try await database.withModelContext { context in
-            // 기존 카테고리 조회
-            let predicate = #Predicate<Category> { $0.id == id }
-            let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            
-            guard let existingCategory = try context.fetch(descriptor).first else {
-                throw RepositoryError.categoryNotFound
-            }
-            
-            // 카테고리 업데이트 (validation은 UseCase에서 처리)
-            existingCategory.name = category.name
-            existingCategory.transactionType = category.transactionType
-            existingCategory.isActive = category.isActive
-            existingCategory.orderIndex = category.orderIndex
-            
-            try context.save()
-        }
-    }
-    
-    // MARK: - 활성/비활성 관리 (Activation Management)
-    
-    public func deactivateCategory(id: UUID) async throws {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Category> { $0.id == id }
-            let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            
-            guard let category = try context.fetch(descriptor).first else {
-                throw RepositoryError.categoryNotFound
-            }
-            
-            category.isActive = false
-            try context.save()
-        }
-    }
-    
-    public func activateCategory(id: UUID) async throws {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Category> { $0.id == id }
-            let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            
-            guard let category = try context.fetch(descriptor).first else {
-                throw RepositoryError.categoryNotFound
-            }
-            
-            category.isActive = true
-            try context.save()
-        }
-    }
-    
-    // MARK: - 삭제 관련 (Delete Operations)
-    
-    public func deleteCategory(id: UUID) async throws {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Category> { $0.id == id }
-            let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            
-            guard let category = try context.fetch(descriptor).first else {
-                throw RepositoryError.categoryNotFound
-            }
-            
-            // 활성 카테고리 삭제 방지
-            if category.isActive {
-                throw RepositoryError.cannotDeleteActiveCategory
-            }
-            
-            // 카테고리 삭제 (SwiftData의 cascade 삭제 규칙에 의해 서브카테고리도 함께 삭제됨)
-            context.delete(category)
-            try context.save()
-        }
-    }
-    
+
     // MARK: - 검증 (Validation)
     
     public func validateCategoryName(_ name: String, type: TransactionType, excludingId: UUID?) async throws -> Bool {
         try await database.withModelContext { context in
             let predicate: Predicate<Category>
-            
             if let excludingId = excludingId {
                 predicate = #Predicate<Category> { category in
                     category.name == name && 
@@ -188,34 +113,96 @@ public class CategoryRepositoryImpl: CategoryRepository {
             }
             
             let descriptor = FetchDescriptor<Category>(predicate: predicate)
-            let existingCategories = try context.fetch(descriptor)
-            
-            return existingCategories.isEmpty
+            return try context.fetch(descriptor).isEmpty
         }
     }
     
-    public func hasTransactions(categoryId: UUID) async throws -> Bool {
+    public func updateCategory(_ category: CategoryDTO) async throws {
         try await database.withModelContext { context in
-            // 해당 카테고리의 서브카테고리들 조회
-            let subCategoryPredicate = #Predicate<SubCategory> { $0.category.id == categoryId }
-            let subCategoryDescriptor = FetchDescriptor<SubCategory>(predicate: subCategoryPredicate)
-            let subCategories = try context.fetch(subCategoryDescriptor)
-            
-            // 서브카테고리가 없으면 거래 내역도 없음
-            if subCategories.isEmpty {
-                return false
+            guard let existingCategory = try self.fetchCategoryModel(id: category.id, context: context) else {
+                throw RepositoryError.categoryNotFound
             }
             
-            let subCategoryIds = subCategories.map { $0.id }
+            existingCategory.name = category.name
+            existingCategory.iconName = category.iconName
+            existingCategory.transactionType = category.transactionType
+            existingCategory.isActive = category.isActive
+            existingCategory.orderIndex = category.orderIndex
             
-            // 거래 내역 확인
-            let transactionPredicate = #Predicate<Transaction> { transaction in
-                subCategoryIds.contains(transaction.subCategory.id)
-            }
-            let transactionDescriptor = FetchDescriptor<Transaction>(predicate: transactionPredicate)
-            let transactions = try context.fetch(transactionDescriptor)
-            
-            return !transactions.isEmpty
+            try context.save()
         }
     }
+    
+    // MARK: - SubCategory Operations Implementation
+    
+    // MARK: - SubCategory 조회 (Fetch Operations)
+    
+    public func fetchSubCategories(categoryId: UUID) async throws -> [SubCategoryDTO] {
+        try await database.withModelContext { context in
+            let predicate = #Predicate<SubCategory> { subCategory in
+                subCategory.category.id == categoryId && subCategory.isActive == true
+            }
+            let descriptor = self.createSubCategoryDescriptor(predicate: predicate)
+            let subCategories = try context.fetch(descriptor)
+            return subCategories.toDTOs()
+        }
+    }
+    
+    // MARK: - SubCategory 생성/수정 (Create/Update Operations)
+    
+    public func insertSubCategory(_ subCategory: SubCategoryDTO) async throws {
+        try await database.withModelContext { context in
+            guard let parentCategory = try self.fetchCategoryModel(id: subCategory.categoryId, context: context) else {
+                throw RepositoryError.categoryNotFound
+            }
+            
+            context.insert(subCategory.toModel(parentCategory: parentCategory))
+            try context.save()
+        }
+    }
+    
+    public func updateSubCategory(_ subCategory: SubCategoryDTO) async throws {
+        try await database.withModelContext { context in
+            guard let existingSubCategory = try self.fetchSubCategoryModel(id: subCategory.id, context: context) else {
+                throw RepositoryError.subCategoryNotFound
+            }
+            
+            if existingSubCategory.category.id != subCategory.categoryId {
+                guard let newParentCategory = try self.fetchCategoryModel(id: subCategory.categoryId, context: context) else {
+                    throw RepositoryError.categoryNotFound
+                }
+                existingSubCategory.category = newParentCategory
+            }
+            
+            existingSubCategory.name = subCategory.name
+            existingSubCategory.transactionType = subCategory.transactionType
+            existingSubCategory.isActive = subCategory.isActive
+            existingSubCategory.orderIndex = subCategory.orderIndex
+            
+            try context.save()
+        }
+    }
+    
+    // MARK: - SubCategory 검증 (Validation)
+    
+    public func validateSubCategoryName(_ name: String, categoryId: UUID, excludingId: UUID?) async throws -> Bool {
+        try await database.withModelContext { context in
+            let predicate: Predicate<SubCategory>
+            if let excludingId = excludingId {
+                predicate = #Predicate<SubCategory> { subCategory in
+                    subCategory.name == name && 
+                    subCategory.category.id == categoryId &&
+                    subCategory.id != excludingId
+                }
+            } else {
+                predicate = #Predicate<SubCategory> { subCategory in
+                    subCategory.name == name && subCategory.category.id == categoryId
+                }
+            }
+            
+            let descriptor = FetchDescriptor<SubCategory>(predicate: predicate)
+            return try context.fetch(descriptor).isEmpty
+        }
+    }
+    
 }

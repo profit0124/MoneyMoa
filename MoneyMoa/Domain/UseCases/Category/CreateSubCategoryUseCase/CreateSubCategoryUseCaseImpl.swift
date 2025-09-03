@@ -8,10 +8,10 @@
 import Foundation
 
 final class CreateSubCategoryUseCaseImpl: CreateSubCategoryUseCase {
-    private let subCategoryRepository: SubCategoryRepository
+    private let categoryRepository: CategoryRepository
     
-    init(subCategoryRepository: SubCategoryRepository) {
-        self.subCategoryRepository = subCategoryRepository
+    init(categoryRepository: CategoryRepository) {
+        self.categoryRepository = categoryRepository
     }
     
     func execute(_ subCategory: SubCategoryDTO) async throws {
@@ -21,7 +21,7 @@ final class CreateSubCategoryUseCaseImpl: CreateSubCategoryUseCase {
         }
         
         // 이름 중복 검증 (Repository의 검증 기능 활용)
-        let isNameValid = try await subCategoryRepository.validateSubCategoryName(
+        let isNameValid = try await categoryRepository.validateSubCategoryName(
             subCategory.name,
             categoryId: subCategory.categoryId,
             excludingId: nil
@@ -31,7 +31,7 @@ final class CreateSubCategoryUseCaseImpl: CreateSubCategoryUseCase {
         }
         
         // 서브카테고리 저장 (Repository에서 상위 카테고리 존재 검증 수행)
-        try await subCategoryRepository.insertSubCategory(subCategory)
+        try await categoryRepository.insertSubCategory(subCategory)
     }
 }
 

@@ -182,25 +182,3 @@ public final class MockTransactionRepository: TransactionRepository {
         }
     }
 }
-
-// MARK: - Mock Error Types
-
-public enum MockError: Error, LocalizedError {
-    case simulatedFailure
-    case transactionNotFound
-    case networkTimeout
-    case invalidData
-    
-    public var errorDescription: String? {
-        switch self {
-        case .simulatedFailure:
-            return "Simulated failure for testing"
-        case .transactionNotFound:
-            return "Transaction not found"
-        case .networkTimeout:
-            return "Network timeout"
-        case .invalidData:
-            return "Invalid data"
-        }
-    }
-}

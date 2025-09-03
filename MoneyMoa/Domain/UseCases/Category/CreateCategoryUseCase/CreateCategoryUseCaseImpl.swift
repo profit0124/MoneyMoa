@@ -9,14 +9,9 @@ import Foundation
 
 final class CreateCategoryUseCaseImpl: CreateCategoryUseCase {
     private let categoryRepository: CategoryRepository
-    private let subCategoryRepository: SubCategoryRepository
     
-    init(
-        categoryRepository: CategoryRepository,
-        subCategoryRepository: SubCategoryRepository
-    ) {
+    init(categoryRepository: CategoryRepository) {
         self.categoryRepository = categoryRepository
-        self.subCategoryRepository = subCategoryRepository
     }
     
     func execute(_ category: CategoryDTO) async throws {
@@ -42,7 +37,7 @@ final class CreateCategoryUseCaseImpl: CreateCategoryUseCase {
             }
             
             // 서브카테고리 중복 이름 검증 (동일 카테고리 내에서)
-            let isSubCategoryNameValid = try await subCategoryRepository.validateSubCategoryName(
+            let isSubCategoryNameValid = try await categoryRepository.validateSubCategoryName(
                 subCategory.name,
                 categoryId: category.id,
                 excludingId: nil
@@ -57,7 +52,7 @@ final class CreateCategoryUseCaseImpl: CreateCategoryUseCase {
         
         // 5. 포함된 서브카테고리들 저장
         for subCategory in category.subCategories {
-            try await subCategoryRepository.insertSubCategory(subCategory)
+            try await categoryRepository.insertSubCategory(subCategory)
         }
     }
 }
