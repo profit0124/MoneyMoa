@@ -10,27 +10,32 @@ import SwiftData
 
 // MARK: - TransactionRepositoryImpl
 
-public class TransactionRepositoryImpl: TransactionRepository {
+public final class TransactionRepositoryImpl: TransactionRepository {
     private let database: Database
     
     public init(database: Database) {
         self.database = database
     }
     
-    // MARK: - 조회 (Fetch Operations)
+    // MARK: - Common Helper Methods
     
-    public func fetchTransactions() async throws -> [TransactionDTO] {
+    /// 공통 거래 조회 로직 (중복 제거)
+    private func fetchTransactionDTOs(
+        predicate: Predicate<Transaction>? = nil,
+        sortBy: [SortDescriptor<Transaction>] = [SortDescriptor(\.date, order: .reverse)]
+    ) async throws -> [TransactionDTO] {
         try await database.withModelContext { context in
             let descriptor = FetchDescriptor<Transaction>(
-                sortBy: [SortDescriptor(\.date, order: .reverse)]  // 최신순
+                predicate: predicate,
+                sortBy: sortBy
             )
             let transactions = try context.fetch(descriptor)
-            
             return transactions.toDTOs()
         }
     }
     
-    public func fetchTransaction(id: UUID) async throws -> TransactionDTO? {
+    /// 단일 거래 조회 로직
+    private func fetchTransactionDTO(id: UUID) async throws -> TransactionDTO? {
         try await database.withModelContext { context in
             let predicate = #Predicate<Transaction> { $0.id == id }
             let descriptor = FetchDescriptor<Transaction>(predicate: predicate)
@@ -43,101 +48,38 @@ public class TransactionRepositoryImpl: TransactionRepository {
         }
     }
     
-    public func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [TransactionDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { transaction in
-                transaction.date >= startDate && transaction.date <= endDate
-            }
-            let descriptor = FetchDescriptor<Transaction>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            let transactions = try context.fetch(descriptor)
-            
-            return transactions.toDTOs()
-        }
+    /// YearMonth를 Date 범위로 변환하는 헬퍼
+    private func dateRange(for yearMonth: YearMonth) -> (start: Date, end: Date) {
+        return (yearMonth.startOfMonth, yearMonth.endOfMonth)
+    }
+    
+    // MARK: - TransactionReader Implementation
+    
+    public func fetchTransaction(id: UUID) async throws -> TransactionDTO? {
+        return try await fetchTransactionDTO(id: id)
     }
     
     public func fetchTransactions(for yearMonth: YearMonth) async throws -> [TransactionDTO] {
-        let startDate = yearMonth.startOfMonth
-        let endDate = yearMonth.endOfMonth
-        return try await fetchTransactions(from: startDate, to: endDate)
+        let range = dateRange(for: yearMonth)
+        return try await fetchTransactions(from: range.start, to: range.end)
     }
     
-    public func fetchTransactions(subCategoryId: UUID) async throws -> [TransactionDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { $0.subCategory.id == subCategoryId }
-            let descriptor = FetchDescriptor<Transaction>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            let transactions = try context.fetch(descriptor)
-            
-            return transactions.toDTOs()
+    public func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [TransactionDTO] {
+        let predicate = #Predicate<Transaction> { transaction in
+            transaction.date >= startDate && transaction.date <= endDate
         }
-    }
-    
-    public func fetchTransactions(paymentMethodId: UUID) async throws -> [TransactionDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { $0.paymentMethod.id == paymentMethodId }
-            let descriptor = FetchDescriptor<Transaction>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            let transactions = try context.fetch(descriptor)
-            
-            return transactions.toDTOs()
-        }
-    }
-    
-    public func fetchTransactionsByType(_ type: TransactionType) async throws -> [TransactionDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { transaction in
-                transaction.transactionTypeRawValue == type.rawValue
-            }
-            let descriptor = FetchDescriptor<Transaction>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            let transactions = try context.fetch(descriptor)
-            
-            return transactions.toDTOs()
-        }
+        return try await fetchTransactionDTOs(predicate: predicate)
     }
     
     public func fetchFavoriteTransactions() async throws -> [TransactionDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { $0.isFavorite == true }
-            let descriptor = FetchDescriptor<Transaction>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            let transactions = try context.fetch(descriptor)
-            
-            return transactions.toDTOs()
-        }
+        let predicate = #Predicate<Transaction> { $0.isFavorite == true }
+        return try await fetchTransactionDTOs(predicate: predicate)
     }
     
-    public func searchTransactions(keyword: String) async throws -> [TransactionDTO] {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { transaction in
-                (transaction.memo?.contains(keyword) == true) ||
-                (transaction.place?.contains(keyword) == true)
-            }
-            let descriptor = FetchDescriptor<Transaction>(
-                predicate: predicate,
-                sortBy: [SortDescriptor(\.date, order: .reverse)]
-            )
-            let transactions = try context.fetch(descriptor)
-            
-            return transactions.toDTOs()
-        }
-    }
-    
-    // MARK: - 집계 및 통계 (Aggregation & Statistics)
+    // MARK: - Statistics (통계 집계)
     
     public func getTotalAmountByType(from startDate: Date, to endDate: Date) async throws -> [(TransactionType, Decimal)] {
-        try await database.withModelContext { context in
+        return try await database.withModelContext { context in
             let predicate = #Predicate<Transaction> { transaction in
                 transaction.date >= startDate && transaction.date <= endDate
             }
@@ -156,14 +98,8 @@ public class TransactionRepositoryImpl: TransactionRepository {
         }
     }
     
-    public func getTotalAmountByType(for yearMonth: YearMonth) async throws -> [(TransactionType, Decimal)] {
-        let startDate = yearMonth.startOfMonth
-        let endDate = yearMonth.endOfMonth
-        return try await getTotalAmountByType(from: startDate, to: endDate)
-    }
-    
     public func getTotalAmountBySubCategory(from startDate: Date, to endDate: Date) async throws -> [(SubCategoryDTO, Decimal)] {
-        try await database.withModelContext { context in
+        return try await database.withModelContext { context in
             let predicate = #Predicate<Transaction> { transaction in
                 transaction.date >= startDate && transaction.date <= endDate
             }
@@ -188,52 +124,7 @@ public class TransactionRepositoryImpl: TransactionRepository {
         }
     }
     
-    public func getTotalAmountBySubCategory(for yearMonth: YearMonth) async throws -> [(SubCategoryDTO, Decimal)] {
-        let startDate = yearMonth.startOfMonth
-        let endDate = yearMonth.endOfMonth
-        return try await getTotalAmountBySubCategory(from: startDate, to: endDate)
-    }
-    
-    public func getDailyTotals(from startDate: Date, to endDate: Date, type: TransactionType?) async throws -> [(Date, Decimal)] {
-        try await database.withModelContext { context in
-            let predicate: Predicate<Transaction>
-            
-            if let type = type {
-                predicate = #Predicate<Transaction> { transaction in
-                    transaction.date >= startDate && 
-                    transaction.date <= endDate &&
-                    transaction.transactionTypeRawValue == type.rawValue
-                }
-            } else {
-                predicate = #Predicate<Transaction> { transaction in
-                    transaction.date >= startDate && transaction.date <= endDate
-                }
-            }
-            
-            let descriptor = FetchDescriptor<Transaction>(predicate: predicate)
-            let transactions = try context.fetch(descriptor)
-            
-            // 날짜별로 그룹화하여 합계 계산
-            var dailyTotals: [Date: Decimal] = [:]
-            let calendar = Calendar.current
-            
-            for transaction in transactions {
-                let dateKey = calendar.startOfDay(for: transaction.date)
-                dailyTotals[dateKey, default: 0] += transaction.amount
-            }
-            
-            // 날짜순으로 정렬하여 반환
-            return dailyTotals.sorted { $0.key < $1.key }
-        }
-    }
-    
-    public func getDailyTotals(for yearMonth: YearMonth, type: TransactionType?) async throws -> [(Date, Decimal)] {
-        let startDate = yearMonth.startOfMonth
-        let endDate = yearMonth.endOfMonth
-        return try await getDailyTotals(from: startDate, to: endDate, type: type)
-    }
-    
-    // MARK: - 생성/수정 (Create/Update Operations)
+    // MARK: - TransactionWriter Implementation
     
     public func insertTransaction(_ transaction: TransactionDTO) async throws {
         let subCategoryId = transaction.subCategory.id
@@ -311,22 +202,6 @@ public class TransactionRepositoryImpl: TransactionRepository {
         }
     }
     
-    public func toggleFavorite(id: UUID) async throws {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Transaction> { $0.id == id }
-            let descriptor = FetchDescriptor<Transaction>(predicate: predicate)
-            
-            guard let transaction = try context.fetch(descriptor).first else {
-                throw RepositoryError.transactionNotFound
-            }
-            
-            transaction.isFavorite.toggle()
-            try context.save()
-        }
-    }
-    
-    // MARK: - 삭제 관련 (Delete Operations)
-    
     public func deleteTransaction(id: UUID) async throws {
         try await database.withModelContext { context in
             let predicate = #Predicate<Transaction> { $0.id == id }
@@ -336,46 +211,8 @@ public class TransactionRepositoryImpl: TransactionRepository {
                 throw RepositoryError.transactionNotFound
             }
             
-            // 거래는 즉시 삭제 (활성/비활성 단계 없음)
             context.delete(transaction)
             try context.save()
-        }
-    }
-    
-    public func deleteTransactions(ids: [UUID]) async throws {
-        try await database.withModelContext { context in
-            for id in ids {
-                let predicate = #Predicate<Transaction> { $0.id == id }
-                let descriptor = FetchDescriptor<Transaction>(predicate: predicate)
-                
-                if let transaction = try context.fetch(descriptor).first {
-                    context.delete(transaction)
-                }
-            }
-            
-            try context.save()
-        }
-    }
-    
-    // MARK: - 검증 (Validation)
-    
-    public func validateSubCategoryExists(id: UUID) async throws -> Bool {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<SubCategory> { $0.id == id && $0.isActive == true }
-            let descriptor = FetchDescriptor<SubCategory>(predicate: predicate)
-            let subCategories = try context.fetch(descriptor)
-            
-            return !subCategories.isEmpty
-        }
-    }
-    
-    public func validatePaymentMethodExists(id: UUID) async throws -> Bool {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<PaymentMethod> { $0.id == id && $0.isActive == true }
-            let descriptor = FetchDescriptor<PaymentMethod>(predicate: predicate)
-            let paymentMethods = try context.fetch(descriptor)
-            
-            return !paymentMethods.isEmpty
         }
     }
 }
