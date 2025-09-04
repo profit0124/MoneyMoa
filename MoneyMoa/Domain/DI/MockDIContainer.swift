@@ -24,6 +24,10 @@ final class MockDIContainer: DIContainer {
         MockCategoryRepository()
     }()
     
+    private lazy var _mockPaymentMethodRepository: MockPaymentMethodRepository = {
+        MockPaymentMethodRepository(scenario: .normal())
+    }()
+    
     /// 테스트에서 직접 접근할 수 있는 MockTransactionRepository
     var mockTransactionRepository: MockTransactionRepository {
         return _mockTransactionRepository
@@ -32,6 +36,11 @@ final class MockDIContainer: DIContainer {
     /// 테스트에서 직접 접근할 수 있는 MockCategoryRepository
     var mockCategoryRepository: MockCategoryRepository {
         return _mockCategoryRepository
+    }
+    
+    /// 테스트에서 직접 접근할 수 있는 MockPaymentMethodRepository
+    var mockPaymentMethodRepository: MockPaymentMethodRepository {
+        return _mockPaymentMethodRepository
     }
     
     // MARK: - Repository Factory Methods
@@ -50,6 +59,10 @@ final class MockDIContainer: DIContainer {
     
     private func makeCategoryRepository() -> CategoryRepository {
         return _mockCategoryRepository
+    }
+    
+    private func makePaymentMethodRepository() -> PaymentMethodRepository {
+        return _mockPaymentMethodRepository
     }
     // MARK: - UseCase Factory Methods
     
@@ -172,14 +185,16 @@ final class MockDIContainer: DIContainer {
     
     // MARK: - PaymentMethod UseCase Factory Methods
     
-    /// Mock GetActivePaymentMethodsUseCase를 생성합니다
+    /// GetActivePaymentMethodsUseCase를 생성합니다 (Mock Repository 기반)
     func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase {
-        return MockGetActivePaymentMethodsUseCase()
+        let repository = makePaymentMethodRepository()
+        return GetActivePaymentMethodsUseCaseImpl(paymentMethodRepository: repository)
     }
     
-    /// Mock CreatePaymentMethodUseCase를 생성합니다
+    /// CreatePaymentMethodUseCase를 생성합니다 (Mock Repository 기반)
     func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase {
-        return MockCreatePaymentMethodUseCase()
+        let repository = makePaymentMethodRepository()
+        return CreatePaymentMethodUseCaseImpl(paymentMethodRepository: repository)
     }
 
     func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase {

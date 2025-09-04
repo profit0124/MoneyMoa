@@ -49,5 +49,5 @@ struct PaymentMethodFormView: View {
 }
 
 #Preview {
-    PaymentMethodFormView(viewModel: .init(createPaymentMethodUseCase: MockCreatePaymentMethodUseCase()))
+    PaymentMethodFormView(viewModel: .init(createPaymentMethodUseCase: MockDIContainer().makeCreatePaymentMethodUseCase()))
 }
