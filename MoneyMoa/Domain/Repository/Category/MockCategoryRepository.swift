@@ -11,8 +11,8 @@ import Foundation
 /// - Provides realistic test data with configurable scenarios  
 /// - Supports error simulation and delay testing
 /// - Includes both Category and SubCategory operations
-public final class MockCategoryRepository: CategoryRepository {
-    
+public final class MockCategoryRepository: @unchecked Sendable, CategoryRepository {
+
     // MARK: - Mock Control Properties
     
     /// Simulated delay for async operations (seconds)
@@ -28,6 +28,10 @@ public final class MockCategoryRepository: CategoryRepository {
     
     private var categories: [CategoryDTO] = []
     private var subCategories: [SubCategoryDTO] = []
+    
+    // MARK: - Thread Safety
+    
+    private let serialQueue = DispatchQueue(label: "MockCategoryRepository.serialQueue", qos: .utility)
     
     // MARK: - Scenarios
     
@@ -85,30 +89,40 @@ public final class MockCategoryRepository: CategoryRepository {
         try await simulateDelay()
         try checkFailure()
         
-        return categories.sorted { $0.orderIndex < $1.orderIndex }
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.categories.sorted { $0.orderIndex < $1.orderIndex }
+                continuation.resume(returning: result)
+            }
+        }
     }
 
     public func fetchCategoriesByType(_ type: TransactionType) async throws -> [CategoryDTO] {
         try await simulateDelay()
         try checkFailure()
         
-        return categories
-            .filter { $0.transactionType == type && $0.isActive }
-            .map { category in
-                let categorySubCategories = subCategories.filter { 
-                    $0.categoryId == category.id && $0.isActive 
-                }
-                return CategoryDTO(
-                    id: category.id,
-                    name: category.name,
-                    iconName: category.iconName,
-                    transactionType: category.transactionType,
-                    isActive: category.isActive,
-                    orderIndex: category.orderIndex,
-                    subCategories: categorySubCategories
-                )
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.categories
+                    .filter { $0.transactionType == type && $0.isActive }
+                    .map { category in
+                        let categorySubCategories = self.subCategories.filter { 
+                            $0.categoryId == category.id && $0.isActive 
+                        }
+                        return CategoryDTO(
+                            id: category.id,
+                            name: category.name,
+                            iconName: category.iconName,
+                            transactionType: category.transactionType,
+                            isActive: category.isActive,
+                            orderIndex: category.orderIndex,
+                            subCategories: categorySubCategories
+                        )
+                    }
+                    .sorted { $0.orderIndex < $1.orderIndex }
+                continuation.resume(returning: result)
             }
-            .sorted { $0.orderIndex < $1.orderIndex }
+        }
     }
     
     // MARK: - SubCategory Reader Implementation
@@ -117,9 +131,14 @@ public final class MockCategoryRepository: CategoryRepository {
         try await simulateDelay()
         try checkFailure()
         
-        return subCategories
-            .filter { $0.categoryId == categoryId && $0.isActive }
-            .sorted { $0.orderIndex < $1.orderIndex }
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.subCategories
+                    .filter { $0.categoryId == categoryId && $0.isActive }
+                    .sorted { $0.orderIndex < $1.orderIndex }
+                continuation.resume(returning: result)
+            }
+        }
     }
     
     // MARK: - Validation Methods
@@ -128,10 +147,15 @@ public final class MockCategoryRepository: CategoryRepository {
         try await simulateDelay()
         try checkFailure()
         
-        return !categories.contains { category in
-            category.name == name && 
-            category.transactionType == type &&
-            category.id != excludingId
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = !self.categories.contains { category in
+                    category.name == name && 
+                    category.transactionType == type &&
+                    category.id != excludingId
+                }
+                continuation.resume(returning: result)
+            }
         }
     }
     
@@ -139,10 +163,15 @@ public final class MockCategoryRepository: CategoryRepository {
         try await simulateDelay()
         try checkFailure()
         
-        return !subCategories.contains { subCategory in
-            subCategory.name == name &&
-            subCategory.categoryId == categoryId &&
-            subCategory.id != excludingId
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = !self.subCategories.contains { subCategory in
+                    subCategory.name == name &&
+                    subCategory.categoryId == categoryId &&
+                    subCategory.id != excludingId
+                }
+                continuation.resume(returning: result)
+            }
         }
     }
     
@@ -152,17 +181,27 @@ public final class MockCategoryRepository: CategoryRepository {
         try await simulateDelay()
         try checkFailure()
         
-        categories.append(category)
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                self.categories.append(category)
+                continuation.resume()
+            }
+        }
     }
     
     public func updateCategory(_ category: CategoryDTO) async throws {
         try await simulateDelay()
         try checkFailure()
         
-        if let index = categories.firstIndex(where: { $0.id == category.id }) {
-            categories[index] = category
-        } else {
-            throw MockError.categoryNotFound
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                if let index = self.categories.firstIndex(where: { $0.id == category.id }) {
+                    self.categories[index] = category
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: MockError.categoryNotFound)
+                }
+            }
         }
     }
     
@@ -172,26 +211,38 @@ public final class MockCategoryRepository: CategoryRepository {
         try await simulateDelay()
         try checkFailure()
         
-        // Check if parent category exists
-        if !categories.contains(where: { $0.id == subCategory.categoryId }) {
-            throw MockError.categoryNotFound
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                // Check if parent category exists
+                if !self.categories.contains(where: { $0.id == subCategory.categoryId }) {
+                    continuation.resume(throwing: MockError.categoryNotFound)
+                    return
+                }
+                
+                self.subCategories.append(subCategory)
+                continuation.resume()
+            }
         }
-        
-        subCategories.append(subCategory)
     }
     
     public func updateSubCategory(_ subCategory: SubCategoryDTO) async throws {
         try await simulateDelay()
         try checkFailure()
         
-        if let index = subCategories.firstIndex(where: { $0.id == subCategory.id }) {
-            // Check if new parent category exists
-            if !categories.contains(where: { $0.id == subCategory.categoryId }) {
-                throw MockError.categoryNotFound
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                if let index = self.subCategories.firstIndex(where: { $0.id == subCategory.id }) {
+                    // Check if new parent category exists
+                    if !self.categories.contains(where: { $0.id == subCategory.categoryId }) {
+                        continuation.resume(throwing: MockError.categoryNotFound)
+                        return
+                    }
+                    self.subCategories[index] = subCategory
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: MockError.subCategoryNotFound)
+                }
             }
-            subCategories[index] = subCategory
-        } else {
-            throw MockError.subCategoryNotFound
         }
     }
     

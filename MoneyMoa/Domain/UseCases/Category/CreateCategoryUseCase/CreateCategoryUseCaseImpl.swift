@@ -30,7 +30,14 @@ final class CreateCategoryUseCaseImpl: CreateCategoryUseCase {
             throw CategoryCreationError.duplicateName
         }
         
-        // 3. 포함된 서브카테고리들 유효성 검사
+        // 3. 입력된 서브카테고리 배열 내 중복 체크
+        let subCategoryNames = category.subCategories.map { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let uniqueNames = Set(subCategoryNames)
+        if subCategoryNames.count != uniqueNames.count {
+            throw CategoryCreationError.duplicateSubCategoryName
+        }
+        
+        // 4. 포함된 서브카테고리들 유효성 검사
         for subCategory in category.subCategories {
             guard !subCategory.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw CategoryCreationError.emptySubCategoryName
@@ -47,10 +54,10 @@ final class CreateCategoryUseCaseImpl: CreateCategoryUseCase {
             }
         }
         
-        // 4. 카테고리 저장 (Repository에서 관계 데이터 검증)
+        // 5. 카테고리 저장 (Repository에서 관계 데이터 검증)
         try await categoryRepository.insertCategory(category)
         
-        // 5. 포함된 서브카테고리들 저장
+        // 6. 포함된 서브카테고리들 저장
         for subCategory in category.subCategories {
             try await categoryRepository.insertSubCategory(subCategory)
         }

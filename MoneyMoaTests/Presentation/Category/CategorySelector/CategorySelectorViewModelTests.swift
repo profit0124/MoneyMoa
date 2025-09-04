@@ -17,7 +17,7 @@ final class CategorySelectorViewModelTests: XCTestCase {
     // MARK: - Properties
     
     private var viewModel: CategorySelectorViewModel!
-    private var mockGetCategoriesUseCase: MockGetCategoriesByTypeUseCase!
+    private var mockDIContainer: MockDIContainer!
     private var mockSelectCategoryPublisher: MockSelectCategoryEventPublisher!
     private var mockRouter: AppRouter!
     
@@ -26,14 +26,14 @@ final class CategorySelectorViewModelTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        mockGetCategoriesUseCase = MockGetCategoriesByTypeUseCase()
+        mockDIContainer = MockDIContainer()
         mockSelectCategoryPublisher = MockSelectCategoryEventPublisher()
         mockRouter = AppRouter()
     }
     
     override func tearDown() {
         viewModel = nil
-        mockGetCategoriesUseCase = nil
+        mockDIContainer = nil
         mockSelectCategoryPublisher = nil
         mockRouter = nil
         super.tearDown()
@@ -43,7 +43,7 @@ final class CategorySelectorViewModelTests: XCTestCase {
     
     private func createViewModel(selectedCategory: CategoryDTO = CategoryDTO.mockFood) -> CategorySelectorViewModel {
         return CategorySelectorViewModel(
-            getCategoriesByTypeUseCase: mockGetCategoriesUseCase,
+            getCategoriesByTypeUseCase: mockDIContainer.makeGetCategoriesByTypeUseCase(),
             selectedCategory: selectedCategory,
             selectCategoryPublisher: mockSelectCategoryPublisher
         )
@@ -138,21 +138,22 @@ final class CategorySelectorViewModelTests: XCTestCase {
         // Income categories
         let incomeCategories = groupedCategories[.income]
         XCTAssertNotNil(incomeCategories)
-        XCTAssertEqual(incomeCategories?.count, 1)
-        XCTAssertEqual(incomeCategories?.first?.name, "수입")
+        XCTAssertEqual(incomeCategories?.count, 2) // 급여, 부수입
+        XCTAssertEqual(incomeCategories?.first?.name, "급여")
         
         // Variable Expense categories
         let variableExpenseCategories = groupedCategories[.variableExpense]
         XCTAssertNotNil(variableExpenseCategories)
-        XCTAssertEqual(variableExpenseCategories?.count, 2) // 식비, 교통비
+        XCTAssertEqual(variableExpenseCategories?.count, 3) // 식비, 쇼핑, 문화생활
         XCTAssertTrue(variableExpenseCategories?.contains { $0.name == "식비" } ?? false)
-        XCTAssertTrue(variableExpenseCategories?.contains { $0.name == "교통비" } ?? false)
+        XCTAssertTrue(variableExpenseCategories?.contains { $0.name == "쇼핑" } ?? false)
+        XCTAssertTrue(variableExpenseCategories?.contains { $0.name == "문화생활" } ?? false)
         
         // Fixed Expense categories
         let fixedExpenseCategories = groupedCategories[.fixedExpense]
         XCTAssertNotNil(fixedExpenseCategories)
-        XCTAssertEqual(fixedExpenseCategories?.count, 1)
-        XCTAssertEqual(fixedExpenseCategories?.first?.name, "월세")
+        XCTAssertEqual(fixedExpenseCategories?.count, 2) // 주거비, 보험료
+        XCTAssertEqual(fixedExpenseCategories?.first?.name, "주거비")
     }
     
     func test_categoriesByTransactionType_withEmptyCategories_returnsEmptyDictionary() {
@@ -234,7 +235,7 @@ final class CategorySelectorViewModelTests: XCTestCase {
     func test_fetchCategories_withError_handlesGracefully() async {
         // Given
         viewModel = createViewModel()
-        mockGetCategoriesUseCase.shouldFail = true
+        mockDIContainer.mockCategoryRepository.shouldFail = true
         
         // When
         viewModel.send(.onAppear)

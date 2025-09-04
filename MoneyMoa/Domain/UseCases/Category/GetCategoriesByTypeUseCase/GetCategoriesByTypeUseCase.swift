@@ -1,5 +1,5 @@
 //
-//  GetCategoriesWithSubCategoriesByTypeUseCase.swift
+//  GetCategoriesByTypeUseCase.swift
 //  MoneyMoa
 //
 //  Created by profit on 8/11/25.

@@ -17,7 +17,7 @@ final class CategoryListViewModelTests: XCTestCase {
     // MARK: - Properties
     
     private var viewModel: CategoryListViewModel!
-    private var mockGetCategoriesUseCase: MockGetCategoriesByTypeUseCase!
+    private var mockDIContainer: MockDIContainer!
     private var mockCategoryEventPublisher: MockCategoryEventPublisher!
     private var cancellables: Set<AnyCancellable>!
     
@@ -26,7 +26,7 @@ final class CategoryListViewModelTests: XCTestCase {
     override func setUp() {
         super.setUp()
         
-        mockGetCategoriesUseCase = MockGetCategoriesByTypeUseCase()
+        mockDIContainer = MockDIContainer()
         mockCategoryEventPublisher = MockCategoryEventPublisher()
         cancellables = Set<AnyCancellable>()
     }
@@ -34,7 +34,7 @@ final class CategoryListViewModelTests: XCTestCase {
     override func tearDown() {
         viewModel?.send(.unsubscribe)
         viewModel = nil
-        mockGetCategoriesUseCase = nil
+        mockDIContainer = nil
         mockCategoryEventPublisher = nil
         cancellables?.removeAll()
         cancellables = nil
@@ -45,7 +45,7 @@ final class CategoryListViewModelTests: XCTestCase {
     
     private func createViewModel(mode: CategoryListMode = .configuration) -> CategoryListViewModel {
         return CategoryListViewModel(
-            getCategoriesUseCase: mockGetCategoriesUseCase,
+            getCategoriesUseCase: mockDIContainer.makeGetCategoriesByTypeUseCase(),
             categoryEventPublisher: mockCategoryEventPublisher,
             mode: mode
         )
@@ -78,7 +78,7 @@ final class CategoryListViewModelTests: XCTestCase {
     func test_initialization_withoutCategoryEventPublisher() {
         // When
         viewModel = CategoryListViewModel(
-            getCategoriesUseCase: mockGetCategoriesUseCase,
+            getCategoriesUseCase: mockDIContainer.makeGetCategoriesByTypeUseCase(),
             mode: .configuration
         )
         
@@ -92,7 +92,7 @@ final class CategoryListViewModelTests: XCTestCase {
     func test_onAppear_withEmptyCategories_fetchesCategories() async {
         // Given
         viewModel = createViewModel(mode: .configuration)
-        // MockGetCategoriesByTypeUseCase는 기본적으로 income 타입에 대해 income 카테고리를 반환
+        // MockGetCategoriesWithSubCategoriesByTypeUseCase는 기본적으로 income 타입에 대해 income 카테고리를 반환
         
         // When
         viewModel.send(.onAppear)
@@ -101,8 +101,8 @@ final class CategoryListViewModelTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         
         // Then - configuration 모드의 기본 거래 유형은 .income
-        XCTAssertEqual(viewModel.categories.count, 1) // income 카테고리 1개
-        XCTAssertEqual(viewModel.categories.first?.name, "수입")
+        XCTAssertEqual(viewModel.categories.count, 2) // income 카테고리 2개 (급여, 부수입)
+        XCTAssertEqual(viewModel.categories.first?.name, "급여")
         XCTAssertEqual(viewModel.categories.first?.transactionType, .income)
     }
     
@@ -136,9 +136,10 @@ final class CategoryListViewModelTests: XCTestCase {
         
         // Then
         XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
-        XCTAssertEqual(viewModel.categories.count, 2) // 식비, 교통비
+        XCTAssertEqual(viewModel.categories.count, 3) // 식비, 쇼핑, 문화생활
         XCTAssertEqual(viewModel.categories[0].name, "식비")
-        XCTAssertEqual(viewModel.categories[1].name, "교통비")
+        XCTAssertEqual(viewModel.categories[1].name, "쇼핑")
+        XCTAssertEqual(viewModel.categories[2].name, "문화생활")
     }
     
     // MARK: - Test Methods - Action Handling - selectSubCategory
@@ -204,7 +205,7 @@ final class CategoryListViewModelTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         
         // Then - configuration 모드에서는 같은 거래 유형의 카테고리 생성 시 목록 갱신
-        XCTAssertEqual(viewModel.categories.count, 2) // 식비, 교통비
+        XCTAssertEqual(viewModel.categories.count, 3) // 식비, 쇼핑, 문화생활
         XCTAssertTrue(viewModel.categories.contains { $0.name == "식비" })
     }
     
@@ -221,8 +222,8 @@ final class CategoryListViewModelTests: XCTestCase {
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         
         // Then - updated 이벤트는 카테고리 목록을 갱신
-        XCTAssertEqual(viewModel.categories.count, 1) // income 카테고리 (기본)
-        XCTAssertEqual(viewModel.categories.first?.name, "수입")
+        XCTAssertEqual(viewModel.categories.count, 2) // income 카테고리 2개 (급여, 부수입)
+        XCTAssertEqual(viewModel.categories.first?.name, "급여")
     }
     
     func test_categoryEventSubscription_deletedEvent_removesCategoryFromList() async {
@@ -253,7 +254,7 @@ final class CategoryListViewModelTests: XCTestCase {
     func test_fetchCategories_withError_handlesGracefully() async {
         // Given
         viewModel = createViewModel(mode: .configuration)
-        mockGetCategoriesUseCase.shouldFail = true
+        mockDIContainer.mockCategoryRepository.shouldFail = true
         
         // When
         viewModel.send(.onAppear)
@@ -279,8 +280,8 @@ final class CategoryListViewModelTests: XCTestCase {
         
         // Then
         XCTAssertEqual(viewModel.selectedTransactionType, .income)
-        XCTAssertEqual(viewModel.categories.count, 1)
-        XCTAssertEqual(viewModel.categories.first?.name, "수입")
+        XCTAssertEqual(viewModel.categories.count, 2) // 급여, 부수입
+        XCTAssertEqual(viewModel.categories.first?.name, "급여")
         XCTAssertEqual(viewModel.categories.first?.transactionType, .income)
     }
     
@@ -296,8 +297,8 @@ final class CategoryListViewModelTests: XCTestCase {
         
         // Then
         XCTAssertEqual(viewModel.selectedTransactionType, .fixedExpense)
-        XCTAssertEqual(viewModel.categories.count, 1)
-        XCTAssertEqual(viewModel.categories.first?.name, "월세")
+        XCTAssertEqual(viewModel.categories.count, 2) // 주거비, 보험료
+        XCTAssertEqual(viewModel.categories.first?.name, "주거비")
         XCTAssertEqual(viewModel.categories.first?.transactionType, .fixedExpense)
     }
     
@@ -313,9 +314,10 @@ final class CategoryListViewModelTests: XCTestCase {
         
         // Then
         XCTAssertEqual(viewModel.selectedTransactionType, .variableExpense)
-        XCTAssertEqual(viewModel.categories.count, 2)
+        XCTAssertEqual(viewModel.categories.count, 3) // 식비, 쇼핑, 문화생활
         XCTAssertEqual(viewModel.categories[0].name, "식비")
-        XCTAssertEqual(viewModel.categories[1].name, "교통비")
+        XCTAssertEqual(viewModel.categories[1].name, "쇼핑")
+        XCTAssertEqual(viewModel.categories[2].name, "문화생활")
         XCTAssertTrue(viewModel.categories.allSatisfy { $0.transactionType == .variableExpense })
     }
 }

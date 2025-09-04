@@ -193,11 +193,13 @@ struct CategoryListView: View {
 }
 
 #Preview("Configuration") {
-    CategoryListView(viewModel: .init(getCategoriesUseCase: MockGetCategoriesByTypeUseCase()))
+    let mockDI = MockDIContainer()
+    CategoryListView(viewModel: .init(getCategoriesUseCase: mockDI.makeGetCategoriesByTypeUseCase()))
         .environment(AppRouter())
 }
 
 #Preview("Selection") {
-    CategoryListView(viewModel: .init(getCategoriesUseCase: MockGetCategoriesByTypeUseCase(), mode: .selection))
+    let mockDI = MockDIContainer()
+    CategoryListView(viewModel: .init(getCategoriesUseCase: mockDI.makeGetCategoriesByTypeUseCase(), mode: .selection))
         .environment(AppRouter())
 }

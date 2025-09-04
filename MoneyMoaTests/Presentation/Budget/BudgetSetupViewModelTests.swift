@@ -11,10 +11,10 @@ import XCTest
 final class BudgetSetupViewModelTests: XCTestCase {
     
     private var sut: BudgetSetupViewModel!
+    private var mockDIContainer: MockDIContainer!
     
     // Mock UseCases
     private var mockGetMonthlyBudgetUseCase: MockGetMonthlyBudgetUseCase!
-    private var mockGetCategoriesByTypeUseCase: MockGetCategoriesByTypeUseCase!
     private var mockCreateTemplateFromBudgetUseCase: MockCreateTemplateFromBudgetUseCase!
     private var mockUpdateTemplateFromBudgetUseCase: MockUpdateTemplateFromBudgetUseCase!
     private var mockCreateBudgetUseCase: MockCreateBudgetUseCase!
@@ -22,6 +22,7 @@ final class BudgetSetupViewModelTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
+        setupMockDI()
         setupMockUseCases()
         createSUT()
     }
@@ -29,12 +30,16 @@ final class BudgetSetupViewModelTests: XCTestCase {
     override func tearDown() {
         sut = nil
         clearMockUseCases()
+        mockDIContainer = nil
         super.tearDown()
+    }
+    
+    private func setupMockDI() {
+        mockDIContainer = MockDIContainer()
     }
     
     private func setupMockUseCases() {
         mockGetMonthlyBudgetUseCase = MockGetMonthlyBudgetUseCase()
-        mockGetCategoriesByTypeUseCase = MockGetCategoriesByTypeUseCase()
         mockCreateTemplateFromBudgetUseCase = MockCreateTemplateFromBudgetUseCase()
         mockUpdateTemplateFromBudgetUseCase = MockUpdateTemplateFromBudgetUseCase()
         mockCreateBudgetUseCase = MockCreateBudgetUseCase()
@@ -42,12 +47,11 @@ final class BudgetSetupViewModelTests: XCTestCase {
         
         // Mock 데이터 초기화
         mockGetMonthlyBudgetUseCase.clearMockData()
-        mockGetCategoriesByTypeUseCase.shouldFail = false
+        mockDIContainer.mockCategoryRepository.shouldFail = false
     }
     
     private func clearMockUseCases() {
         mockGetMonthlyBudgetUseCase = nil
-        mockGetCategoriesByTypeUseCase = nil
         mockCreateTemplateFromBudgetUseCase = nil
         mockUpdateTemplateFromBudgetUseCase = nil
         mockCreateBudgetUseCase = nil
@@ -58,7 +62,7 @@ final class BudgetSetupViewModelTests: XCTestCase {
         sut = BudgetSetupViewModel(
             yearMonth: yearMonth,
             getMonthlyBudgetUseCase: mockGetMonthlyBudgetUseCase,
-            getCategoriesByTypeUseCase: mockGetCategoriesByTypeUseCase,
+            getCategoriesByTypeUseCase: mockDIContainer.makeGetCategoriesByTypeUseCase(),
             createTemplateFromBudgetUseCase: mockCreateTemplateFromBudgetUseCase,
             updateBudgetTemplateUseCase: mockUpdateTemplateFromBudgetUseCase,
             createBudgetUseCase: mockCreateBudgetUseCase,
@@ -347,7 +351,7 @@ final class BudgetSetupViewModelTests: XCTestCase {
     
     func test_onAppear_whenUseCaseThrowsError_shouldShowError() async {
         // Given: Mock UseCase가 에러를 던지도록 설정된 상태
-        mockGetCategoriesByTypeUseCase.shouldFail = true
+        mockDIContainer.mockCategoryRepository.shouldFail = true
         
         // When: onAppear 액션 실행
         sut.send(.onAppear)
