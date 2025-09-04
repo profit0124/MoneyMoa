@@ -16,15 +16,15 @@ final class UpdateSubCategoryUseCaseTests: XCTestCase {
     // MARK: - Properties
     
     private var useCase: UpdateSubCategoryUseCaseImpl!
-    private var mockRepository: MockSubCategoryRepository!
+    private var mockRepository: MockCategoryRepository!
     
     // MARK: - Setup & Teardown
     
     override func setUp() {
         super.setUp()
         
-        mockRepository = MockSubCategoryRepository()
-        useCase = UpdateSubCategoryUseCaseImpl(subCategoryRepository: mockRepository)
+        mockRepository = MockCategoryRepository()
+        useCase = UpdateSubCategoryUseCaseImpl(categoryRepository: mockRepository)
     }
     
     override func tearDown() {
@@ -309,9 +309,9 @@ final class UpdateSubCategoryUseCaseTests: XCTestCase {
     }
 }
 
-// MARK: - Mock SubCategoryRepository
+// MARK: - Mock CategoryRepository
 
-private class MockSubCategoryRepository: SubCategoryRepository {
+private class MockCategoryRepository: CategoryRepository {
 
     var updateSubCategoryCallCount = 0
     var validateSubCategoryNameCallCount = 0
@@ -359,18 +359,12 @@ private class MockSubCategoryRepository: SubCategoryRepository {
         return validateSubCategoryNameResult
     }
     
-    // MARK: - Unused SubCategoryRepository methods (required by protocol)
-    func fetchSubCategories() async throws -> [SubCategoryDTO] { [] }
-    func fetchSubCategory(id: UUID) async throws -> SubCategoryDTO? { nil }
+    // MARK: - Unused CategoryRepository methods (required by protocol)
+    func fetchCategories() async throws -> [CategoryDTO] { [] }
+    func fetchCategoriesByType(_ type: TransactionType) async throws -> [CategoryDTO] { [] }
+    func validateCategoryName(_ name: String, type: TransactionType, excludingId: UUID?) async throws -> Bool { true }
     func fetchSubCategories(categoryId: UUID) async throws -> [SubCategoryDTO] { [] }
-    func fetchActiveSubCategories() async throws -> [SubCategoryDTO] { [] }
-    func fetchSubCategoriesByType(_ type: TransactionType) async throws -> [SubCategoryDTO] { [] }
+    func insertCategory(_ category: CategoryDTO) async throws {}
+    func updateCategory(_ category: CategoryDTO) async throws {}
     func insertSubCategory(_ subCategory: SubCategoryDTO) async throws {}
-    func deactivateSubCategory(id: UUID) async throws {}
-    func activateSubCategory(id: UUID) async throws {}
-    func hasTransactions(subCategoryId: UUID) async throws -> Bool { true }
-    func createSubCategory(_ subCategory: SubCategoryDTO) async throws { }
-    func getSubCategories(by categoryId: UUID) async throws -> [SubCategoryDTO] { return [] }
-    func deleteSubCategory(id: UUID) async throws { }
-    func moveSubCategory(_ subCategoryId: UUID, to categoryId: UUID) async throws { }
 }

@@ -11,14 +11,9 @@ import Foundation
 
 public final class ImportRecommendedCategoriesUseCaseImpl: ImportRecommendedCategoriesUseCase {
     private let categoryRepository: CategoryRepository
-    private let subCategoryRepository: SubCategoryRepository
     
-    public init(
-        categoryRepository: CategoryRepository,
-        subCategoryRepository: SubCategoryRepository
-    ) {
+    public init(categoryRepository: CategoryRepository) {
         self.categoryRepository = categoryRepository
-        self.subCategoryRepository = subCategoryRepository
     }
     
     public func execute() async throws {
@@ -54,7 +49,7 @@ public final class ImportRecommendedCategoriesUseCaseImpl: ImportRecommendedCate
                         categoryIconName: categoryDTO.iconName
                     )
                     
-                    try await subCategoryRepository.insertSubCategory(subCategoryDTO)
+                    try await categoryRepository.insertSubCategory(subCategoryDTO)
                 }
             }
         }

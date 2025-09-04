@@ -121,21 +121,13 @@ final class AppDIContainer: DIContainer {
     /// Production GetCategoriesByTypeUseCase를 생성합니다
     func makeGetCategoriesByTypeUseCase() -> GetCategoriesByTypeUseCase {
         let categoryRepository = makeCategoryRepository()
-        let subCategoryRepository = makeSubCategoryRepository()
-        return GetCategoriesByTypeUseCaseImpl(
-            categoryRepository: categoryRepository,
-            subCategoryRepository: subCategoryRepository
-        )
+        return GetCategoriesByTypeUseCaseImpl(categoryRepository: categoryRepository)
     }
     
     /// Production CreateCategoryUseCase를 생성합니다
     func makeCreateCategoryUseCase() -> CreateCategoryUseCase {
         let categoryRepository = makeCategoryRepository()
-        let subCategoryRepository = makeSubCategoryRepository()
-        return CreateCategoryUseCaseImpl(
-            categoryRepository: categoryRepository,
-            subCategoryRepository: subCategoryRepository
-        )
+        return CreateCategoryUseCaseImpl(categoryRepository: categoryRepository)
     }
     
     /// Production UpdateCategoryUseCase를 생성합니다
@@ -146,24 +138,20 @@ final class AppDIContainer: DIContainer {
     
     /// Production CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase {
-        let repository = makeSubCategoryRepository()
-        return CreateSubCategoryUseCaseImpl(subCategoryRepository: repository)
+        let repository = makeCategoryRepository()
+        return CreateSubCategoryUseCaseImpl(categoryRepository: repository)
     }
 
     /// Production UpdateSubCategoryUseCase를 생성합니다
     func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase {
-        let repository = makeSubCategoryRepository()
-        return UpdateSubCategoryUseCaseImpl(subCategoryRepository: repository)
+        let repository = makeCategoryRepository()
+        return UpdateSubCategoryUseCaseImpl(categoryRepository: repository)
     }
 
     /// Production ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {
         let categoryRepository = makeCategoryRepository()
-        let subCategoryRepository = makeSubCategoryRepository()
-        return ImportRecommendedCategoriesUseCaseImpl(
-            categoryRepository: categoryRepository,
-            subCategoryRepository: subCategoryRepository
-        )
+        return ImportRecommendedCategoriesUseCaseImpl(categoryRepository: categoryRepository)
     }
     
     // MARK: - PaymentMethod UseCase Factory Methods
@@ -202,14 +190,19 @@ final class AppDIContainer: DIContainer {
         return BudgetRepositoryImpl(database: database)
     }
     
-    /// CategoryRepository 구현체를 생성합니다
+    /// CategoryRepository 구현체를 생성합니다 (통합 인터페이스)
     private func makeCategoryRepository() -> CategoryRepository {
         return CategoryRepositoryImpl(database: database)
     }
     
-    /// SubCategoryRepository 구현체를 생성합니다
-    private func makeSubCategoryRepository() -> SubCategoryRepository {
-        return SubCategoryRepositoryImpl(database: database)
+    /// CategoryReader 구현체를 생성합니다 (읽기 전용)
+    private func makeCategoryReader() -> CategoryReader {
+        return CategoryRepositoryImpl(database: database)
+    }
+    
+    /// CategoryWriter 구현체를 생성합니다 (쓰기 전용)
+    private func makeCategoryWriter() -> CategoryWriter {
+        return CategoryRepositoryImpl(database: database)
     }
     
     /// PaymentMethodRepository 구현체를 생성합니다

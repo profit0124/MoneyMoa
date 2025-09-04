@@ -327,19 +327,12 @@ private class MockCategoryRepository: CategoryRepository {
     
     // MARK: - Unused CategoryRepository methods (required by protocol)
     func fetchCategories() async throws -> [CategoryDTO] { [] }
-    func fetchCategory(id: UUID) async throws -> CategoryDTO? { nil }
-    func fetchCategoryWithSubCategories(id: UUID) async throws -> CategoryDTO? { nil }
-    func fetchActiveCategories() async throws -> [CategoryDTO] { [] }
     func fetchCategoriesByType(_ type: TransactionType) async throws -> [CategoryDTO] { [] }
     func insertCategory(_ category: CategoryDTO) async throws {}
-    func deactivateCategory(id: UUID) async throws {}
-    func activateCategory(id: UUID) async throws {}
-    func hasTransactions(categoryId: UUID) async throws -> Bool { true }
-    func createCategory(_ category: CategoryDTO) async throws { }
-    func getCategories(by type: TransactionType) async throws -> [CategoryDTO] { return [] }
-    func deleteCategory(id: UUID) async throws { }
-    func createSubCategory(_ subCategory: SubCategoryDTO) async throws { }
+    
+    // MARK: - SubCategory methods
+    func fetchSubCategories(categoryId: UUID) async throws -> [SubCategoryDTO] { [] }
+    func insertSubCategory(_ subCategory: SubCategoryDTO) async throws { }
     func updateSubCategory(_ subCategory: SubCategoryDTO) async throws { }
-    func deleteSubCategory(_ subCategoryId: UUID) async throws { }
-    func importRecommendedCategories() async throws { }
+    func validateSubCategoryName(_ name: String, categoryId: UUID, excludingId: UUID?) async throws -> Bool { true }
 }

@@ -20,9 +20,18 @@ final class MockDIContainer: DIContainer {
         MockTransactionRepository(scenario: .empty)
     }()
     
+    private lazy var _mockCategoryRepository: MockCategoryRepository = {
+        MockCategoryRepository()
+    }()
+    
     /// 테스트에서 직접 접근할 수 있는 MockTransactionRepository
     var mockTransactionRepository: MockTransactionRepository {
         return _mockTransactionRepository
+    }
+    
+    /// 테스트에서 직접 접근할 수 있는 MockCategoryRepository
+    var mockCategoryRepository: MockCategoryRepository {
+        return _mockCategoryRepository
     }
     
     // MARK: - Repository Factory Methods
@@ -37,6 +46,10 @@ final class MockDIContainer: DIContainer {
     
     private func makeTransactionWriter() -> TransactionWriter {
         return _mockTransactionRepository
+    }
+    
+    private func makeCategoryRepository() -> CategoryRepository {
+        return _mockCategoryRepository
     }
     // MARK: - UseCase Factory Methods
     
@@ -121,33 +134,40 @@ final class MockDIContainer: DIContainer {
     
     // MARK: - Category UseCase Factory Methods
     
-    /// Mock GetCategoriesByTypeUseCase를 생성합니다
+    /// GetCategoriesByTypeUseCase를 생성합니다 (Mock Repository 기반)
     func makeGetCategoriesByTypeUseCase() -> GetCategoriesByTypeUseCase {
-        return MockGetCategoriesByTypeUseCase()
+        let categoryRepository = makeCategoryRepository()
+        return GetCategoriesByTypeUseCaseImpl(categoryRepository: categoryRepository)
     }
     
-    /// Mock CreateCategoryUseCase를 생성합니다
+    /// Mock Repository 기반 CreateCategoryUseCase를 생성합니다
     func makeCreateCategoryUseCase() -> CreateCategoryUseCase {
-        return MockCreateCategoryUseCase()
+        let categoryRepository = makeCategoryRepository()
+        return CreateCategoryUseCaseImpl(categoryRepository: categoryRepository)
     }
     
-    /// Mock UpdateCategoryUseCase를 생성합니다
+    /// Mock Repository 기반 UpdateCategoryUseCase를 생성합니다
     func makeUpdateCategoryUseCase() -> UpdateCategoryUseCase {
-        return MockUpdateCategoryUseCase()
+        let categoryRepository = makeCategoryRepository()
+        return UpdateCategoryUseCaseImpl(categoryRepository: categoryRepository)
     }
 
+    /// Mock Repository 기반 UpdateSubCategoryUseCase를 생성합니다
     func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase {
-        return MockUpdateSubCategoryUseCase()
+        let categoryRepository = makeCategoryRepository()
+        return UpdateSubCategoryUseCaseImpl(categoryRepository: categoryRepository)
     }
 
-    /// Mock CreateSubCategoryUseCase를 생성합니다
+    /// Mock Repository 기반 CreateSubCategoryUseCase를 생성합니다
     func makeCreateSubCategoryUseCase() -> CreateSubCategoryUseCase {
-        return MockCreateSubCategoryUseCase()
+        let categoryRepository = makeCategoryRepository()
+        return CreateSubCategoryUseCaseImpl(categoryRepository: categoryRepository)
     }
     
     /// Mock ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {
-        return MockImportRecommendedCategoriesUseCase()
+        let categoryRepository = makeCategoryRepository()
+        return ImportRecommendedCategoriesUseCaseImpl(categoryRepository: categoryRepository)
     }
     
     // MARK: - PaymentMethod UseCase Factory Methods

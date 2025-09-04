@@ -10,7 +10,7 @@ import Foundation
 /// Mock Transaction Repository for Testing and Previews
 /// - Provides realistic test data with configurable scenarios  
 /// - Supports error simulation and delay testing
-public final class MockTransactionRepository: TransactionRepository {
+public final class MockTransactionRepository: @unchecked Sendable, TransactionRepository {
     
     // MARK: - Mock Control Properties
     
@@ -26,6 +26,10 @@ public final class MockTransactionRepository: TransactionRepository {
     // MARK: - Data Storage
     
     private var transactions: [TransactionDTO] = []
+    
+    // MARK: - Thread Safety
+    
+    private let serialQueue = DispatchQueue(label: "MockTransactionRepository.serialQueue", qos: .utility)
     
     // MARK: - Scenarios
     
@@ -78,7 +82,12 @@ public final class MockTransactionRepository: TransactionRepository {
         try await simulateDelay()
         try checkFailure()
         
-        return transactions.first { $0.id == id }
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.transactions.first { $0.id == id }
+                continuation.resume(returning: result)
+            }
+        }
     }
     
     public func fetchTransactions(for yearMonth: YearMonth) async throws -> [TransactionDTO] {
@@ -88,67 +97,92 @@ public final class MockTransactionRepository: TransactionRepository {
         let startDate = yearMonth.startOfMonth
         let endDate = yearMonth.endOfMonth
         
-        return transactions.filter { transaction in
-            transaction.date >= startDate && transaction.date <= endDate
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.transactions.filter { transaction in
+                    transaction.date >= startDate && transaction.date <= endDate
+                }
+                .sorted { $0.date > $1.date }
+                continuation.resume(returning: result)
+            }
         }
-        .sorted { $0.date > $1.date }
     }
     
     public func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [TransactionDTO] {
         try await simulateDelay()
         try checkFailure()
         
-        return transactions.filter { transaction in
-            transaction.date >= startDate && transaction.date <= endDate
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.transactions.filter { transaction in
+                    transaction.date >= startDate && transaction.date <= endDate
+                }
+                .sorted { $0.date > $1.date }
+                continuation.resume(returning: result)
+            }
         }
-        .sorted { $0.date > $1.date }
     }
     
     public func fetchFavoriteTransactions() async throws -> [TransactionDTO] {
         try await simulateDelay()
         try checkFailure()
         
-        return transactions.filter { $0.isFavorite }
-            .sorted { $0.date > $1.date }
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.transactions.filter { $0.isFavorite }
+                    .sorted { $0.date > $1.date }
+                continuation.resume(returning: result)
+            }
+        }
     }
     
     public func getTotalAmountByType(from startDate: Date, to endDate: Date) async throws -> [(TransactionType, Decimal)] {
         try await simulateDelay()
         try checkFailure()
         
-        let periodTransactions = transactions.filter { transaction in
-            return transaction.date >= startDate && transaction.date <= endDate
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let periodTransactions = self.transactions.filter { transaction in
+                    return transaction.date >= startDate && transaction.date <= endDate
+                }
+                
+                var totals: [TransactionType: Decimal] = [:]
+                for transaction in periodTransactions {
+                    totals[transaction.transactionType, default: 0] += transaction.amount
+                }
+                
+                let result = totals.map { (type, amount) in (type, amount) }
+                continuation.resume(returning: result)
+            }
         }
-        
-        var totals: [TransactionType: Decimal] = [:]
-        for transaction in periodTransactions {
-            totals[transaction.transactionType, default: 0] += transaction.amount
-        }
-        
-        return totals.map { (type, amount) in (type, amount) }
     }
     
     public func getTotalAmountBySubCategory(from startDate: Date, to endDate: Date) async throws -> [(SubCategoryDTO, Decimal)] {
         try await simulateDelay()
         try checkFailure()
         
-        let periodTransactions = transactions.filter { transaction in
-            return transaction.date >= startDate && transaction.date <= endDate
-        }
-        
-        var totals: [UUID: (SubCategoryDTO, Decimal)] = [:]
-        for transaction in periodTransactions {
-            let subCategory = transaction.subCategory
-            let subCategoryId = subCategory.id
-            
-            if let existing = totals[subCategoryId] {
-                totals[subCategoryId] = (existing.0, existing.1 + transaction.amount)
-            } else {
-                totals[subCategoryId] = (subCategory, transaction.amount)
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let periodTransactions = self.transactions.filter { transaction in
+                    return transaction.date >= startDate && transaction.date <= endDate
+                }
+                
+                var totals: [UUID: (SubCategoryDTO, Decimal)] = [:]
+                for transaction in periodTransactions {
+                    let subCategory = transaction.subCategory
+                    let subCategoryId = subCategory.id
+                    
+                    if let existing = totals[subCategoryId] {
+                        totals[subCategoryId] = (existing.0, existing.1 + transaction.amount)
+                    } else {
+                        totals[subCategoryId] = (subCategory, transaction.amount)
+                    }
+                }
+                
+                let result = totals.values.map { $0 }
+                continuation.resume(returning: result)
             }
         }
-        
-        return totals.values.map { $0 }
     }
     
     // MARK: - TransactionWriter Implementation
@@ -157,17 +191,27 @@ public final class MockTransactionRepository: TransactionRepository {
         try await simulateDelay()
         try checkFailure()
         
-        transactions.append(transaction)
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                self.transactions.append(transaction)
+                continuation.resume()
+            }
+        }
     }
     
     public func updateTransaction(_ transaction: TransactionDTO) async throws {
         try await simulateDelay()
         try checkFailure()
         
-        if let index = transactions.firstIndex(where: { $0.id == transaction.id }) {
-            transactions[index] = transaction
-        } else {
-            throw MockError.transactionNotFound
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                if let index = self.transactions.firstIndex(where: { $0.id == transaction.id }) {
+                    self.transactions[index] = transaction
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: MockError.transactionNotFound)
+                }
+            }
         }
     }
 
@@ -175,32 +219,15 @@ public final class MockTransactionRepository: TransactionRepository {
         try await simulateDelay()
         try checkFailure()
         
-        if let index = transactions.firstIndex(where: { $0.id == id }) {
-            transactions.remove(at: index)
-        } else {
-            throw MockError.transactionNotFound
-        }
-    }
-}
-
-// MARK: - Mock Error Types
-
-public enum MockError: Error, LocalizedError {
-    case simulatedFailure
-    case transactionNotFound
-    case networkTimeout
-    case invalidData
-    
-    public var errorDescription: String? {
-        switch self {
-        case .simulatedFailure:
-            return "Simulated failure for testing"
-        case .transactionNotFound:
-            return "Transaction not found"
-        case .networkTimeout:
-            return "Network timeout"
-        case .invalidData:
-            return "Invalid data"
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                if let index = self.transactions.firstIndex(where: { $0.id == id }) {
+                    self.transactions.remove(at: index)
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: MockError.transactionNotFound)
+                }
+            }
         }
     }
 }
