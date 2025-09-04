@@ -212,4 +212,59 @@ final class MockDIContainerTests: XCTestCase {
         XCTAssertNotNil(publisher)
         XCTAssertTrue(publisher is DefaultTransactionEventPublisher)
     }
+    
+    // MARK: - Test Methods - PaymentMethod UseCases
+    
+    func test_makeGetActivePaymentMethodsUseCase_returnsValidUseCase() {
+        // Given & When
+        let useCase = container.makeGetActivePaymentMethodsUseCase()
+        
+        // Then
+        XCTAssertNotNil(useCase)
+        XCTAssertTrue(useCase is GetActivePaymentMethodsUseCaseImpl)
+    }
+    
+    func test_makeCreatePaymentMethodUseCase_returnsValidUseCase() {
+        // Given & When
+        let useCase = container.makeCreatePaymentMethodUseCase()
+        
+        // Then
+        XCTAssertNotNil(useCase)
+        XCTAssertTrue(useCase is CreatePaymentMethodUseCaseImpl)
+    }
+    
+    func test_mockPaymentMethodRepository_isAccessible() {
+        // Given & When
+        let mockRepository = container.mockPaymentMethodRepository
+        
+        // Then
+        XCTAssertNotNil(mockRepository)    }
+    
+    func test_mockPaymentMethodRepository_hasNormalScenario() async throws {
+        // Given
+        let mockRepository = container.mockPaymentMethodRepository
+        
+        // When
+        let paymentMethods = try await mockRepository.fetchPaymentMethods()
+        
+        // Then
+        XCTAssertGreaterThan(paymentMethods.count, 0)
+    }
+    
+    func test_paymentMethodUseCases_shareSameRepository() async throws {
+        // Given
+        let getActiveUseCase = container.makeGetActivePaymentMethodsUseCase()
+        let createUseCase = container.makeCreatePaymentMethodUseCase()
+        
+        // When: Create a new payment method
+        let newPaymentMethod = PaymentMethodFactory.create(
+            name: "테스트카드",
+            kind: .credit
+        )
+        try await createUseCase.execute(newPaymentMethod)
+        
+        // Then: Should be available through get use case
+        let activePaymentMethods = try await getActiveUseCase.execute()
+        XCTAssertTrue(activePaymentMethods.contains { $0.name == "테스트카드" })
+    }
 }

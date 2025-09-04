@@ -84,29 +84,61 @@ public enum PaymentMethodFactory {
         return paymentMethods
     }
     
-    /// 랜덤 결제수단 세트
+    /// 랜덤 결제수단 세트 (고유한 이름 보장)
     /// - Parameter count: 생성할 개수
-    /// - Returns: 랜덤하게 생성된 결제수단 배열
+    /// - Returns: 랜덤하게 생성된 고유한 이름의 결제수단 배열
     public static func randomSet(count: Int) -> [PaymentMethodDTO] {
         let kinds: [PaymentMethodKind] = [.cash, .credit, .debit, .transfer]
         let prefixes = ["국민", "신한", "우리", "하나", "기업", "농협", "카카오", "토스", "삼성", "현대"]
         let suffixes = ["카드", "체크카드", "신용카드", "페이", "머니"]
         
-        return (0..<count).map { index in
-            let kind = kinds.randomElement() ?? .credit
-            let prefix = prefixes.randomElement() ?? "기본"
-            let suffix = suffixes.randomElement() ?? "카드"
-            let name = kind == .cash ? "현금" : 
-                      kind == .transfer ? "계좌이체" : 
-                      "\(prefix)\(suffix)"
+        var usedNames: Set<String> = []
+        var results: [PaymentMethodDTO] = []
+        
+        for index in 0..<count {
+            var name: String
+            var kind: PaymentMethodKind
+            var attempts = 0
             
-            return create(
+            repeat {
+                kind = kinds.randomElement() ?? .credit
+                
+                if kind == .cash {
+                    name = usedNames.contains("현금") ? "현금\(index)" : "현금"
+                } else if kind == .transfer {
+                    name = usedNames.contains("계좌이체") ? "계좌이체\(index)" : "계좌이체"
+                } else {
+                    let prefix = prefixes.randomElement() ?? "기본"
+                    let suffix = suffixes.randomElement() ?? "카드"
+                    name = "\(prefix)\(suffix)"
+                    
+                    // 중복 이름이면 인덱스 추가
+                    if usedNames.contains(name) {
+                        name = "\(prefix)\(suffix)\(index)"
+                    }
+                }
+                
+                attempts += 1
+                // 무한루프 방지: 100번 시도 후에는 강제로 고유한 이름 생성
+                if attempts > 100 {
+                    name = "결제수단\(index)"
+                    kind = .credit
+                    break
+                }
+                
+            } while usedNames.contains(name)
+            
+            usedNames.insert(name)
+            
+            results.append(create(
                 name: name,
                 kind: kind,
                 orderIndex: index,
                 isActive: Bool.random() ? true : Double.random(in: 0...1) > 0.2 // 80% 확률로 활성
-            )
+            ))
         }
+        
+        return results
     }
     
     // MARK: - Special Cases
