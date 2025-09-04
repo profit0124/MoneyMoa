@@ -10,7 +10,7 @@ import SwiftData
 
 // MARK: - PaymentMethodRepositoryImpl
 
-public class PaymentMethodRepositoryImpl: PaymentMethodRepository {
+public final class PaymentMethodRepositoryImpl: PaymentMethodRepository {
     private let database: Database
     
     public init(database: Database) {
