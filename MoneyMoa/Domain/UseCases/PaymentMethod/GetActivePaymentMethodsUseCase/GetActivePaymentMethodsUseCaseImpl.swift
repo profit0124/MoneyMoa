@@ -8,13 +8,13 @@
 import Foundation
 
 final class GetActivePaymentMethodsUseCaseImpl: GetActivePaymentMethodsUseCase {
-    private let paymentMethodRepository: PaymentMethodRepository
+    private let paymentMethodReader: PaymentMethodReader
     
     init(paymentMethodRepository: PaymentMethodRepository) {
-        self.paymentMethodRepository = paymentMethodRepository
+        self.paymentMethodReader = paymentMethodRepository
     }
     
     func execute() async throws -> [PaymentMethodDTO] {
-        return try await paymentMethodRepository.fetchActivePaymentMethods()
+        return try await paymentMethodReader.fetchActivePaymentMethods()
     }
 }

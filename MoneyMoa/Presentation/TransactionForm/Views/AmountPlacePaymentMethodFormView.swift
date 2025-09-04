@@ -187,8 +187,8 @@ struct AmountPlacePaymentMethodFormView: View {
     AmountPlacePaymentMethodFormView(
         viewModel:
             AmountPlacePaymentMethodFormViewModel(
-                getActivePaymentMethodsUseCase: MockGetActivePaymentMethodsUseCase(),
-                createPaymentMethodUseCase: MockCreatePaymentMethodUseCase()
+                getActivePaymentMethodsUseCase: MockDIContainer().makeGetActivePaymentMethodsUseCase(),
+                createPaymentMethodUseCase: MockDIContainer().makeCreatePaymentMethodUseCase()
             )
     )
     .padding(.horizontal, 16)

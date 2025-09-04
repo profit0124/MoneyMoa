@@ -7,9 +7,9 @@
 
 import Foundation
 
-// MARK: - PaymentMethod Repository Protocol
+// MARK: - PaymentMethod Reader Protocol
 
-public protocol PaymentMethodRepository {
+public protocol PaymentMethodReader: Sendable {
     
     // MARK: - 조회 (Fetch Operations)
     
@@ -30,6 +30,41 @@ public protocol PaymentMethodRepository {
     /// - Parameter kind: 결제수단 종류 (현금/이체/신용카드/체크카드)
     /// - Returns: 해당 종류의 활성 결제수단 목록
     func fetchPaymentMethodsByKind(_ kind: PaymentMethodKind) async throws -> [PaymentMethodDTO]
+    
+    // MARK: - 검증 (Validation)
+    
+    /// 결제수단명 중복 확인 (같은 종류 내에서)
+    /// - Parameters:
+    ///   - name: 확인할 결제수단명
+    ///   - kind: 결제수단 종류 (같은 종류 내에서만 중복 확인)
+    ///   - excludingId: 제외할 ID (수정 시 자기 자신 제외)
+    /// - Returns: 사용 가능하면 true
+    /// - Note: 같은 이름이라도 종류가 다르면 허용 (예: "국민은행" 신용카드 + "국민은행" 체크카드)
+    func validatePaymentMethodName(_ name: String, kind: PaymentMethodKind, excludingId: UUID?) async throws -> Bool
+    
+    /// 결제수단에 거래 내역 존재 여부 확인
+    /// - Parameter id: 확인할 결제수단 ID
+    /// - Returns: 거래 내역이 있으면 true
+    func hasTransactions(paymentMethodId: UUID) async throws -> Bool
+    
+    // MARK: - 통계 (Statistics)
+    
+    /// 결제수단별 사용 횟수 조회 (최근 사용한 순서로 정렬)
+    /// - Parameter limit: 조회할 개수 제한 (기본값: 10)
+    /// - Returns: 결제수단별 사용 횟수 정보
+    func fetchPaymentMethodUsageStats(limit: Int) async throws -> [(paymentMethod: PaymentMethodDTO, usageCount: Int)]
+    
+    /// 특정 기간 내 결제수단별 거래 금액 합계
+    /// - Parameters:
+    ///   - startDate: 시작일
+    ///   - endDate: 종료일
+    /// - Returns: 결제수단별 거래 금액 합계
+    func fetchPaymentMethodAmountSummary(startDate: Date, endDate: Date) async throws -> [(paymentMethod: PaymentMethodDTO, totalAmount: Decimal)]
+}
+
+// MARK: - PaymentMethod Writer Protocol
+
+public protocol PaymentMethodWriter: Sendable {
     
     // MARK: - 생성/수정 (Create/Update Operations)
     
@@ -66,34 +101,9 @@ public protocol PaymentMethodRepository {
     /// - Warning: 비활성 상태인 결제수단만 삭제 가능. 해당 결제수단을 사용한 거래가 있으면 삭제 불가
     /// - Throws: 활성 상태 결제수단 삭제 시도 시 에러, 거래 내역이 있을 때 에러
     func deletePaymentMethod(id: UUID) async throws
-    
-    // MARK: - 검증 (Validation)
-    
-    /// 결제수단명 중복 확인 (같은 종류 내에서)
-    /// - Parameters:
-    ///   - name: 확인할 결제수단명
-    ///   - kind: 결제수단 종류 (같은 종류 내에서만 중복 확인)
-    ///   - excludingId: 제외할 ID (수정 시 자기 자신 제외)
-    /// - Returns: 사용 가능하면 true
-    /// - Note: 같은 이름이라도 종류가 다르면 허용 (예: "국민은행" 신용카드 + "국민은행" 체크카드)
-    func validatePaymentMethodName(_ name: String, kind: PaymentMethodKind, excludingId: UUID?) async throws -> Bool
-    
-    /// 결제수단에 거래 내역 존재 여부 확인
-    /// - Parameter id: 확인할 결제수단 ID
-    /// - Returns: 거래 내역이 있으면 true
-    func hasTransactions(paymentMethodId: UUID) async throws -> Bool
-    
-    // MARK: - 통계 (Statistics)
-    
-    /// 결제수단별 사용 횟수 조회 (최근 사용한 순서로 정렬)
-    /// - Parameter limit: 조회할 개수 제한 (기본값: 10)
-    /// - Returns: 결제수단별 사용 횟수 정보
-    func fetchPaymentMethodUsageStats(limit: Int) async throws -> [(paymentMethod: PaymentMethodDTO, usageCount: Int)]
-    
-    /// 특정 기간 내 결제수단별 거래 금액 합계
-    /// - Parameters:
-    ///   - startDate: 시작일
-    ///   - endDate: 종료일
-    /// - Returns: 결제수단별 거래 금액 합계
-    func fetchPaymentMethodAmountSummary(startDate: Date, endDate: Date) async throws -> [(paymentMethod: PaymentMethodDTO, totalAmount: Decimal)]
 }
+
+// MARK: - PaymentMethod Repository Protocol
+
+/// PaymentMethodReader와 PaymentMethodWriter를 결합한 통합 프로토콜
+public typealias PaymentMethodRepository = PaymentMethodReader & PaymentMethodWriter
