@@ -51,7 +51,7 @@ final class AppDIContainer: DIContainer {
     /// Production GetBudgetTemplateUseCase를 생성합니다
     func makeGetBudgetTemplateUseCase() -> GetBudgetTemplateUseCase {
         let repository = makeBudgetRepository()
-        return GetBudgetTemplateUseCaseImpl(budgetRepository: repository)
+        return GetBudgetTemplateUseCaseImpl(repo: repository)
     }
     
     /// Production CreateBudgetFromTemplateUseCase를 생성합니다
@@ -69,13 +69,13 @@ final class AppDIContainer: DIContainer {
     /// Production CreateBudgetTemplateUseCase를 생성합니다
     func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase {
         let repository = makeBudgetRepository()
-        return CreateTemplateFromBudgetUseCaseImpl(budgetRepository: repository)
+        return CreateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
     /// Production UpdateBudgetTemplateUseCase를 생성합니다
     func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase {
         let repository = makeBudgetRepository()
-        return UpdateTemplateFromBudgetUseCaseImpl(budgetRepository: repository)
+        return UpdateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
     /// Production UpdateBudgetRangeUseCase를 생성합니다
@@ -186,7 +186,7 @@ final class AppDIContainer: DIContainer {
     }
     
     /// BudgetRepository 구현체를 생성합니다
-    private func makeBudgetRepository() -> BudgetRepository {
+    private func makeBudgetRepository() -> CompleteBudgetRepository {
         return BudgetRepositoryImpl(database: database)
     }
     

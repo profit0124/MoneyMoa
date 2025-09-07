@@ -9,13 +9,13 @@ import Foundation
 
 public struct CreateTemplateFromBudgetUseCaseImpl: CreateTemplateFromBudgetUseCase {
 
-    private let budgetRepository: BudgetRepository
-    
-    public init(budgetRepository: BudgetRepository) {
-        self.budgetRepository = budgetRepository
+    private let repo: BudgetTemplateWriter
+
+    public init(repo: BudgetTemplateWriter) {
+        self.repo = repo
     }
     
     public func execute(_ budget: BudgetDTO) async throws {
-        try await budgetRepository.createBudgetTemplate(budget.toBudgetTemplateDTO())
+        try await repo.createBudgetTemplate(budget.toBudgetTemplateDTO())
     }
 }
