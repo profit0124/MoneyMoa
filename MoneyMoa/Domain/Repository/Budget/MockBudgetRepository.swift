@@ -211,14 +211,14 @@ public final class MockBudgetRepository: @unchecked Sendable, BudgetRepository {
         try await simulateDelay()
         try checkFailure()
         
-        return await withCheckedContinuation { continuation in
+        return try await withCheckedThrowingContinuation { continuation in
             serialQueue.async {
                 // Validate category budgets sum
                 do {
                     try self.validateCategoryBudgetsSum(budget.categoryBudgets, totalAmount: budget.totalAmount)
                 } catch {
-                    // For mock, we'll just log and continue
-                    print("Mock validation failed: \(error)")
+                    continuation.resume(throwing: error)
+                    return
                 }
                 
                 let newBudget = BudgetDTO(
@@ -228,7 +228,7 @@ public final class MockBudgetRepository: @unchecked Sendable, BudgetRepository {
                     categoryBudgets: budget.categoryBudgets
                 )
                 self.budgets[month] = newBudget
-                continuation.resume()
+                continuation.resume(returning: ())
             }
         }
     }

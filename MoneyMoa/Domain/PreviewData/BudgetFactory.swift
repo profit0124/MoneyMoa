@@ -221,8 +221,18 @@ public enum BudgetFactory {
         var budgets: [BudgetDTO] = []
         
         for i in 0..<count {
-            let month = YearMonth(year: currentMonth.year, month: max(1, currentMonth.month - i))
-            let budget = createBudget(for: month, scenario: scenario)
+            // Calculate month properly by going back chronologically
+            var year = currentMonth.year
+            var month = currentMonth.month - i
+            
+            // Handle year rollback when month becomes negative
+            while month < 1 {
+                month += 12
+                year -= 1
+            }
+            
+            let targetMonth = YearMonth(year: year, month: month)
+            let budget = createBudget(for: targetMonth, scenario: scenario)
             budgets.append(budget)
         }
         
@@ -246,8 +256,20 @@ public enum BudgetFactory {
         let budgetId = UUID()
         let baseAmount = Decimal(Int.random(in: 500_000...5_000_000))
         
-        let categoryNames = ["식비", "교통비", "쇼핑", "문화생활", "미용", "의료비", "교육", "기타", "생활용품", "경조사"]
-        let selectedCategories = categoryNames.shuffled().prefix(categoryCount)
+        let categoryNames = ["식비", "교통비", "쇼핑", "문화생활", "미용", "의료비", "교육", "기타", "생활용품", "경조사", 
+                           "통신비", "보험료", "저축", "투자", "대출상환", "세금", "기부", "애완동물", "취미", "운동",
+                           "여행", "숙박", "렌탈", "수리비", "청소", "간식", "음료", "화장품", "의류", "도서"]
+        
+        // 요청된 카테고리 수만큼 생성 (중복 허용)
+        let selectedCategories: [String]
+        if categoryCount <= categoryNames.count {
+            selectedCategories = Array(categoryNames.shuffled().prefix(categoryCount))
+        } else {
+            // 요청된 수가 사용 가능한 카테고리보다 많으면 중복을 허용하여 생성
+            selectedCategories = (0..<categoryCount).map { index in
+                categoryNames[index % categoryNames.count] + (index >= categoryNames.count ? "_\(index / categoryNames.count + 1)" : "")
+            }
+        }
         
         let categoryBudgets = selectedCategories.map { name in
             let percentage = Double.random(in: 0.1...0.3)

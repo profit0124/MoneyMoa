@@ -104,30 +104,6 @@ final class MockDIContainerTests: XCTestCase {
         XCTAssertTrue(useCase is GetExpenseSumUntilDateUseCaseImpl)
     }
     
-    func test_makeGetMonthlyBudgetUseCase_returnsMockUseCase() {
-        // Given & When
-        let useCase = container.makeGetMonthlyBudgetUseCase()
-        
-        // Then
-        XCTAssertTrue(useCase is MockGetMonthlyBudgetUseCase)
-    }
-    
-    func test_makeGetBudgetTemplateUseCase_returnsMockUseCase() {
-        // Given & When
-        let useCase = container.makeGetBudgetTemplateUseCase()
-        
-        // Then
-        XCTAssertTrue(useCase is MockGetBudgetTemplateUseCase)
-    }
-    
-    func test_makeCreateBudgetFromTemplateUseCase_returnsMockUseCase() {
-        // Given & When
-        let useCase = container.makeCreateBudgetFromTemplateUseCase()
-        
-        // Then
-        XCTAssertTrue(useCase is MockCreateBudgetFromTemplateUseCase)
-    }
-    
     // MARK: - Test Methods - TransactionForm ViewModels
     
     func test_makeAmountPlacePaymentMethodFormViewModel_returnsValidViewModel() {

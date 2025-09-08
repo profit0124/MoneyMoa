@@ -101,10 +101,21 @@ public final class BudgetTemplateRepositoryImpl: BudgetTemplateRepository {
             // Update template
             existingTemplate.totalAmount = template.totalAmount
 
+            // 기존 템플릿 ID를 자동으로 사용하도록 카테고리 템플릿 ID 수정
+            let correctedCategoryTemplates = template.categoryBudgetTemplates.map { category in
+                CategoryBudgetTemplateDTO(
+                    id: category.id,
+                    amount: category.amount,
+                    categoryID: category.categoryID,
+                    categoryName: category.categoryName,
+                    budgetTemplateId: existingTemplate.id // 기존 템플릿 ID로 자동 수정
+                )
+            }
+
             // Diff-based category templates update
             self.updateCategoryTemplatesWithDiff(
                 existing: existingTemplate.categoryBudgetTemplates,
-                new: template.categoryBudgetTemplates,
+                new: correctedCategoryTemplates,
                 template: existingTemplate,
                 context: context
             )
