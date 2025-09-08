@@ -9,11 +9,57 @@ import Foundation
 import SwiftData
 
 /// Budget Repository 구현체
-public final class BudgetRepositoryImpl: CompleteBudgetRepository {
+public final class BudgetRepositoryImpl: BudgetRepository {
     private let database: Database
     
     public init(database: Database) {
         self.database = database
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func budgetPredicate(for month: YearMonth) -> Predicate<Budget> {
+        #Predicate<Budget> { 
+            $0.month.year == month.year && $0.month.month == month.month 
+        }
+    }
+    
+    private func validateCategoryBudgetsSum(_ budgets: [CategoryBudgetDTO], totalAmount: Decimal) throws {
+        let sum = budgets.reduce(0) { $0 + $1.amount }
+        guard sum <= totalAmount else {
+            throw RepositoryError.categoryBudgetsExceedTotalAmount
+        }
+    }
+    
+    private func updateCategoryBudgetsWithDiff(
+        existing: [CategoryBudget],
+        new: [CategoryBudgetDTO],
+        budget: Budget,
+        context: ModelContext
+    ) {
+        // 기존 카테고리 예산을 Map으로 변환
+        var existingMap = Dictionary(uniqueKeysWithValues: 
+            existing.map { ($0.categoryID, $0) }
+        )
+        
+        // 새로운 카테고리 예산 처리
+        for dto in new {
+            if let existing = existingMap[dto.categoryID] {
+                // UPDATE: 기존 항목 수정
+                existing.amount = dto.amount
+                existing.categoryName = dto.categoryName
+                existingMap.removeValue(forKey: dto.categoryID)
+            } else {
+                // INSERT: 새 항목 추가
+                let categoryBudget = dto.toModel(budget: budget)
+                context.insert(categoryBudget)
+            }
+        }
+        
+        // DELETE: 남은 기존 항목 삭제
+        for (_, categoryBudget) in existingMap {
+            context.delete(categoryBudget)
+        }
     }
     
     // MARK: - Common Fetch Logic
@@ -42,9 +88,7 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
         for month: YearMonth,
         includeCategoryBudgets: Bool = false
     ) async throws -> BudgetDTO? {
-        let predicate = #Predicate<Budget> {
-            $0.month.year == month.year && $0.month.month == month.month
-        }
+        let predicate = budgetPredicate(for: month)
         
         let budgets = try await fetchBudgetDTOs(
             predicate: predicate,
@@ -78,12 +122,13 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
     public func fetchCurrentBudgetWithCategories() async throws -> BudgetDTO {
         let currentMonth = YearMonth.current
         
+        // 최적화: ensureBudgetExists가 이미 카테고리 포함된 DTO를 반환하도록 개선
         if let existingBudget = try await fetchBudgetWithCategories(for: currentMonth) {
             return existingBudget
         }
         
-        _ = try await ensureBudgetExists(for: currentMonth)
-        return try await fetchBudgetWithCategories(for: currentMonth)!
+        // 생성 후 카테고리 포함하여 반환
+        return try await createBudgetFromTemplate(for: currentMonth, includeCategories: true)
     }
     
     public func fetchRecentBudgets(months: Int = 12) async throws -> [BudgetDTO] {
@@ -98,16 +143,10 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
     }
     
     // MARK: - BudgetWriter Implementation
-    
+    @discardableResult
     public func createBudget(_ budget: BudgetDTO) async throws -> BudgetDTO {
-        try await database.withModelContext { context in
-            let year = budget.month.year
-            let month = budget.month.month
-            
-            // Check for existing budget
-            let predicate = #Predicate<Budget> {
-                $0.month.year == year && $0.month.month == month
-            }
+        let predicate = budgetPredicate(for: budget.month)
+        return try await database.withModelContext { context in
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             let existingBudgets = try context.fetch(descriptor)
             
@@ -134,20 +173,24 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
             }
             
             try context.save()
-            return budget
+            
+            // Return created budget with actual IDs
+            return newBudget.toDTO(includeCategoryBudgets: true)
         }
     }
     
     public func createBudget(for month: YearMonth, budget: BudgetDTO) async throws {
-        try await database.withModelContext { context in
-            // Delete existing budget if any
-            let predicate = #Predicate<Budget> {
-                $0.month.year == month.year && $0.month.month == month.month
-            }
+        let predicate = budgetPredicate(for: month)
+        return try await database.withModelContext { context in
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             let existingBudgets = try context.fetch(descriptor)
             
+            // Delete existing budget if any (manually delete CategoryBudgets first)
             for existing in existingBudgets {
+                // Manually delete associated CategoryBudgets to avoid relationship issues
+                for categoryBudget in existing.categoryBudgets {
+                    context.delete(categoryBudget)
+                }
                 context.delete(existing)
             }
             
@@ -173,12 +216,7 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
         }
     }
     
-    public func ensureBudgetExists(for month: YearMonth) async throws -> BudgetDTO {
-        // Return if already exists
-        if let existingBudget = try await fetchBudget(for: month) {
-            return existingBudget
-        }
-        
+    private func createBudgetFromTemplate(for month: YearMonth, includeCategories: Bool = false) async throws -> BudgetDTO {
         try await database.withModelContext { context in
             // Fetch template
             guard let template = try context.fetch(FetchDescriptor<BudgetTemplate>()).first else {
@@ -193,49 +231,67 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
             context.insert(newBudget)
             
             // Create category budgets from template
+            var categoryBudgetDTOs: [CategoryBudgetDTO] = []
             for categoryBudgetTemplate in template.categoryBudgetTemplates {
                 let categoryBudget = CategoryBudget(
                     template: categoryBudgetTemplate,
                     budget: newBudget
                 )
                 context.insert(categoryBudget)
+                
+                if includeCategories {
+                    categoryBudgetDTOs.append(CategoryBudgetDTO(
+                        amount: categoryBudget.amount,
+                        categoryID: categoryBudget.categoryID,
+                        categoryName: categoryBudget.categoryName,
+                        budgetId: newBudget.id
+                    ))
+                }
             }
             
             try context.save()
+            
+            // Return DTO directly without re-fetching
+            return BudgetDTO(
+                id: newBudget.id,
+                month: month,
+                totalAmount: newBudget.totalAmount,
+                categoryBudgets: categoryBudgetDTOs
+            )
+        }
+    }
+    
+    public func ensureBudgetExists(for month: YearMonth) async throws -> BudgetDTO {
+        // Return if already exists
+        if let existingBudget = try await fetchBudget(for: month) {
+            return existingBudget
         }
         
-        return try await fetchBudget(for: month)!
+        // Create from template and return directly (no re-fetch)
+        return try await createBudgetFromTemplate(for: month, includeCategories: false)
     }
     
     public func updateBudget(for month: YearMonth, budget: BudgetDTO) async throws {
-        try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> {
-                $0.month.year == month.year && $0.month.month == month.month
-            }
+        try validateCategoryBudgetsSum(budget.categoryBudgets, totalAmount: budget.totalAmount)
+        
+        let predicate = budgetPredicate(for: month)
+        return try await database.withModelContext { context in
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let existingBudget = try context.fetch(descriptor).first else {
                 throw RepositoryError.budgetNotFound
             }
             
-            // Validate category budgets sum
-            let categoryBudgetsSum = budget.categoryBudgets.reduce(0) { $0 + $1.amount }
-            if categoryBudgetsSum > budget.totalAmount {
-                throw RepositoryError.categoryBudgetsExceedTotalAmount
-            }
-            
             // Update budget
             existingBudget.totalAmount = budget.totalAmount
             
-            // Replace category budgets
-            for existingCategoryBudget in existingBudget.categoryBudgets {
-                context.delete(existingCategoryBudget)
-            }
-            
-            for categoryBudgetDTO in budget.categoryBudgets {
-                let categoryBudget = categoryBudgetDTO.toModel(budget: existingBudget)
-                context.insert(categoryBudget)
-            }
+            // Diff-based category budgets update
+            self.updateCategoryBudgetsWithDiff(
+                existing: Array(existingBudget.categoryBudgets),
+                new: budget.categoryBudgets,
+                budget: existingBudget,
+                context: context
+            )
             
             try context.save()
         }
@@ -243,9 +299,7 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
     
     public func updateBudgetTotalAmount(for month: YearMonth, totalAmount: Decimal) async throws {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> {
-                $0.month.year == month.year && $0.month.month == month.month
-            }
+            let predicate = self.budgetPredicate(for: month)
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let budget = try context.fetch(descriptor).first else {
@@ -265,30 +319,22 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
     
     public func updateCategoryBudgets(for month: YearMonth, categoryBudgets: [CategoryBudgetDTO]) async throws {
         try await database.withModelContext { context in
-            let predicate = #Predicate<Budget> {
-                $0.month.year == month.year && $0.month.month == month.month
-            }
+            let predicate = self.budgetPredicate(for: month)
             let descriptor = FetchDescriptor<Budget>(predicate: predicate)
             
             guard let budget = try context.fetch(descriptor).first else {
                 throw RepositoryError.budgetNotFound
             }
             
-            // Validate category budgets sum
-            let categoryBudgetsSum = categoryBudgets.reduce(0) { $0 + $1.amount }
-            if categoryBudgetsSum > budget.totalAmount {
-                throw RepositoryError.categoryBudgetsExceedTotalAmount
-            }
+            try self.validateCategoryBudgetsSum(categoryBudgets, totalAmount: budget.totalAmount)
             
-            // Replace category budgets
-            for existingCategoryBudget in budget.categoryBudgets {
-                context.delete(existingCategoryBudget)
-            }
-            
-            for categoryBudgetDTO in categoryBudgets {
-                let categoryBudget = categoryBudgetDTO.toModel(budget: budget)
-                context.insert(categoryBudget)
-            }
+            // Diff-based update
+            self.updateCategoryBudgetsWithDiff(
+                existing: Array(budget.categoryBudgets),
+                new: categoryBudgets,
+                budget: budget,
+                context: context
+            )
             
             try context.save()
         }
@@ -296,9 +342,7 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
     
     public func updateCategoryBudget(categoryId: UUID, amount: Decimal, for month: YearMonth) async throws {
         try await database.withModelContext { context in
-            let budgetPredicate = #Predicate<Budget> {
-                $0.month.year == month.year && $0.month.month == month.month
-            }
+            let budgetPredicate = self.budgetPredicate(for: month)
             let budgetDescriptor = FetchDescriptor<Budget>(predicate: budgetPredicate)
             
             guard let budget = try context.fetch(budgetDescriptor).first else {
@@ -324,113 +368,4 @@ public final class BudgetRepositoryImpl: CompleteBudgetRepository {
         }
     }
     
-    // MARK: - BudgetTemplateReader Implementation
-    
-    public func fetchBudgetTemplate() async throws -> BudgetTemplateDTO? {
-        try await database.withModelContext { context in
-            let descriptor = FetchDescriptor<BudgetTemplate>()
-            let templates = try context.fetch(descriptor)
-            return templates.first?.toDTO(includeCategoryBudgets: false)
-        }
-    }
-    
-    public func fetchBudgetTemplateWithCategories() async throws -> BudgetTemplateDTO? {
-        try await database.withModelContext { context in
-            let descriptor = FetchDescriptor<BudgetTemplate>()
-            let templates = try context.fetch(descriptor)
-            return templates.first?.toDTO(includeCategoryBudgets: true)
-        }
-    }
-    
-    // MARK: - BudgetTemplateWriter Implementation
-    
-    public func upsertBudgetTemplate(_ template: BudgetTemplateDTO) async throws {
-        try await database.withModelContext { context in
-            let existingDescriptor = FetchDescriptor<BudgetTemplate>()
-            let existingTemplates = try context.fetch(existingDescriptor)
-            
-            if let existingTemplate = existingTemplates.first {
-                // Update existing template
-                existingTemplate.totalAmount = template.totalAmount
-                
-                // Replace category budget templates
-                for existingCategoryBudget in existingTemplate.categoryBudgetTemplates {
-                    context.delete(existingCategoryBudget)
-                }
-                
-                for categoryBudgetTemplateDTO in template.categoryBudgetTemplates {
-                    let categoryBudgetTemplate = categoryBudgetTemplateDTO.toModel(budgetTemplate: existingTemplate)
-                    context.insert(categoryBudgetTemplate)
-                }
-            } else {
-                // Create new template
-                let newTemplate = template.toModelWithCategories()
-                context.insert(newTemplate)
-            }
-            
-            try context.save()
-        }
-    }
-    
-    @discardableResult
-    public func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
-        try await database.withModelContext { context in
-            let newTemplate = template.toModelWithCategories()
-            context.insert(newTemplate)
-            try context.save()
-            
-            return newTemplate.toDTO(includeCategoryBudgets: true)
-        }
-    }
-    
-    @discardableResult
-    public func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
-        try await database.withModelContext { context in
-            let descriptor = FetchDescriptor<BudgetTemplate>()
-            
-            guard let existingTemplate = try context.fetch(descriptor).first else {
-                throw RepositoryError.budgetTemplateNotFound
-            }
-            
-            // Update template
-            existingTemplate.totalAmount = template.totalAmount
-            
-            // Replace category budget templates
-            for existingCategoryBudget in existingTemplate.categoryBudgetTemplates {
-                context.delete(existingCategoryBudget)
-            }
-            
-            for categoryBudgetTemplateDTO in template.categoryBudgetTemplates {
-                let categoryBudgetTemplate = categoryBudgetTemplateDTO.toModel(budgetTemplate: existingTemplate)
-                context.insert(categoryBudgetTemplate)
-            }
-            
-            try context.save()
-            
-            return existingTemplate.toDTO(includeCategoryBudgets: true)
-        }
-    }
-    
-    public func updateCategoryBudgetTemplates(_ categoryBudgetTemplates: [CategoryBudgetTemplateDTO]) async throws {
-        try await database.withModelContext { context in
-            guard let template = try context.fetch(FetchDescriptor<BudgetTemplate>()).first else {
-                throw RepositoryError.budgetTemplateNotFound
-            }
-            
-            // Replace all category budget templates
-            let existingDescriptor = FetchDescriptor<CategoryBudgetTemplate>()
-            let existingCategoryTemplates = try context.fetch(existingDescriptor)
-            
-            for existing in existingCategoryTemplates {
-                context.delete(existing)
-            }
-            
-            for categoryBudgetTemplateDTO in categoryBudgetTemplates {
-                let categoryBudgetTemplate = categoryBudgetTemplateDTO.toModel(budgetTemplate: template)
-                context.insert(categoryBudgetTemplate)
-            }
-            
-            try context.save()
-        }
-    }
 }

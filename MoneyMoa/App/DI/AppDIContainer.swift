@@ -50,7 +50,7 @@ final class AppDIContainer: DIContainer {
     
     /// Production GetBudgetTemplateUseCase를 생성합니다
     func makeGetBudgetTemplateUseCase() -> GetBudgetTemplateUseCase {
-        let repository = makeBudgetRepository()
+        let repository = makeBudgetTemplateReader()
         return GetBudgetTemplateUseCaseImpl(repo: repository)
     }
     
@@ -68,13 +68,13 @@ final class AppDIContainer: DIContainer {
     
     /// Production CreateBudgetTemplateUseCase를 생성합니다
     func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase {
-        let repository = makeBudgetRepository()
+        let repository = makeBudgetTemplateWriter()
         return CreateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
     /// Production UpdateBudgetTemplateUseCase를 생성합니다
     func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase {
-        let repository = makeBudgetRepository()
+        let repository = makeBudgetTemplateWriter()
         return UpdateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
@@ -184,9 +184,31 @@ final class AppDIContainer: DIContainer {
     private func makeTransactionWriter() -> TransactionWriter {
         return TransactionRepositoryImpl(database: database)
     }
-    
+
+    private func makeBudgetTemplateReader() -> BudgetTemplateReader {
+        return BudgetTemplateRepositoryImpl(database: database)
+    }
+
+    private func makeBudgetTemplateWriter() -> BudgetTemplateWriter {
+        return BudgetTemplateRepositoryImpl(database: database)
+    }
+
+    private func makeBudgetTemplateRepository() -> BudgetTemplateRepository {
+        return BudgetTemplateRepositoryImpl(database: database)
+    }
+
     /// BudgetRepository 구현체를 생성합니다
-    private func makeBudgetRepository() -> CompleteBudgetRepository {
+    private func makeBudgetReader() -> BudgetReader {
+        return BudgetRepositoryImpl(database: database)
+    }
+
+    /// BudgetRepository 구현체를 생성합니다
+    private func makeBudgetWriter() -> BudgetWriter {
+        return BudgetRepositoryImpl(database: database)
+    }
+
+    /// BudgetRepository 구현체를 생성합니다
+    private func makeBudgetRepository() -> BudgetRepository {
         return BudgetRepositoryImpl(database: database)
     }
     

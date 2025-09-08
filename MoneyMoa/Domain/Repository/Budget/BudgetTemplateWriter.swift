@@ -12,9 +12,6 @@ public protocol BudgetTemplateWriter: Sendable {
     
     // MARK: - Core Write Operations
     
-    /// 예산 템플릿 생성/업데이트 (하나만 존재, 기존 것을 교체)
-    func upsertBudgetTemplate(_ template: BudgetTemplateDTO) async throws
-    
     /// 새로운 예산 템플릿 생성
     @discardableResult
     func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO
