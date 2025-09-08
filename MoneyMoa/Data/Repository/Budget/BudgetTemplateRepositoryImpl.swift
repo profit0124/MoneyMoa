@@ -78,6 +78,7 @@ public final class BudgetTemplateRepositoryImpl: BudgetTemplateRepository {
     @discardableResult
     public func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
         try await database.withModelContext { context in
+            try self.validateCategoryBudgetsSum(template.categoryBudgetTemplates, totalAmount: template.totalAmount)
             let newTemplate = template.toModelWithCategories()
             context.insert(newTemplate)
             try context.save()
@@ -89,6 +90,8 @@ public final class BudgetTemplateRepositoryImpl: BudgetTemplateRepository {
     @discardableResult
     public func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO {
         try await database.withModelContext { context in
+            try self.validateCategoryBudgetsSum(template.categoryBudgetTemplates, totalAmount: template.totalAmount)
+
             let descriptor = FetchDescriptor<BudgetTemplate>()
 
             guard let existingTemplate = try context.fetch(descriptor).first else {
@@ -117,6 +120,8 @@ public final class BudgetTemplateRepositoryImpl: BudgetTemplateRepository {
             guard let template = try context.fetch(FetchDescriptor<BudgetTemplate>()).first else {
                 throw RepositoryError.budgetTemplateNotFound
             }
+
+            try self.validateCategoryBudgetsSum(categoryBudgetTemplates, totalAmount: template.totalAmount)
 
             // Diff-based update instead of delete-all & recreate
             self.updateCategoryTemplatesWithDiff(

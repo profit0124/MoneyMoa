@@ -153,7 +153,9 @@ public final class BudgetRepositoryImpl: BudgetRepository {
             if !existingBudgets.isEmpty {
                 throw RepositoryError.budgetAlreadyExists
             }
-            
+
+            try self.validateCategoryBudgetsSum(budget.categoryBudgets, totalAmount: budget.totalAmount)
+
             // Create new budget
             let newBudget = Budget(
                 month: budget.month,
@@ -193,7 +195,9 @@ public final class BudgetRepositoryImpl: BudgetRepository {
                 }
                 context.delete(existing)
             }
-            
+
+            try self.validateCategoryBudgetsSum(budget.categoryBudgets, totalAmount: budget.totalAmount)
+
             // Create new budget
             let newBudget = Budget(
                 month: month,
