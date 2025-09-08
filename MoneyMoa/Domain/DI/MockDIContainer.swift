@@ -27,6 +27,14 @@ final class MockDIContainer: DIContainer {
     private lazy var _mockPaymentMethodRepository: MockPaymentMethodRepository = {
         MockPaymentMethodRepository(scenario: .normal())
     }()
+
+    private lazy var _mockBudgetTemplateRepository: MockBudgetTemplateRepository = {
+        MockBudgetTemplateRepository(scenario: .empty)
+    }()
+
+    private lazy var _mockBudgetRepository: MockBudgetRepository = {
+        MockBudgetRepository(scenario: .empty, templateRepository: _mockBudgetTemplateRepository)
+    }()
     
     /// 테스트에서 직접 접근할 수 있는 MockTransactionRepository
     var mockTransactionRepository: MockTransactionRepository {
@@ -41,6 +49,16 @@ final class MockDIContainer: DIContainer {
     /// 테스트에서 직접 접근할 수 있는 MockPaymentMethodRepository
     var mockPaymentMethodRepository: MockPaymentMethodRepository {
         return _mockPaymentMethodRepository
+    }
+    
+    /// 테스트에서 직접 접근할 수 있는 MockBudgetTemplateRepository
+    var mockBudgetTemplateRepository: MockBudgetTemplateRepository {
+        return _mockBudgetTemplateRepository
+    }
+    
+    /// 테스트에서 직접 접근할 수 있는 MockBudgetRepository
+    var mockBudgetRepository: MockBudgetRepository {
+        return _mockBudgetRepository
     }
     
     // MARK: - Repository Factory Methods
@@ -64,6 +82,14 @@ final class MockDIContainer: DIContainer {
     private func makePaymentMethodRepository() -> PaymentMethodRepository {
         return _mockPaymentMethodRepository
     }
+    
+    private func makeBudgetRepository() -> BudgetRepository {
+        return _mockBudgetRepository
+    }
+    
+    private func makeBudgetTemplateRepository() -> BudgetTemplateRepository {
+        return _mockBudgetTemplateRepository
+    }
     // MARK: - UseCase Factory Methods
     
     /// GetMonthlyTransactionsUseCase를 생성합니다 (Mock Repository 기반)
@@ -78,39 +104,48 @@ final class MockDIContainer: DIContainer {
         return GetExpenseSumUntilDateUseCaseImpl(transactionReader: reader)
     }
     
-    /// Mock GetMonthlyBudgetUseCase를 생성합니다
+    // MARK: - Budget UseCase Factory Methods (Repository-based)
+    
+    /// Repository 기반 GetMonthlyBudgetUseCase를 생성합니다
     func makeGetMonthlyBudgetUseCase() -> GetMonthlyBudgetUseCase {
-        return MockGetMonthlyBudgetUseCase()
+        let repository = makeBudgetRepository()
+        return GetMonthlyBudgetUseCaseImpl(budgetRepository: repository)
     }
     
-    /// Mock GetBudgetTemplateUseCase를 생성합니다
+    /// Repository 기반 GetBudgetTemplateUseCase를 생성합니다
     func makeGetBudgetTemplateUseCase() -> GetBudgetTemplateUseCase {
-        return MockGetBudgetTemplateUseCase()
+        let repository = makeBudgetTemplateRepository()
+        return GetBudgetTemplateUseCaseImpl(repo: repository)
     }
     
-    /// Mock CreateBudgetFromTemplateUseCase를 생성합니다
+    /// Repository 기반 CreateBudgetFromTemplateUseCase를 생성합니다
     func makeCreateBudgetFromTemplateUseCase() -> CreateBudgetFromTemplateUseCase {
-        return MockCreateBudgetFromTemplateUseCase()
+        let budgetRepository = makeBudgetRepository()
+        return CreateBudgetFromTemplateUseCaseImpl(budgetRepository: budgetRepository)
     }
     
-    /// Mock CreateBudgetUseCase를 생성합니다
+    /// Repository 기반 CreateBudgetUseCase를 생성합니다
     func makeCreateBudgetUseCase() -> CreateBudgetUseCase {
-        return MockCreateBudgetUseCase()
+        let repository = makeBudgetRepository()
+        return CreateBudgetUseCaseImpl(budgetRepository: repository)
     }
     
-    /// Mock CreateBudgetTemplateUseCase를 생성합니다
+    /// Repository 기반 CreateBudgetTemplateUseCase를 생성합니다
     func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase {
-        return MockCreateTemplateFromBudgetUseCase()
+        let repository = makeBudgetTemplateRepository()
+        return CreateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
-    /// Mock UpdateBudgetTemplateUseCase를 생성합니다
+    /// Repository 기반 UpdateBudgetTemplateUseCase를 생성합니다
     func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase {
-        return MockUpdateTemplateFromBudgetUseCase()
+        let repository = makeBudgetTemplateRepository()
+        return UpdateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
-    /// Mock UpdateBudgetRangeUseCase를 생성합니다
+    /// Repository 기반 UpdateBudgetRangeUseCase를 생성합니다
     func makeUpdateBudgetRangeUseCase() -> UpdateBudgetRangeUseCase {
-        return MockUpdateBudgetRangeUseCase()
+        let repository = makeBudgetRepository()
+        return UpdateBudgetRangeUseCaseImpl(budgetRepository: repository)
     }
     
     // MARK: - Transaction UseCase Factory Methods
