@@ -13,11 +13,11 @@ public final class GetMonthlyBudgetUseCaseImpl: GetMonthlyBudgetUseCase {
     
     // MARK: - Dependencies
     
-    private let budgetRepository: BudgetRepository
-    
+    private let budgetRepository: BudgetReader
+
     // MARK: - Initialization
     
-    public init(budgetRepository: BudgetRepository) {
+    public init(budgetRepository: BudgetReader) {
         self.budgetRepository = budgetRepository
     }
     

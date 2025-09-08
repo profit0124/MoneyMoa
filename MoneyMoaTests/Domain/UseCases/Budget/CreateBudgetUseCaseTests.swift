@@ -2,245 +2,330 @@
 //  CreateBudgetUseCaseTests.swift
 //  MoneyMoaTests
 //
-//  Created by Claude on 8/22/25.
+//  Created by Claude Code on 9/8/25.
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import MoneyMoa
 
-final class CreateBudgetUseCaseTests: XCTestCase {
+@Suite("CreateBudgetUseCase Tests")
+struct CreateBudgetUseCaseTests {
     
-    private var sut: CreateBudgetUseCaseImpl!
-    private var mockRepository: MockBudgetRepository!
+    // MARK: - Test Components
     
-    override func setUp() {
-        super.setUp()
-        mockRepository = MockBudgetRepository()
-        sut = CreateBudgetUseCaseImpl(budgetRepository: mockRepository)
+    private func makeMockDIContainer() -> MockDIContainer {
+        return MockDIContainer()
     }
     
-    override func tearDown() {
-        sut = nil
-        mockRepository = nil
-        super.tearDown()
+    private func makeCreateBudgetUseCase(container: MockDIContainer) -> CreateBudgetUseCase {
+        return container.makeCreateBudgetUseCase()
     }
     
-    // MARK: - Test Cases
+    // MARK: - Success Tests
     
-    func test_execute_whenNoBudgetExists_shouldCreateNewBudgetSuccessfully() async throws {
+    @Test("정상적인 예산 생성")
+    func testCreateBudget_Success() async throws {
         // Given
-        let budget = makeBudgetDTO()
-        let expectedCreatedBudget = makeBudgetDTO(id: UUID()) // Repository에서 반환할 예산
-        mockRepository.createBudgetResult = expectedCreatedBudget
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budget = BudgetFactory.normal(for: YearMonth(year: 2024, month: 8))
         
         // When
-        let result = try await sut.execute(budget)
+        let result = try await useCase.execute(budget)
         
         // Then
-        XCTAssertEqual(mockRepository.createBudgetCallCount, 1)
-        XCTAssertEqual(mockRepository.lastCreateBudgetInput?.totalAmount, budget.totalAmount)
-        XCTAssertEqual(mockRepository.lastCreateBudgetInput?.month, budget.month)
-        XCTAssertEqual(mockRepository.lastCreateBudgetInput?.categoryBudgets.count, budget.categoryBudgets.count)
+        #expect(result.id == budget.id)
+        #expect(result.month == budget.month)
+        #expect(result.totalAmount == budget.totalAmount)
+        #expect(result.categoryBudgets.count == budget.categoryBudgets.count)
         
-        // 반환값 검증
-        XCTAssertEqual(result.id, expectedCreatedBudget.id)
-        XCTAssertEqual(result.totalAmount, expectedCreatedBudget.totalAmount)
-        XCTAssertEqual(result.month, expectedCreatedBudget.month)
+        // Repository에 저장되었는지 확인
+        #expect(mockRepository.hasBudget(for: budget.month))
+        #expect(mockRepository.budgetCount == 1)
     }
     
-    func test_execute_whenBudgetAlreadyExists_shouldThrowBudgetAlreadyExistsError() async throws {
+    @Test("카테고리 예산이 포함된 예산 생성")
+    func testCreateBudgetWithCategoryBudgets_Success() async throws {
         // Given
-        let budget = makeBudgetDTO()
-        mockRepository.shouldThrowError = RepositoryError.budgetAlreadyExists
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budget = BudgetFactory.createRealistic(for: YearMonth.current)
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.totalAmount == budget.totalAmount)
+        #expect(result.categoryBudgets.count == budget.categoryBudgets.count)
+        
+        // 카테고리 예산이 올바르게 복사되었는지 확인
+        for (original, created) in zip(budget.categoryBudgets, result.categoryBudgets) {
+            #expect(created.amount == original.amount)
+            #expect(created.categoryID == original.categoryID)
+            #expect(created.categoryName == original.categoryName)
+        }
+        
+        // Repository에 저장되었는지 확인
+        #expect(mockRepository.hasBudget(for: budget.month))
+    }
+    
+    @Test("최소 예산 생성")
+    func testCreateMinimalBudget_Success() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budget = BudgetFactory.minimal()
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.totalAmount == budget.totalAmount)
+        #expect(result.categoryBudgets.count == budget.categoryBudgets.count)
+        #expect(mockRepository.hasBudget(for: budget.month))
+    }
+    
+    @Test("높은 소득 수준 예산 생성")
+    func testCreateHighIncomeBudget_Success() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budget = BudgetFactory.highIncome(for: YearMonth(year: 2024, month: 12))
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.totalAmount == 5_000_000)
+        #expect(result.categoryBudgets.count == 8)
+        #expect(mockRepository.hasBudget(for: budget.month))
+        
+        // 카테고리 총액이 올바른지 확인
+        let categorySum = result.categoryBudgets.reduce(0) { $0 + $1.amount }
+        #expect(categorySum <= result.totalAmount)
+    }
+    
+    // MARK: - Error Tests
+    
+    @Test("Repository 에러 시뮬레이션")
+    func testCreateBudget_RepositoryError() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        // Repository가 실패하도록 설정
+        mockRepository.shouldFail = true
+        mockRepository.errorToThrow = MockError.simulatedFailure
+        
+        let budget = BudgetFactory.normal()
         
         // When & Then
         do {
-            _ = try await sut.execute(budget)
-            XCTFail("Expected budgetAlreadyExists error to be thrown")
-        } catch let error as RepositoryError {
-            switch error {
-            case .budgetAlreadyExists:
-                XCTAssertTrue(true) // 예상된 에러
-            default:
-                XCTFail("Expected budgetAlreadyExists error, but got \(error)")
-            }
+            _ = try await useCase.execute(budget)
+            #expect(Bool(false), "Should have thrown an error")
         } catch {
-            XCTFail("Expected RepositoryError, but got \(type(of: error)): \(error)")
-        }
-        
-        // Repository 호출 확인
-        XCTAssertEqual(mockRepository.createBudgetCallCount, 1)
-    }
-    
-    func test_execute_shouldPassCorrectParametersToRepository() async throws {
-        // Given
-        let budget = makeBudgetDTOWithCategories()
-        mockRepository.createBudgetResult = budget
-        
-        // When
-        _ = try await sut.execute(budget)
-        
-        // Then
-        guard let passedBudget = mockRepository.lastCreateBudgetInput else {
-            XCTFail("Repository createBudget should have been called with budget parameter")
-            return
-        }
-        
-        // 모든 필드가 정확히 전달되었는지 확인
-        XCTAssertEqual(passedBudget.id, budget.id)
-        XCTAssertEqual(passedBudget.month, budget.month)
-        XCTAssertEqual(passedBudget.totalAmount, budget.totalAmount)
-        XCTAssertEqual(passedBudget.categoryBudgets.count, budget.categoryBudgets.count)
-        
-        // 카테고리별 예산 정보 검증
-        for (index, originalCategory) in budget.categoryBudgets.enumerated() {
-            let passedCategory = passedBudget.categoryBudgets[index]
-            XCTAssertEqual(passedCategory.id, originalCategory.id)
-            XCTAssertEqual(passedCategory.amount, originalCategory.amount)
-            XCTAssertEqual(passedCategory.categoryID, originalCategory.categoryID)
-            XCTAssertEqual(passedCategory.categoryName, originalCategory.categoryName)
+            switch error {
+            case MockError.simulatedFailure:
+                // Expected error
+                break
+            default:
+                #expect(Bool(false), "Unexpected error type: \(error)")
+            }
         }
     }
     
-    func test_execute_shouldReturnRepositoryResult() async throws {
+    @Test("중복 예산 생성 시도 (같은 달)")
+    func testCreateDuplicateBudget_Error() async throws {
         // Given
-        let inputBudget = makeBudgetDTO()
-        let repositoryResult = makeBudgetDTO(
-            id: UUID(),
-            totalAmount: inputBudget.totalAmount + 1000 // 다른 값으로 설정
-        )
-        mockRepository.createBudgetResult = repositoryResult
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
         
-        // When
-        let result = try await sut.execute(inputBudget)
+        let month = YearMonth(year: 2024, month: 9)
+        let budget1 = BudgetFactory.normal(for: month)
+        let budget2 = BudgetFactory.minimal(for: month)
         
-        // Then
-        // UseCase는 Repository 결과를 그대로 반환해야 함
-        XCTAssertEqual(result.id, repositoryResult.id)
-        XCTAssertEqual(result.totalAmount, repositoryResult.totalAmount)
-        XCTAssertEqual(result.month, repositoryResult.month)
-    }
-    
-    func test_execute_whenRepositoryThrowsOtherError_shouldPropagateError() async throws {
-        // Given
-        let budget = makeBudgetDTO()
-        let expectedError = RepositoryError.databaseError(NSError(domain: "test", code: 500))
-        mockRepository.shouldThrowError = expectedError
+        // When - 첫 번째 예산 생성 성공
+        _ = try await useCase.execute(budget1)
+        #expect(mockRepository.budgetCount == 1)
         
-        // When & Then
+        // Then - 같은 달에 두 번째 예산 생성 시도 시 에러
         do {
-            _ = try await sut.execute(budget)
-            XCTFail("Expected error to be thrown")
-        } catch let error as RepositoryError {
-            switch error {
-            case .databaseError:
-                XCTAssertTrue(true) // 예상된 에러
-            default:
-                XCTFail("Expected databaseError, but got \(error)")
-            }
+            _ = try await useCase.execute(budget2)
+            #expect(Bool(false), "Should have thrown an error for duplicate budget")
         } catch {
-            XCTFail("Expected RepositoryError, but got \(type(of: error)): \(error)")
+            // 중복 생성 에러 예상
+            #expect(mockRepository.budgetCount == 1, "Should still have only one budget")
         }
     }
     
-    func test_execute_withEmptyCategoryBudgets_shouldHandleCorrectly() async throws {
+    // MARK: - Validation Tests
+    
+    @Test("카테고리 예산 합계가 총 예산을 초과하는 경우")
+    func testCreateBudget_CategoryBudgetsExceedTotal_Error() async throws {
         // Given
-        let budget = BudgetDTO(
-            id: UUID(),
-            month: YearMonth.current,
-            totalAmount: 1000000,
-            categoryBudgets: [] // 빈 카테고리 배열
-        )
-        mockRepository.createBudgetResult = budget
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
         
-        // When
-        let result = try await sut.execute(budget)
-        
-        // Then
-        XCTAssertEqual(mockRepository.createBudgetCallCount, 1)
-        XCTAssertEqual(result.categoryBudgets.count, 0)
-        XCTAssertEqual(mockRepository.lastCreateBudgetInput?.categoryBudgets.count, 0)
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func makeBudgetDTO(id: UUID? = nil, totalAmount: Decimal = 1000000) -> BudgetDTO {
-        return BudgetDTO(
-            id: id ?? UUID(),
-            month: YearMonth.current,
-            totalAmount: totalAmount,
-            categoryBudgets: []
-        )
-    }
-    
-    private func makeBudgetDTOWithCategories() -> BudgetDTO {
-        let categoryBudgets = [
-            CategoryBudgetDTO(
-                id: UUID(),
-                amount: 300000,
-                categoryID: UUID(),
-                categoryName: "식비",
-                budgetId: UUID()
-            ),
-            CategoryBudgetDTO(
-                id: UUID(),
-                amount: 200000,
-                categoryID: UUID(),
-                categoryName: "교통비",
-                budgetId: UUID()
-            )
+        let budgetId = UUID()
+        let excessiveCategoryBudgets = [
+            CategoryBudgetDTO(amount: 800_000, categoryID: UUID(), categoryName: "식비", budgetId: budgetId),
+            CategoryBudgetDTO(amount: 600_000, categoryID: UUID(), categoryName: "교통비", budgetId: budgetId),
+            CategoryBudgetDTO(amount: 700_000, categoryID: UUID(), categoryName: "쇼핑", budgetId: budgetId)
         ]
         
-        return BudgetDTO(
-            id: UUID(),
+        let budget = BudgetDTO(
+            id: budgetId,
             month: YearMonth.current,
-            totalAmount: 500000,
-            categoryBudgets: categoryBudgets
+            totalAmount: 1_000_000, // 총액 100만원인데 카테고리 합계는 210만원
+            categoryBudgets: excessiveCategoryBudgets
         )
-    }
-}
-
-// MARK: - Mock Repository
-
-private class MockBudgetRepository: BudgetRepository {
-    
-    // MARK: - Tracking Properties
-    
-    var createBudgetCallCount = 0
-    var lastCreateBudgetInput: BudgetDTO?
-    var createBudgetResult: BudgetDTO?
-    var shouldThrowError: Error?
-    
-    // MARK: - CreateBudget Method (테스트 대상)
-    
-    func createBudget(_ budget: BudgetDTO) async throws -> BudgetDTO {
-        createBudgetCallCount += 1
-        lastCreateBudgetInput = budget
         
-        if let error = shouldThrowError {
-            throw error
+        // When & Then
+        do {
+            _ = try await useCase.execute(budget)
+            #expect(Bool(false), "Should have thrown validation error")
+        } catch {
+            // 검증 에러 발생 확인
+            #expect(true, "Validation error occurred as expected")
+        }
+    }
+    
+    @Test("빈 카테고리 예산으로 예산 생성")
+    func testCreateBudgetWithEmptyCategories_Success() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budget = BudgetFactory.empty()
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.totalAmount == 0)
+        #expect(result.categoryBudgets.isEmpty)
+        #expect(mockRepository.hasBudget(for: budget.month))
+    }
+    
+    // MARK: - Edge Cases
+    
+    @Test("극한 값으로 예산 생성")
+    func testCreateBudget_EdgeValues() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budget = BudgetFactory.edge()
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.totalAmount == budget.totalAmount)
+        #expect(result.categoryBudgets.count == budget.categoryBudgets.count)
+        #expect(mockRepository.hasBudget(for: budget.month))
+    }
+    
+    @Test("미래 날짜로 예산 생성")
+    func testCreateBudgetForFutureDate_Success() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let futureMonth = YearMonth(year: 2025, month: 12)
+        let budget = BudgetFactory.normal(for: futureMonth)
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.month == futureMonth)
+        #expect(mockRepository.hasBudget(for: futureMonth))
+    }
+    
+    @Test("과거 날짜로 예산 생성")
+    func testCreateBudgetForPastDate_Success() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let pastMonth = YearMonth(year: 2023, month: 1)
+        let budget = BudgetFactory.normal(for: pastMonth)
+        
+        // When
+        let result = try await useCase.execute(budget)
+        
+        // Then
+        #expect(result.month == pastMonth)
+        #expect(mockRepository.hasBudget(for: pastMonth))
+    }
+    
+    // MARK: - Multiple Budget Tests
+    
+    @Test("여러 개의 예산을 순차적으로 생성")
+    func testCreateMultipleBudgets_Sequential() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        let budgets = BudgetFactory.multipleMonths(count: 5)
+        
+        // When
+        var createdBudgets: [BudgetDTO] = []
+        for budget in budgets {
+            let created = try await useCase.execute(budget)
+            createdBudgets.append(created)
         }
         
-        return createBudgetResult ?? budget
+        // Then
+        #expect(createdBudgets.count == 5)
+        #expect(mockRepository.budgetCount == 5)
+        
+        for (original, created) in zip(budgets, createdBudgets) {
+            #expect(created.month == original.month)
+            #expect(created.totalAmount == original.totalAmount)
+        }
     }
     
-    // MARK: - Unused Protocol Methods (Stub Implementation)
+    // MARK: - Delay Tests
     
-    func fetchBudgetTemplate() async throws -> BudgetTemplateDTO? { return nil }
-    func fetchBudgetTemplateWithCategories() async throws -> BudgetTemplateDTO? { return nil }
-    func upsertBudgetTemplate(_ template: BudgetTemplateDTO) async throws { }
-    func createBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO { return template }
-    func updateBudgetTemplate(_ template: BudgetTemplateDTO) async throws -> BudgetTemplateDTO { return template }
-    func updateCategoryBudgetTemplates(_ categoryBudgetTemplates: [CategoryBudgetTemplateDTO]) async throws { }
-    func fetchBudget(for month: YearMonth) async throws -> BudgetDTO? { return nil }
-    func fetchBudgetWithCategories(for month: YearMonth) async throws -> BudgetDTO? { return nil }
-    func fetchCurrentBudget() async throws -> BudgetDTO { return BudgetDTO(id: UUID(), month: .current, totalAmount: 0, categoryBudgets: []) }
-    func fetchCurrentBudgetWithCategories() async throws -> BudgetDTO { return BudgetDTO(id: UUID(), month: .current, totalAmount: 0, categoryBudgets: []) }
-    func ensureBudgetExists(for month: YearMonth) async throws -> BudgetDTO { return BudgetDTO(id: UUID(), month: month, totalAmount: 0, categoryBudgets: []) }
-    func createBudget(for month: YearMonth, budget: BudgetDTO) async throws { }
-    func fetchRecentBudgets(months: Int) async throws -> [BudgetDTO] { return [] }
-    func updateBudget(for month: YearMonth, budget: BudgetDTO) async throws { }
-    func updateBudgetTotalAmount(for month: YearMonth, totalAmount: Decimal) async throws { }
-    func updateCategoryBudgets(for month: YearMonth, categoryBudgets: [CategoryBudgetDTO]) async throws { }
-    func updateCategoryBudget(categoryId: UUID, amount: Decimal, for month: YearMonth) async throws { }
+    @Test("지연이 있는 Repository 테스트")
+    func testCreateBudget_WithDelay() async throws {
+        // Given
+        let container = makeMockDIContainer()
+        let useCase = makeCreateBudgetUseCase(container: container)
+        let mockRepository = container.mockBudgetRepository
+        
+        // 0.1초 지연 설정
+        mockRepository.delay = 0.1
+        
+        let budget = BudgetFactory.normal()
+        let startTime = Date()
+        
+        // When
+        let result = try await useCase.execute(budget)
+        let endTime = Date()
+        
+        // Then
+        let elapsed = endTime.timeIntervalSince(startTime)
+        #expect(elapsed >= 0.1, "Should have waited at least 0.1 seconds")
+        #expect(result.id == budget.id)
+        #expect(mockRepository.hasBudget(for: budget.month))
+    }
 }

@@ -13,17 +13,17 @@ public class GetBudgetTemplateUseCaseImpl: GetBudgetTemplateUseCase {
     
     // MARK: - Properties
     
-    private let budgetRepository: BudgetRepository
-    
+    private let repo: BudgetTemplateReader
+
     // MARK: - Initialization
     
-    public init(budgetRepository: BudgetRepository) {
-        self.budgetRepository = budgetRepository
+    public init(repo: BudgetTemplateReader) {
+        self.repo = repo
     }
     
     // MARK: - UseCase Methods
     
     public func execute() async throws -> BudgetTemplateDTO? {
-        return try await budgetRepository.fetchBudgetTemplateWithCategories()
+        return try await repo.fetchBudgetTemplateWithCategories()
     }
 }

@@ -9,9 +9,9 @@ import Foundation
 
 public struct CreateBudgetUseCaseImpl: CreateBudgetUseCase {
     
-    private let budgetRepository: BudgetRepository
-    
-    public init(budgetRepository: BudgetRepository) {
+    private let budgetRepository: BudgetWriter
+
+    public init(budgetRepository: BudgetWriter) {
         self.budgetRepository = budgetRepository
     }
     

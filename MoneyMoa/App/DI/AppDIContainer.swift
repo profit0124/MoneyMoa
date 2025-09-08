@@ -50,8 +50,8 @@ final class AppDIContainer: DIContainer {
     
     /// Production GetBudgetTemplateUseCase를 생성합니다
     func makeGetBudgetTemplateUseCase() -> GetBudgetTemplateUseCase {
-        let repository = makeBudgetRepository()
-        return GetBudgetTemplateUseCaseImpl(budgetRepository: repository)
+        let repository = makeBudgetTemplateReader()
+        return GetBudgetTemplateUseCaseImpl(repo: repository)
     }
     
     /// Production CreateBudgetFromTemplateUseCase를 생성합니다
@@ -68,14 +68,14 @@ final class AppDIContainer: DIContainer {
     
     /// Production CreateBudgetTemplateUseCase를 생성합니다
     func makeCreateBudgetTemplateUseCase() -> CreateTemplateFromBudgetUseCase {
-        let repository = makeBudgetRepository()
-        return CreateTemplateFromBudgetUseCaseImpl(budgetRepository: repository)
+        let repository = makeBudgetTemplateWriter()
+        return CreateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
     /// Production UpdateBudgetTemplateUseCase를 생성합니다
     func makeUpdateBudgetTemplateUseCase() -> UpdateTemplateFromBudgetUseCase {
-        let repository = makeBudgetRepository()
-        return UpdateTemplateFromBudgetUseCaseImpl(budgetRepository: repository)
+        let repository = makeBudgetTemplateWriter()
+        return UpdateTemplateFromBudgetUseCaseImpl(repo: repository)
     }
     
     /// Production UpdateBudgetRangeUseCase를 생성합니다
@@ -184,7 +184,29 @@ final class AppDIContainer: DIContainer {
     private func makeTransactionWriter() -> TransactionWriter {
         return TransactionRepositoryImpl(database: database)
     }
-    
+
+    private func makeBudgetTemplateReader() -> BudgetTemplateReader {
+        return BudgetTemplateRepositoryImpl(database: database)
+    }
+
+    private func makeBudgetTemplateWriter() -> BudgetTemplateWriter {
+        return BudgetTemplateRepositoryImpl(database: database)
+    }
+
+    private func makeBudgetTemplateRepository() -> BudgetTemplateRepository {
+        return BudgetTemplateRepositoryImpl(database: database)
+    }
+
+    /// BudgetRepository 구현체를 생성합니다
+    private func makeBudgetReader() -> BudgetReader {
+        return BudgetRepositoryImpl(database: database)
+    }
+
+    /// BudgetRepository 구현체를 생성합니다
+    private func makeBudgetWriter() -> BudgetWriter {
+        return BudgetRepositoryImpl(database: database)
+    }
+
     /// BudgetRepository 구현체를 생성합니다
     private func makeBudgetRepository() -> BudgetRepository {
         return BudgetRepositoryImpl(database: database)
