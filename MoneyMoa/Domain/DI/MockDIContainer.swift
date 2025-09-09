@@ -17,7 +17,7 @@ final class MockDIContainer: DIContainer {
     // MARK: - Mock Repository Instances
     
     private lazy var _mockTransactionRepository: MockTransactionRepository = {
-        MockTransactionRepository(scenario: .empty)
+        MockTransactionRepository(scenario: .stress(count: 100))
     }()
     
     private lazy var _mockCategoryRepository: MockCategoryRepository = {
@@ -25,15 +25,15 @@ final class MockDIContainer: DIContainer {
     }()
     
     private lazy var _mockPaymentMethodRepository: MockPaymentMethodRepository = {
-        MockPaymentMethodRepository(scenario: .normal())
+        MockPaymentMethodRepository(scenario: .stress(count: 100))
     }()
 
     private lazy var _mockBudgetTemplateRepository: MockBudgetTemplateRepository = {
-        MockBudgetTemplateRepository(scenario: .empty)
+        MockBudgetTemplateRepository(scenario: .highIncome)
     }()
 
     private lazy var _mockBudgetRepository: MockBudgetRepository = {
-        MockBudgetRepository(scenario: .empty, templateRepository: _mockBudgetTemplateRepository)
+        MockBudgetRepository(scenario: .multipleMonths, templateRepository: _mockBudgetTemplateRepository)
     }()
     
     /// 테스트에서 직접 접근할 수 있는 MockTransactionRepository
@@ -241,6 +241,14 @@ final class MockDIContainer: DIContainer {
 
     /// StatisticsRepository 구현체를 생성합니다
     private func makeStatisticsRepository() -> StatisticsRepository {
-        return MockStatisticsRepository()
+        return StatisticsRepositoryImpl(
+            tx: TransactionRepositoryAdapter(
+                repo: makeTransactionRepository()
+            ),
+            budget: BudgetRepositoryAdapter(
+                budgetRepo: makeBudgetRepository(),
+                txRepo: makeTransactionRepository()
+            )
+        )
     }
 }

@@ -23,7 +23,12 @@ public struct MovingAverageServiceImpl: MovingAverageService {
             window.append(sorted[i].amount)
             if window.count > 7 { window.removeFirst() }
             let avg = window.reduce(0, +) / Decimal(window.count)
-            out.append(.init(date: sorted[i].date, amount: avg))
+            out.append(.init(
+                date: sorted[i].date,
+                amount: sorted[i].amount,
+                movingAverage: avg,
+                isWeekend: sorted[i].isWeekend
+            ))
         }
         return out
     }

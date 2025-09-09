@@ -56,33 +56,15 @@ public final class StatisticsRepositoryImpl: StatisticsRepository {
     
     private func calculateDailyAnalytics(_ rows: [TransactionRow]) -> [DailyPointDTO] {
         let calendar = Calendar.current
-        var result: [DailyPointDTO] = []
         
-        for (index, row) in rows.enumerated() {
-            let isWeekend = calendar.isDateInWeekend(row.date)
-            
-            // 7일 이동평균 계산
-            let movingAverage: Decimal
-            if index >= 6 {
-                let last7Days = Array(rows[max(0, index - 6)...index])
-                let sum = last7Days.reduce(Decimal.zero) { $0 + $1.amount }
-                movingAverage = sum / Decimal(last7Days.count)
-            } else {
-                // 첫 6일은 현재까지의 평균
-                let currentDays = Array(rows[0...index])
-                let sum = currentDays.reduce(Decimal.zero) { $0 + $1.amount }
-                movingAverage = sum / Decimal(currentDays.count)
-            }
-            
-            result.append(DailyPointDTO(
+        return rows.map { row in
+            DailyPointDTO(
                 date: row.date,
                 amount: row.amount,
-                movingAverage: movingAverage,
-                isWeekend: isWeekend
-            ))
+                movingAverage: 0,  // MovingAverageService에서 계산됨
+                isWeekend: calendar.isDateInWeekend(row.date)
+            )
         }
-        
-        return result
     }
 
     public func fetchCategoryExpenseByMonth(range: DateRange) async throws -> [CategoryMonthlyPointDTO] {

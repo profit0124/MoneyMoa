@@ -311,11 +311,7 @@ struct CustomDatePickerView: View {
 #Preview {
     NavigationStack {
         StatisticsView(
-            viewModel: StatisticsViewModel(
-                getStatisticsDashboardUseCase: GetStatisticsDashboardUseCaseImpl(
-                    repo: MockStatisticsRepository()
-                )
-            )
+            viewModel: MockDIContainer().makeStatisticsViewModel()
         )
         .navigationTitle(Text("asdf"))
         .navigationBarTitleDisplayMode(.inline)
