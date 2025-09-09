@@ -208,8 +208,10 @@ struct BudgetStatusCard: View {
 }
 
 #Preview {
-    BudgetVsExpenseView(data: BudgetVsExpenseDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        BudgetVsExpenseView(data: dashboard.budget.byMonth)
+            .padding()
+    }
 }
 
 #Preview("Empty") {

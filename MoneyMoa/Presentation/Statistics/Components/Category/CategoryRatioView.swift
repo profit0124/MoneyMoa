@@ -206,8 +206,10 @@ struct CategoryTopCard: View {
 }
 
 #Preview {
-    CategoryRatioView(data: CategoryRatioDTO.previewData)
+    StatisticsPreviewHelper.preview { dashboard in
+        CategoryRatioView(data: dashboard.category.ratios)
             .padding()
+    }
 }
 
 #Preview("Empty") {

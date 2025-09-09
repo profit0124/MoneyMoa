@@ -140,6 +140,8 @@ struct PatternCard: View {
 }
 
 #Preview {
-    WeeklyPatternView(data: WeeklyPatternDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        WeeklyPatternView(data: dashboard.pattern.weekly)
+            .padding()
+    }
 }

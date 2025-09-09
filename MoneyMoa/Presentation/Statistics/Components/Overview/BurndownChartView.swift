@@ -169,6 +169,8 @@ struct BurndownChartView: View {
 }
 
 #Preview {
-    BurndownChartView(data: BurndownPointDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview(range: .thisMonth) { dashboard in
+        BurndownChartView(data: dashboard.overview.burndown)
+            .padding()
+    }
 }
