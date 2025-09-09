@@ -33,8 +33,6 @@ final class MainViewModelTests: XCTestCase {
             getMonthlyTransactionsUseCase: mockDIContainer.makeGetMonthlyTransactionsUseCase(),
             getExpenseSumUntilDateUseCase: mockDIContainer.makeGetExpenseSumUntilDateUseCase(),
             getMonthlyBudgetUseCase: mockDIContainer.makeGetMonthlyBudgetUseCase(),
-            getBudgetTemplateUseCase: mockDIContainer.makeGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: mockDIContainer.makeCreateBudgetFromTemplateUseCase(),
             transactionEventPublisher: mockTransactionEventPublisher
         )
         
@@ -114,8 +112,6 @@ final class MainViewModelTests: XCTestCase {
             getMonthlyTransactionsUseCase: mockDIContainer.makeGetMonthlyTransactionsUseCase(),
             getExpenseSumUntilDateUseCase: mockDIContainer.makeGetExpenseSumUntilDateUseCase(),
             getMonthlyBudgetUseCase: mockDIContainer.makeGetMonthlyBudgetUseCase(),
-            getBudgetTemplateUseCase: mockDIContainer.makeGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: mockDIContainer.makeCreateBudgetFromTemplateUseCase(),
             transactionEventPublisher: mockTransactionEventPublisher,
             initialYearMonth: customYearMonth
         )
@@ -131,7 +127,7 @@ final class MainViewModelTests: XCTestCase {
         viewModel.send(.loadTransactions)
         
         // Wait for async operations
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then
         XCTAssertFalse(viewModel.transactionsByDate.isEmpty)
@@ -173,22 +169,106 @@ final class MainViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentYearMonth, targetYearMonth)
     }
     
-    // MARK: - Test Methods - Budget Template Integration
+    // MARK: - Test Methods - Budget Loading Scenarios
     
-    func test_budgetTemplateFlow_withoutTemplate_showsNoBudgetState() async {
-        // Given - No budget template exists (MockDIContainer handles this)
+    func test_loadCurrentMonthBudget_withBudgetExists_setsBudget() async {
+        // Given - Setup budget in mock repository
+        let currentMonth = YearMonth.current
+        let testBudget = BudgetDTO(
+            id: UUID(),
+            month: currentMonth,
+            totalAmount: 1000000,
+            categoryBudgets: []
+        )
+        mockDIContainer.mockBudgetRepository.addBudget(testBudget)
         
         // When
         viewModel.send(.loadTransactions)
         
         // Wait for all async operations
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then
         XCTAssertNotNil(viewModel.summaryData)
-        // MockDIContainer returns mock budget data, so we verify the loading completed
+        XCTAssertNotNil(viewModel.summaryData?.budget)
+        XCTAssertEqual(viewModel.summaryData?.budget?.totalAmount, 1000000)
+        XCTAssertFalse(viewModel.isSummaryLoading)
+    }
+    
+    func test_loadCurrentMonthBudget_withNoBudget_setsNil() async {
+        // Given - No budget exists (MockDIContainer empty scenario)
+        mockDIContainer.mockBudgetRepository.clearData()
+        
+        // When
+        viewModel.send(.loadTransactions)
+        
+        // Wait for all async operations
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then
+        XCTAssertNotNil(viewModel.summaryData)
+        XCTAssertNil(viewModel.summaryData?.budget)
         XCTAssertFalse(viewModel.isSummaryLoading)
         XCTAssertTrue(viewModel.hasSummaryData)
+    }
+    
+    func test_setBudget_withValidBudget_updatesSummary() async {
+        // Given
+        let testBudget = BudgetDTO(
+            id: UUID(),
+            month: YearMonth.current,
+            totalAmount: 500000,
+            categoryBudgets: []
+        )
+        
+        // Setup transactions first
+        viewModel.send(.loadTransactions)
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05초
+        
+        // When
+        viewModel.send(.setBudget(testBudget))
+        
+        // Wait for summary update
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05초
+        
+        // Then
+        XCTAssertNotNil(viewModel.summaryData)
+        XCTAssertNotNil(viewModel.summaryData?.budget)
+        XCTAssertEqual(viewModel.summaryData?.budget?.totalAmount, 500000)
+    }
+    
+    func test_setBudget_withNilBudget_updatesSummary() async {
+        // Given - Load transactions first
+        viewModel.send(.loadTransactions)
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05초
+        
+        // When
+        viewModel.send(.setBudget(nil))
+        
+        // Wait for summary update
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05초
+        
+        // Then
+        XCTAssertNotNil(viewModel.summaryData)
+        XCTAssertNil(viewModel.summaryData?.budget)
+        XCTAssertNil(viewModel.summaryData?.remainingBudget)
+        XCTAssertNil(viewModel.summaryData?.budgetUsagePercentage)
+    }
+    
+    func test_budgetLoading_withRepositoryError_handlesGracefully() async {
+        // Given - Configure budget repository to fail
+        mockDIContainer.mockBudgetRepository.shouldFail = true
+        
+        // When
+        viewModel.send(.loadTransactions)
+        
+        // Wait for all async operations
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
+        
+        // Then - Should still complete with nil budget
+        XCTAssertNotNil(viewModel.summaryData)
+        XCTAssertNil(viewModel.summaryData?.budget)
+        XCTAssertFalse(viewModel.isSummaryLoading)
     }
     
     // MARK: - Test Methods - Computed Properties
@@ -198,7 +278,7 @@ final class MainViewModelTests: XCTestCase {
         viewModel.send(.loadTransactions)
         
         // Wait for async loading
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then
         // Test data has 40,000 (15,000 + 25,000) in expenses for current month
@@ -210,7 +290,7 @@ final class MainViewModelTests: XCTestCase {
         viewModel.send(.loadTransactions)
         
         // Wait for async loading
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then  
         // Test data has 100,000 in income for current month
@@ -225,63 +305,47 @@ final class MainViewModelTests: XCTestCase {
         viewModel.send(.loadTransactions)
         
         // Wait for async operations
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then
         XCTAssertTrue(viewModel.hasSummaryData)
     }
     
-    // MARK: - Test Methods - Repository-based Testing
+    // MARK: - Test Methods - Basic Error Handling
     
-    func test_loadTransactions_withRepositoryData_loadsCorrectly() async throws {
-        // Given - Repository has test data
-        let mockRepository = mockDIContainer.mockTransactionRepository
-        XCTAssertFalse(mockRepository.shouldFail)
-        
-        // When
-        viewModel.send(.loadTransactions)
-        
-        // Wait for async operations
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
-        
-        // Then
-        XCTAssertFalse(viewModel.isLoading)
-        XCTAssertFalse(viewModel.isSummaryLoading)
-        XCTAssertNotNil(viewModel.summaryData)
-    }
-    
-    func test_loadTransactions_withRepositoryFailure_handlesErrorGracefully() async throws {
+    func test_loadTransactions_withRepositoryFailure_handlesErrorGracefully() async {
         // Given - Repository configured to fail
-        let mockRepository = mockDIContainer.mockTransactionRepository
-        mockRepository.shouldFail = true
+        mockDIContainer.mockTransactionRepository.shouldFail = true
         
         // When
         viewModel.send(.loadTransactions)
         
         // Wait for async operations
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1초
+        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1초
         
         // Then - ViewModel should handle error gracefully
         XCTAssertFalse(viewModel.isLoading)
-        // Depending on error handling implementation, summary might still complete
+        // Should still complete summary flow
+        XCTAssertNotNil(viewModel.summaryData)
     }
     
     // MARK: - Test Methods - Event Publisher Integration
     
-    func test_transactionEventPublisher_receivesEvents() async {
+    func test_transactionEventPublisher_receivesCurrentMonthEvents() async {
         // Given
         viewModel.send(.loadTransactions)
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5초
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05초
         
-        // When - Simulate transaction event
+        // When - Simulate transaction event for current month
         let event = TransactionEvent(type: .created, yearMonth: YearMonth.current)
         mockTransactionEventPublisher.publish(event)
         
         // Wait for event processing
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5초
+        try? await Task.sleep(nanoseconds: 50_000_000) // 0.05초
         
         // Then - Should trigger data reload
         XCTAssertEqual(mockTransactionEventPublisher.publishedEvents.count, 1)
         XCTAssertEqual(mockTransactionEventPublisher.publishedEvents.first?.type, .created)
     }
+    
 }

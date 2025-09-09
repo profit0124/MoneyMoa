@@ -54,8 +54,6 @@ public class MainViewModel {
     private let getMonthlyTransactionsUseCase: GetMonthlyTransactionsUseCase
     private let getExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseCase
     private let getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase
-    private let getBudgetTemplateUseCase: GetBudgetTemplateUseCase
-    private let createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase
     private let transactionEventPublisher: TransactionEventPublisher
     
     // MARK: - Publisher Subscriptions
@@ -69,16 +67,12 @@ public class MainViewModel {
         getMonthlyTransactionsUseCase: GetMonthlyTransactionsUseCase,
         getExpenseSumUntilDateUseCase: GetExpenseSumUntilDateUseCase,
         getMonthlyBudgetUseCase: GetMonthlyBudgetUseCase,
-        getBudgetTemplateUseCase: GetBudgetTemplateUseCase,
-        createBudgetFromTemplateUseCase: CreateBudgetFromTemplateUseCase,
         transactionEventPublisher: TransactionEventPublisher,
         initialYearMonth: YearMonth = YearMonth.current
     ) {
         self.getMonthlyTransactionsUseCase = getMonthlyTransactionsUseCase
         self.getExpenseSumUntilDateUseCase = getExpenseSumUntilDateUseCase
         self.getMonthlyBudgetUseCase = getMonthlyBudgetUseCase
-        self.getBudgetTemplateUseCase = getBudgetTemplateUseCase
-        self.createBudgetFromTemplateUseCase = createBudgetFromTemplateUseCase
         self.transactionEventPublisher = transactionEventPublisher
         self.currentYearMonth = initialYearMonth
         
@@ -92,9 +86,7 @@ public class MainViewModel {
         case calculateCurrentMonthExpense
         case loadPreviousMonthExpense
         case loadCurrentMonthBudget
-        case checkBudgetTemplate
-        case createBudgetFromTemplate(BudgetTemplateDTO)
-        case setBudget(BudgetDTO)
+        case setBudget(BudgetDTO?)
         case updateSummaryData
         case handleYearMonth(HandleYearMonth)
     }
@@ -128,16 +120,6 @@ public class MainViewModel {
         case .loadCurrentMonthBudget:
             Task {
                 let action = await loadCurrentMonthBudget()
-                send(action)
-            }
-        case .checkBudgetTemplate:
-            Task {
-                let action = await checkBudgetTemplate()
-                send(action)
-            }
-        case .createBudgetFromTemplate(let template):
-            Task {
-                let action = await createBudgetFromTemplate(template)
                 send(action)
             }
         case .setBudget(let budget):
@@ -271,59 +253,15 @@ public class MainViewModel {
         
         do {
             let budgetDTO = try await getMonthlyBudgetUseCase.execute(yearMonth: currentYearMonth)
-            if let budgetDTO {
-                return .setBudget(budgetDTO)
-            } else {
-                return .checkBudgetTemplate
-            }
+            return .setBudget(budgetDTO)
         } catch {
             print("Current month budget load error: \(error.localizedDescription)")
-            return .checkBudgetTemplate
-        }
-    }
-    
-    /// 예산 템플릿이 있는지 확인합니다
-    private func checkBudgetTemplate() async -> Action {
-        startSummaryLoading()
-        defer {
-            stopSummaryLoading()
-        }
-        
-        do {
-            if let budgetTemplate = try await getBudgetTemplateUseCase.execute() {
-                return .createBudgetFromTemplate(budgetTemplate)
-            } else {
-                currentMonthBudget = nil
-                return .updateSummaryData
-            }
-        } catch {
-            print("Budget template check error: \(error.localizedDescription)")
-            currentMonthBudget = nil
-            return .updateSummaryData
-        }
-    }
-    
-    /// 템플릿을 기반으로 예산을 생성합니다
-    private func createBudgetFromTemplate(_ template: BudgetTemplateDTO) async -> Action {
-        startSummaryLoading()
-        defer {
-            stopSummaryLoading()
-        }
-        
-        do {
-            let newBudget = try await createBudgetFromTemplateUseCase.execute(
-                template: template,
-                yearMonth: currentYearMonth
-            )
-            return .setBudget(newBudget)
-        } catch {
-            currentMonthBudget = nil
-            return .updateSummaryData
+            return .setBudget(nil)
         }
     }
     
     /// 예산을 설정합니다 (reload 대신 직접 설정)
-    private func setBudget(_ budget: BudgetDTO) {
+    private func setBudget(_ budget: BudgetDTO?) {
         currentMonthBudget = budget
     }
     
