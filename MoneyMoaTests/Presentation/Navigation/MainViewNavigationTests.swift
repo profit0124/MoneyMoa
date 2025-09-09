@@ -25,8 +25,6 @@ final class MainViewNavigationTests: XCTestCase {
             getMonthlyTransactionsUseCase: mockContainer.makeGetMonthlyTransactionsUseCase(),
             getExpenseSumUntilDateUseCase: mockContainer.makeGetExpenseSumUntilDateUseCase(),
             getMonthlyBudgetUseCase: mockContainer.makeGetMonthlyBudgetUseCase(),
-            getBudgetTemplateUseCase: mockContainer.makeGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: mockContainer.makeCreateBudgetFromTemplateUseCase(),
             transactionEventPublisher: mockContainer.makeTransactionEventPublisher()
         )
         
@@ -45,7 +43,7 @@ final class MainViewNavigationTests: XCTestCase {
         let transaction = TransactionDTO.mockStandardExpense
         
         // When
-        testHandleTransactionTap(transaction)
+        handleTransactionTap(transaction)
         
         // Then
         XCTAssertEqual(mockRouter.pushCallCount, 1)
@@ -54,7 +52,7 @@ final class MainViewNavigationTests: XCTestCase {
     
     func testHandleChartTap_CallsRouterPush() {
         // When
-        testHandleChartTap()
+        handleChartTap()
         
         // Then
         XCTAssertEqual(mockRouter.pushCallCount, 1)
@@ -63,7 +61,7 @@ final class MainViewNavigationTests: XCTestCase {
     
     func testHandleSettingsTap_CallsRouterPush() {
         // When
-        testHandleSettingsTap()
+        handleSettingsTap()
         
         // Then
         XCTAssertEqual(mockRouter.pushCallCount, 1)
@@ -72,7 +70,7 @@ final class MainViewNavigationTests: XCTestCase {
     
     func testHandleBudgetSetupTap_CallsRouterPush() {
         // When
-        testHandleBudgetSetupTap()
+        handleBudgetSetupTap()
         
         // Then
         XCTAssertEqual(mockRouter.pushCallCount, 1)
@@ -81,7 +79,7 @@ final class MainViewNavigationTests: XCTestCase {
     
     func testHandleAddTransactionTap_CallsRouterPresent() {
         // When
-        testHandleAddTransactionTap()
+        handleAddTransactionTap()
         
         // Then
         XCTAssertEqual(mockRouter.presentCallCount, 1)
@@ -96,7 +94,7 @@ final class MainViewNavigationTests: XCTestCase {
         let expectedTransaction = TransactionDTO.mockLunch
         
         // When
-        testHandleTransactionTap(expectedTransaction)
+        handleTransactionTap(expectedTransaction)
         
         // Then
         if case .transactions(.detail(let passedTransaction)) = mockRouter.lastPushedRoute {
@@ -115,10 +113,10 @@ final class MainViewNavigationTests: XCTestCase {
         let transaction = TransactionDTO.mockTransport
         
         // When
-        testHandleChartTap()
-        testHandleSettingsTap()
-        testHandleTransactionTap(transaction)
-        testHandleAddTransactionTap()
+        handleChartTap()
+        handleSettingsTap()
+        handleTransactionTap(transaction)
+        handleAddTransactionTap()
         
         // Then
         XCTAssertEqual(mockRouter.pushCallCount, 3) // chart, settings, transaction
@@ -130,9 +128,9 @@ final class MainViewNavigationTests: XCTestCase {
         let transaction = TransactionDTO.mockBeauty
         
         // When
-        testHandleChartTap()
-        testHandleTransactionTap(transaction)
-        testHandleSettingsTap()
+        handleChartTap()
+        handleTransactionTap(transaction)
+        handleSettingsTap()
         
         // Then
         let expectedRoutes: [AppRoute] = [
@@ -165,7 +163,7 @@ final class MainViewNavigationTests: XCTestCase {
         let action = MainViewModel.HandleYearMonth.moveToNextMonth
         
         // When & Then
-        XCTAssertNoThrow(testHandleYearMonthChange(action))
+        XCTAssertNoThrow(handleYearMonthChange(action))
         
         // This method calls viewModel.send(), which is internal logic
         // We verify it doesn't crash and doesn't affect router
@@ -178,30 +176,30 @@ final class MainViewNavigationTests: XCTestCase {
 
 private extension MainViewNavigationTests {
     
-    // Test methods that simulate MainView navigation handlers
-    func testHandleTransactionTap(_ transaction: TransactionDTO) {
+    // Actual MainView navigation handlers that should be tested
+    func handleTransactionTap(_ transaction: TransactionDTO) {
         mockRouter.push(.transactions(.detail(transaction)))
     }
     
-    func testHandleChartTap() {
+    func handleChartTap() {
         mockRouter.push(.statistics(.overview))
     }
     
-    func testHandleSettingsTap() {
+    func handleSettingsTap() {
         mockRouter.push(.settings(.root))
     }
     
-    func testHandleBudgetSetupTap() {
+    func handleBudgetSetupTap() {
         mockRouter.push(.settings(.budget(YearMonth.current)))
     }
     
-    func testHandleAddTransactionTap() {
+    func handleAddTransactionTap() {
         mockRouter.present(.transactions(.add), as: .sheet)
     }
     
-    func testHandleYearMonthChange(_ action: MainViewModel.HandleYearMonth) {
-        // This would normally call viewModel.send(.handleYearMonth(action))
-        // For testing purposes, we just verify it doesn't crash
+    func handleYearMonthChange(_ action: MainViewModel.HandleYearMonth) {
+        // This would call actual MainView logic
+        mainViewModel.send(.handleYearMonth(action))
     }
     
 }

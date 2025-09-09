@@ -157,8 +157,6 @@ extension DIContainer {
             getMonthlyTransactionsUseCase: makeGetMonthlyTransactionsUseCase(),
             getExpenseSumUntilDateUseCase: makeGetExpenseSumUntilDateUseCase(),
             getMonthlyBudgetUseCase: makeGetMonthlyBudgetUseCase(),
-            getBudgetTemplateUseCase: makeGetBudgetTemplateUseCase(),
-            createBudgetFromTemplateUseCase: makeCreateBudgetFromTemplateUseCase(),
             transactionEventPublisher: makeTransactionEventPublisher()
         )
     }
