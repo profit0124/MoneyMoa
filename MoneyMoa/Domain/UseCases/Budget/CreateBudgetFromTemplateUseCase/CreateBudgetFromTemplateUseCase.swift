@@ -32,5 +32,6 @@ public protocol CreateBudgetFromTemplateUseCase {
     ///       yearMonth: YearMonth(year: 2024, month: 8)
     ///   )
     ///   ```
+    @discardableResult
     func execute(template: BudgetTemplateDTO, yearMonth: YearMonth) async throws -> BudgetDTO
 }
