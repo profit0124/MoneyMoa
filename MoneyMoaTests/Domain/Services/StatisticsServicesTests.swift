@@ -20,9 +20,9 @@ struct ServicesTests {
         let out = svc.ma7(daily, calendar: cal)
         #expect(out.count == 10)
         // 7번째 항목(index 6)은 1~7의 평균
-        #expect(out[6].amount == Decimal( (1+2+3+4+5+6+7)/7 ))
+        #expect(out[6].movingAverage == Decimal( (1+2+3+4+5+6+7)/7 ))
         // 10번째 항목(index 9)은 4~10의 평균 (sliding window)
-        #expect(out[9].amount == Decimal( (4+5+6+7+8+9+10)/7 ))
+        #expect(out[9].movingAverage == Decimal( (4+5+6+7+8+9+10)/7 ))
     }
 
     @Test
@@ -37,7 +37,7 @@ struct ServicesTests {
         let daily = [DailyPointDTO(date: cal.date(from: .init(year: 2025, month: 8, day: 1))!, amount: 100)]
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 1)
-        #expect(out[0].amount == 100)
+        #expect(out[0].movingAverage == 100)
     }
 
     @Test
@@ -50,8 +50,8 @@ struct ServicesTests {
         ]
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 2)
-        #expect(out[0].amount == 100) // first day: only itself
-        #expect(out[1].amount == 150) // second day: (100+200)/2
+        #expect(out[0].movingAverage == 100) // first day: only itself
+        #expect(out[1].movingAverage == 150) // second day: (100+200)/2
     }
 
     @Test
@@ -65,9 +65,9 @@ struct ServicesTests {
         ]
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 3)
-        #expect(out[0].amount == 10) // 첫 번째는 10
-        #expect(out[1].amount == 15) // 두 번째는 (10+20)/2
-        #expect(out[2].amount == 20) // 세 번째는 (10+20+30)/3
+        #expect(out[0].movingAverage == 10) // 첫 번째는 10
+        #expect(out[1].movingAverage == 15) // 두 번째는 (10+20)/2
+        #expect(out[2].movingAverage == 20) // 세 번째는 (10+20+30)/3
     }
 
     @Test
@@ -79,7 +79,7 @@ struct ServicesTests {
         }
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 7)
-        #expect(out[6].amount == Decimal((1+2+3+4+5+6+7)/7)) // 7일 평균
+        #expect(out[6].movingAverage == Decimal((1+2+3+4+5+6+7)/7)) // 7일 평균
     }
 
     @Test
@@ -92,9 +92,9 @@ struct ServicesTests {
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 12)
         // 8일째는 2~8일의 평균
-        #expect(out[7].amount == Decimal((2+3+4+5+6+7+8)/7))
+        #expect(out[7].movingAverage == Decimal((2+3+4+5+6+7+8)/7))
         // 12일째는 6~12일의 평균
-        #expect(out[11].amount == Decimal((6+7+8+9+10+11+12)/7))
+        #expect(out[11].movingAverage == Decimal((6+7+8+9+10+11+12)/7))
     }
 
     @Test
@@ -108,9 +108,9 @@ struct ServicesTests {
         ]
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 3)
-        #expect(out[0].amount == 0)
-        #expect(out[1].amount == 50) // (0+100)/2
-        #expect(out[2].amount == Decimal(100)/Decimal(3)) // (0+100+0)/3
+        #expect(out[0].movingAverage == 0)
+        #expect(out[1].movingAverage == 50) // (0+100)/2
+        #expect(out[2].movingAverage == Decimal(100)/Decimal(3)) // (0+100+0)/3
     }
 
     @Test
