@@ -97,7 +97,7 @@ public final class FormatterManager {
         titleFormatter.dateFormat = "YY.MM.dd"
 
         let startStr = titleFormatter.string(from: range.start)
-        let endStr = titleFormatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: range.end) ?? range.end)
+        let endStr = titleFormatter.string(from: koreaCalendar.date(byAdding: .day, value: -1, to: range.end) ?? range.end)
         return "\(startStr)-\(endStr)"
     }
     

@@ -46,14 +46,14 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     /// 해당 월의 첫날 00:00:00 Date를 반환
     public var startOfMonth: Date {
-        let calendar = Calendar.current
+        let calendar = KST.calendar
         let components = DateComponents(year: year, month: month, day: 1, hour: 0, minute: 0, second: 0)
         return calendar.date(from: components) ?? Date()
     }
     
     /// 해당 월의 마지막날 23:59:59 Date를 반환
     public var endOfMonth: Date {
-        let calendar = Calendar.current
+        let calendar = KST.calendar
         let nextMonth = self.nextMonth()
         let nextMonthStart = nextMonth.startOfMonth
         // 다음 달 첫날에서 1초를 빼서 이번 달 마지막날 23:59:59를 만듦
@@ -68,7 +68,7 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     /// Date로부터 YearMonth를 생성합니다
     public init(from date: Date) {
-        let calendar = Calendar.current
+        let calendar = KST.calendar
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }

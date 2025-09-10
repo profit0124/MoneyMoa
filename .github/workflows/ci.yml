@@ -25,6 +25,7 @@ env:
   APP_SCHEME: "MoneyMoa"          # Your scheme (must be shared)
   PROJECT_FILE: "MoneyMoa.xcodeproj"
   COVERAGE_TARGETS: "MoneyMoa"    # Comma-separated if multiple; used only when a test plan exists
+  TZ: "Asia/Seoul"                # Set timezone for consistent test results
 
 jobs:
   build-and-test:
