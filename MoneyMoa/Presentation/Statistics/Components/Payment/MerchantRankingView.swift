@@ -130,6 +130,8 @@ struct MerchantRankCard: View {
 }
 
 #Preview {
-    MerchantRankingView(data: MerchantRankingDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        MerchantRankingView(data: dashboard.pattern.merchants)
+            .padding()
+    }
 }

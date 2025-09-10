@@ -19,11 +19,13 @@ struct BudgetSetupViewModelTests {
     }
     
     private func makeBudgetSetupViewModel(
-        yearMonth: YearMonth = .current,
+        yearMonth: YearMonth? = nil,
         container: MockDIContainer
     ) -> BudgetSetupViewModel {
+        // CI 환경 호환성을 위해 고정된 날짜 사용
+        let fixedYearMonth = yearMonth ?? FixedDateHelper.fixedYearMonth
         return BudgetSetupViewModel(
-            yearMonth: yearMonth,
+            yearMonth: fixedYearMonth,
             getMonthlyBudgetUseCase: container.makeGetMonthlyBudgetUseCase(),
             getCategoriesByTypeUseCase: container.makeGetCategoriesByTypeUseCase(),
             createTemplateFromBudgetUseCase: container.makeCreateBudgetTemplateUseCase(),

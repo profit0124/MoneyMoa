@@ -216,6 +216,8 @@ struct MonthSummaryCard: View {
 }
 
 #Preview {
-    MonthlyIncomeExpenseView(data: MonthlyPointDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        MonthlyIncomeExpenseView(data: dashboard.overview.monthly)
+            .padding()
+    }
 }

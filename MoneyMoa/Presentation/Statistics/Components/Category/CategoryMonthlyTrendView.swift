@@ -66,5 +66,8 @@ struct CategoryMonthlyTrendView: View {
 }
 
 #Preview {
-    CategoryMonthlyTrendView(data: CategoryPreviewData.categoryMonthlyPoints)
+    StatisticsPreviewHelper.preview { dashboard in
+        CategoryMonthlyTrendView(data: dashboard.category.monthlyStacks)
+            .padding()
+    }
 }

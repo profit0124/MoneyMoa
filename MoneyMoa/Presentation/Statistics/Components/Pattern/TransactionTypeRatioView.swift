@@ -144,6 +144,8 @@ struct TransactionTypeRatioView: View {
 }
 
 #Preview {
-    TransactionTypeRatioView(data: TransactionTypeRatioDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        TransactionTypeRatioView(data: dashboard.pattern.typeRatio)
+            .padding()
+    }
 }

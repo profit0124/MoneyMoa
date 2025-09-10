@@ -130,9 +130,9 @@ public enum TransactionFactory {
             // Very large amount
             create(amount: 10_000_000, transactionType: .income, subCategory: .mockSalary, paymentMethod: .mockTransfer),
             // Future date
-            create(amount: 50000, date: Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date(), transactionType: .variableExpense, subCategory: .mockFoodExpense, paymentMethod: .mockCreditCard),
+            create(amount: 50000, date: KST.calendar.date(byAdding: .day, value: 30, to: Date()) ?? Date(), transactionType: .variableExpense, subCategory: .mockFoodExpense, paymentMethod: .mockCreditCard),
             // Old date
-            create(amount: 30000, date: Calendar.current.date(byAdding: .year, value: -1, to: Date()) ?? Date(), transactionType: .variableExpense, subCategory: .mockFoodExpense, paymentMethod: .mockCreditCard)
+            create(amount: 30000, date: KST.calendar.date(byAdding: .year, value: -1, to: Date()) ?? Date(), transactionType: .variableExpense, subCategory: .mockFoodExpense, paymentMethod: .mockCreditCard)
         ]
     }
     
@@ -165,7 +165,7 @@ public enum TransactionFactory {
     
     private static func generateVariableExpenses(for yearMonth: YearMonth) -> [TransactionDTO] {
         var transactions: [TransactionDTO] = []
-        let daysInMonth = Calendar.current.range(of: .day, in: .month, for: yearMonth.startOfMonth)?.count ?? 30
+        let daysInMonth = KST.calendar.range(of: .day, in: .month, for: yearMonth.startOfMonth)?.count ?? 30
         
         // Daily expenses (70% of days)
         let activeDays = Int(Double(daysInMonth) * 0.7)
@@ -199,7 +199,7 @@ public enum TransactionFactory {
     }
     
     private static func randomDateInMonth(_ yearMonth: YearMonth, dayBias: DayBias) -> Date {
-        let calendar = Calendar.current
+        let calendar = KST.calendar
         let startOfMonth = yearMonth.startOfMonth
         let daysInMonth = calendar.range(of: .day, in: .month, for: startOfMonth)?.count ?? 30
         
@@ -231,7 +231,7 @@ public enum TransactionFactory {
     }
     
     private static func addDays(to date: Date, days: Int) -> Date {
-        Calendar.current.date(byAdding: .day, value: days, to: date) ?? date
+        KST.calendar.date(byAdding: .day, value: days, to: date) ?? date
     }
     
     private enum DayBias {

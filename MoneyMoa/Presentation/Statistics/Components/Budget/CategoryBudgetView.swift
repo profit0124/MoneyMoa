@@ -172,8 +172,10 @@ struct CategoryBudgetCard: View {
 }
 
 #Preview {
-    CategoryBudgetView(data: CategoryBudgetVsExpenseDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        CategoryBudgetView(data: dashboard.budget.byCategory)
+            .padding()
+    }
 }
 
 #Preview("Empty") {

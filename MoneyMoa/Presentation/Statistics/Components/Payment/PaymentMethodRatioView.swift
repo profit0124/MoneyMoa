@@ -135,6 +135,8 @@ struct PaymentMethodLegendItem: View {
 }
 
 #Preview {
-    PaymentMethodRatioView(data: PaymentMethodRatioDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview { dashboard in
+        PaymentMethodRatioView(data: dashboard.payment.ratios)
+            .padding()
+    }
 }

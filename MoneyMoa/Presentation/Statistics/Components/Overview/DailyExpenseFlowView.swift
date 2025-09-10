@@ -186,6 +186,8 @@ struct StatCard: View {
 }
 
 #Preview {
-    DailyExpenseFlowView(data: DailyPointDTO.previewData)
-        .padding()
+    StatisticsPreviewHelper.preview(range: .lastMonth) { dashboard in
+        DailyExpenseFlowView(data: dashboard.overview.daily)
+            .padding()
+    }
 }
