@@ -34,10 +34,8 @@ struct StatisticsRepositoryImplAnalyticsTests {
     }
     
     private func createTestRange(months: Int = 3) -> DateRange {
-        let cal = KST.calendar
-        let endDate = Date()
-        let startDate = cal.date(byAdding: .month, value: -months, to: endDate)!
-        return DateRange(start: startDate, end: endDate, calendar: cal)
+        // 고정된 날짜 사용으로 CI 환경 호환성 보장
+        return FixedDateHelper.createRange(months: months)
     }
     
     // MARK: - fetchMonthlyTotals Tests
@@ -116,8 +114,7 @@ struct StatisticsRepositoryImplAnalyticsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
-        let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
+        let date = FixedDateHelper.fixedDate
         
         // 수입 없이 지출만 있는 경우
         try await repos.txRepo.insertTransaction(
@@ -130,11 +127,7 @@ struct StatisticsRepositoryImplAnalyticsTests {
             )
         )
         
-        let range = DateRange(
-            start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
-            end: cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!,
-            calendar: cal
-        )
+        let range = FixedDateHelper.fixedMonthRange
         
         // When
         let results = try await repos.statsRepo.fetchMonthlyTotals(range: range)
@@ -189,20 +182,17 @@ struct StatisticsRepositoryImplAnalyticsTests {
         let repos = createRepository(txScenario: .empty)
         
         let cal = KST.calendar
+        let baseDate = FixedDateHelper.fixedDate // August 15, 2025
         let dates = [
-            cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!, // 금요일
-            cal.date(from: DateComponents(year: 2025, month: 8, day: 16))!, // 토요일
-            cal.date(from: DateComponents(year: 2025, month: 8, day: 17))!, // 일요일
-            cal.date(from: DateComponents(year: 2025, month: 8, day: 18))!  // 월요일
+            baseDate,
+            cal.date(byAdding: .day, value: 1, to: baseDate)!,
+            cal.date(byAdding: .day, value: 2, to: baseDate)!,
+            cal.date(byAdding: .day, value: 3, to: baseDate)!
         ]
         
         try await insertWeeklyTestData(txRepo: repos.txRepo, dates: dates, amounts: [10000, 20000, 30000, 40000])
         
-        let range = DateRange(
-            start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
-            end: cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!,
-            calendar: cal
-        )
+        let range = FixedDateHelper.fixedMonthRange
         
         // When
         let results = try await repos.statsRepo.fetchDailyExpenses(range: range)
@@ -253,16 +243,11 @@ struct StatisticsRepositoryImplAnalyticsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
-        let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
+        let date = FixedDateHelper.fixedDate
         
         try await insertCategoryTestData(txRepo: repos.txRepo, date: date)
         
-        let range = DateRange(
-            start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
-            end: cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!,
-            calendar: cal
-        )
+        let range = FixedDateHelper.fixedMonthRange
         
         // When
         let results = try await repos.statsRepo.fetchCategoryExpenseByMonth(range: range)

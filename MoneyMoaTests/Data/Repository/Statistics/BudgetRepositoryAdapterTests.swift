@@ -33,11 +33,8 @@ struct BudgetRepositoryAdapterTests {
     }
     
     private func createSingleMonthRange() -> DateRange {
-        let cal = KST.calendar
-        let currentMonth = YearMonth.current
-        let start = currentMonth.startOfMonth
-        let end = currentMonth.endOfMonth
-        return DateRange(start: start, end: end, calendar: cal)
+        // CI 환경 호환성을 위해 고정된 날짜 사용
+        return FixedDateHelper.fixedMonthRange
     }
     
     // MARK: - fetchBudgets Tests
@@ -98,8 +95,13 @@ struct BudgetRepositoryAdapterTests {
         let txRepo = container.mockTransactionRepository
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
-        budgetRepo.loadScenario(.normal) // 현재 월 단일 예산
+        // 테스트에서 사용할 고정된 월
         let range = createSingleMonthRange()
+        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        
+        // 해당 월에 대한 예산을 명시적으로 생성
+        let budget = BudgetFactory.normal(for: targetMonth)
+        budgetRepo.setBudgets([budget])
         
         // When
         let result = try await adapter.fetchBudgets(range: range)
@@ -155,11 +157,24 @@ struct BudgetRepositoryAdapterTests {
         let txRepo = container.mockTransactionRepository
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
-        // 예산과 거래 데이터 모두 준비
-        budgetRepo.loadScenario(.normal)
-        txRepo.loadScenario(.normal())
-        
         let range = createSingleMonthRange() // 8월
+        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        
+        // 테스트 월에 맞는 예산과 거래 생성
+        let budget = BudgetFactory.normal(for: targetMonth)
+        budgetRepo.setBudgets([budget])
+        
+        // 테스트 월에 맞는 거래 생성
+        let testDate = FixedDateHelper.fixedDate
+        try await txRepo.insertTransaction(
+            TransactionFactory.create(
+                amount: 200000,
+                date: testDate,
+                transactionType: .variableExpense,
+                subCategory: .mockFoodExpense,
+                paymentMethod: .mockCash
+            )
+        )
         
         // When
         let result = try await adapter.fetchBudgetVsExpenseByMonth(range: range)
@@ -168,15 +183,11 @@ struct BudgetRepositoryAdapterTests {
         #expect(result.count == 1, "단일 월이므로 결과가 1개여야 함")
         
         let row = result[0]
-        #expect(row.budget >= 0, "예산은 0 이상이어야 함")
-        #expect(row.expense >= 0, "지출은 0 이상이어야 함")
+        #expect(row.budget > 0, "예산이 있어야 함")
+        #expect(row.expense == 200000, "지출이 예상값과 일치해야 함")
         
-        // monthStart가 올바른 월 시작일인지 확인
-        let cal = KST.calendar
-        let currentMonth = YearMonth.current
-        let expectedMonthStart = currentMonth.startOfMonth
-        #expect(cal.isDate(row.monthStart, equalTo: expectedMonthStart, toGranularity: .day),
-               "monthStart가 올바른 월 시작일이어야 함")
+        #expect(KST.calendar.isDate(row.monthStart, equalTo: range.start, toGranularity: .month),
+               "monthStart가 요청한 범위의 월과 같아야 함")
     }
     
     @Test("여러 월 처리: 3개월 범위의 예산 vs 지출 데이터")
@@ -219,10 +230,19 @@ struct BudgetRepositoryAdapterTests {
         let txRepo = container.mockTransactionRepository
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
-        budgetRepo.loadScenario(.empty) // 예산 없음
-        txRepo.loadScenario(.normal()) // 거래는 있음
-        
         let range = createSingleMonthRange()
+        
+        // 예산 없이 거래만 생성
+        let testDate = FixedDateHelper.fixedDate
+        try await txRepo.insertTransaction(
+            TransactionFactory.create(
+                amount: 150000,
+                date: testDate,
+                transactionType: .variableExpense,
+                subCategory: .mockFoodExpense,
+                paymentMethod: .mockCash
+            )
+        )
         
         // When
         let result = try await adapter.fetchBudgetVsExpenseByMonth(range: range)
@@ -232,7 +252,7 @@ struct BudgetRepositoryAdapterTests {
         
         let row = result[0]
         #expect(row.budget == 0, "예산이 없으므로 0이어야 함")
-        #expect(row.expense >= 0, "지출은 0 이상이어야 함")
+        #expect(row.expense == 150000, "지출이 예상값과 일치해야 함")
     }
     
     @Test("거래 없음: 거래가 없는 경우 지출이 0")
@@ -243,10 +263,13 @@ struct BudgetRepositoryAdapterTests {
         let txRepo = container.mockTransactionRepository
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
-        budgetRepo.loadScenario(.normal) // 예산은 있음
-        txRepo.loadScenario(.empty) // 거래 없음
-        
         let range = createSingleMonthRange()
+        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        
+        // 해당 월에 대한 예산을 명시적으로 생성
+        let budget = BudgetFactory.normal(for: targetMonth)
+        budgetRepo.setBudgets([budget])
+        txRepo.loadScenario(.empty) // 거래 없음
         
         // When
         let result = try await adapter.fetchBudgetVsExpenseByMonth(range: range)
@@ -325,10 +348,36 @@ struct BudgetRepositoryAdapterTests {
         let txRepo = container.mockTransactionRepository
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
-        budgetRepo.loadScenario(.normal)
-        txRepo.loadScenario(.stress()) // 다양한 거래 타입이 포함된 시나리오
-        
         let range = createSingleMonthRange()
+        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        
+        // 예산 생성
+        let budget = BudgetFactory.normal(for: targetMonth)
+        budgetRepo.setBudgets([budget])
+        
+        // 다양한 지출 타입의 거래 생성
+        let testDate = FixedDateHelper.fixedDate
+        let fixedAmount: Decimal = 100000
+        let variableAmount: Decimal = 250000
+        
+        try await txRepo.insertTransaction(
+            TransactionFactory.create(
+                amount: fixedAmount,
+                date: testDate,
+                transactionType: .fixedExpense,
+                subCategory: .mockHousingRent,
+                paymentMethod: .mockTransfer
+            )
+        )
+        try await txRepo.insertTransaction(
+            TransactionFactory.create(
+                amount: variableAmount,
+                date: testDate,
+                transactionType: .variableExpense,
+                subCategory: .mockFoodExpense,
+                paymentMethod: .mockCash
+            )
+        )
         
         // When
         let result = try await adapter.fetchBudgetVsExpenseByMonth(range: range)
@@ -337,16 +386,7 @@ struct BudgetRepositoryAdapterTests {
         #expect(result.count == 1, "결과가 1개여야 함")
         
         let row = result[0]
-        
-        // 수동으로 고정비 + 변동비 계산하여 검증
-        let ym = YearMonth.current
-        let startDate = ym.startOfMonth
-        let endDate = ym.endOfMonth
-        
-        let totals = try await txRepo.getTotalAmountByType(from: startDate, to: endDate)
-        let fixedExpense = totals.first(where: { $0.0 == .fixedExpense })?.1 ?? 0
-        let variableExpense = totals.first(where: { $0.0 == .variableExpense })?.1 ?? 0
-        let expectedExpense = fixedExpense + variableExpense
+        let expectedExpense = fixedAmount + variableAmount
         
         #expect(row.expense == expectedExpense, 
                "계산된 지출이 고정비 + 변동비 합계와 일치해야 함")

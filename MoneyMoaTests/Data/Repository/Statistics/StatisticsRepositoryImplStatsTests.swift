@@ -95,16 +95,11 @@ struct StatisticsRepositoryImplStatsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
-        let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
+        let date = FixedDateHelper.fixedDate
         
         try await insertPaymentMethodTestData(txRepo: repos.txRepo, date: date)
         
-        let range = DateRange(
-            start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
-            end: cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!,
-            calendar: cal
-        )
+        let range = FixedDateHelper.fixedMonthRange
         
         // When
         let results = try await repos.statsRepo.fetchPaymentMethodStats(range: range)
@@ -134,8 +129,7 @@ struct StatisticsRepositoryImplStatsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
-        let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
+        let date = FixedDateHelper.fixedDate
         
         // 수입 70만원, 지출 30만원
         try await repos.txRepo.insertTransaction(
@@ -157,11 +151,7 @@ struct StatisticsRepositoryImplStatsTests {
             )
         )
         
-        let range = DateRange(
-            start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
-            end: cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!,
-            calendar: cal
-        )
+        let range = FixedDateHelper.fixedMonthRange
         
         // When
         let result = try await repos.statsRepo.fetchTransactionTypeRatio(range: range)
@@ -218,16 +208,11 @@ struct StatisticsRepositoryImplStatsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
-        let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
+        let date = FixedDateHelper.fixedDate
         
         try await insertMerchantTestData(txRepo: repos.txRepo, date: date)
         
-        let range = DateRange(
-            start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
-            end: cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!,
-            calendar: cal
-        )
+        let range = FixedDateHelper.fixedMonthRange
         
         // When
         let result = try await repos.statsRepo.fetchMerchantRanking(range: range)
@@ -241,9 +226,17 @@ struct StatisticsRepositoryImplStatsTests {
     @Test("fetchBudgetsByCategory: 단순 전달")
     func testFetchBudgetsByCategory_SimplePassthrough() async throws {
         // Given
-        let repos = createRepository(budgetScenario: .multipleMonths)
+        let repos = createRepository(budgetScenario: .empty) // 먼저 비어있게 시작
         
         let range = createFixedRange() // 6월~8월
+        
+        // 범위에 포함된 월들에 대해 예산 생성
+        let months = range.months()
+        var budgets: [BudgetDTO] = []
+        for month in months {
+            budgets.append(BudgetFactory.normal(for: month))
+        }
+        repos.budgetRepo.setBudgets(budgets)
         
         // When
         let result = try await repos.statsRepo.fetchBudgetsByCategory(range: range)
@@ -251,13 +244,14 @@ struct StatisticsRepositoryImplStatsTests {
         // Then
         #expect(!result.isEmpty) // BudgetAdapter를 통해 데이터가 전달됨
         
-        // multipleMonths 시나리오는 여러 카테고리를 포함
+        // normal 시나리오는 여러 카테고리를 포함
         for (categoryId, monthlyBudgets) in result {
             #expect(!categoryId.isEmpty)
             #expect(!monthlyBudgets.isEmpty)
             
-            for (_, amount) in monthlyBudgets {
+            for (yearMonth, amount) in monthlyBudgets {
                 #expect(amount > 0)
+                #expect(range.months().contains(yearMonth), "범위 내의 월이어야 함")
             }
         }
     }
@@ -268,28 +262,44 @@ struct StatisticsRepositoryImplStatsTests {
     func testFetchBudgetVsExpenseByMonth_SimpleConversion() async throws {
         // Given
         let repos = createRepository(
-            txScenario: .normal(),
-            budgetScenario: .normal
+            txScenario: .empty, // 빈 상태에서 시작
+            budgetScenario: .empty
         )
         
         let cal = KST.calendar
-        let currentMonth = YearMonth.current
+        let currentMonth = FixedDateHelper.fixedYearMonth
         let range = DateRange(
             start: currentMonth.startOfMonth,
             end: currentMonth.endOfMonth,
             calendar: cal
         )
         
+        // 테스트 월에 맞는 예산 생성
+        let budget = BudgetFactory.normal(for: currentMonth)
+        repos.budgetRepo.setBudgets([budget])
+        
+        // 테스트 월에 맞는 거래 생성
+        let testDate = FixedDateHelper.fixedDate
+        try await repos.txRepo.insertTransaction(
+            TransactionFactory.create(
+                amount: 300000,
+                date: testDate,
+                transactionType: .variableExpense,
+                subCategory: .mockFoodExpense,
+                paymentMethod: .mockCash
+            )
+        )
+        
         // When
         let results = try await repos.statsRepo.fetchBudgetVsExpenseByMonth(range: range)
         
         // Then
-        #expect(results.count == 1) // 현재 월 단일 데이터
+        #expect(results.count == 1)
         
         let result = results[0]
         #expect(result.monthStart == currentMonth.startOfMonth)
-        #expect(result.budget > 0) // normal 시나리오는 예산이 있음
-        #expect(result.expense >= 0) // 지출은 0 이상
+        #expect(result.budget > 0) // 예산이 있음
+        #expect(result.expense == 300000) // 지출이 예상값과 일치
     }
     
     // MARK: - Integration Tests
@@ -299,10 +309,18 @@ struct StatisticsRepositoryImplStatsTests {
         // Given
         let repos = createRepository(
             txScenario: .realistic,
-            budgetScenario: .realistic
+            budgetScenario: .empty // 먼저 비어있게 시작
         )
         
         let range = createFixedRange()
+        
+        // 범위에 포함된 월들에 대해 realistic 예산 생성
+        let months = range.months()
+        var budgets: [BudgetDTO] = []
+        for month in months {
+            budgets.append(BudgetFactory.normal(for: month))
+        }
+        repos.budgetRepo.setBudgets(budgets)
         
         // When - 모든 메서드 호출
         let monthlyTotals = try await repos.statsRepo.fetchMonthlyTotals(range: range)
