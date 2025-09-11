@@ -113,6 +113,83 @@ public enum RepositoryError: Error, Sendable {
     case custom(String)
 }
 
+// MARK: - TransactionTimeContext
+
+/// 거래 발생 시점의 시간대 및 로케일 컨텍스트
+/// Experience-Based Time을 위한 핵심 타입
+public struct TransactionTimeContext: Codable, Sendable, Hashable {
+    /// 시간대 식별자 (e.g., "Asia/Seoul", "America/New_York")
+    public let timeZoneIdentifier: String
+    
+    /// 캘린더 식별자 (e.g., "gregorian", "japanese", "chinese")
+    public let calendarIdentifier: String
+    
+    /// 로케일 식별자 (e.g., "ko_KR", "en_US")
+    public let localeIdentifier: String?
+    
+    /// TimeZone 객체 (계산된 프로퍼티)
+    public var timeZone: TimeZone {
+        TimeZone(identifier: timeZoneIdentifier) ?? .current
+    }
+    
+    /// Calendar 객체 (계산된 프로퍼티)
+    public var calendar: Calendar {
+        // Calendar.Identifier를 문자열에서 직접 생성하는 방법
+        let calendarID: Calendar.Identifier
+        switch calendarIdentifier.lowercased() {
+        case "gregorian": calendarID = .gregorian
+        case "buddhist": calendarID = .buddhist
+        case "chinese": calendarID = .chinese
+        case "coptic": calendarID = .coptic
+        case "ethiopicAmeteMihret": calendarID = .ethiopicAmeteMihret
+        case "ethiopicAmeteAlem": calendarID = .ethiopicAmeteAlem
+        case "hebrew": calendarID = .hebrew
+        case "iso8601": calendarID = .iso8601
+        case "indian": calendarID = .indian
+        case "islamic": calendarID = .islamic
+        case "islamicCivil": calendarID = .islamicCivil
+        case "japanese": calendarID = .japanese
+        case "persian": calendarID = .persian
+        case "republicOfChina": calendarID = .republicOfChina
+        case "islamicTabular": calendarID = .islamicTabular
+        case "islamicUmmAlQura": calendarID = .islamicUmmAlQura
+        default: calendarID = .gregorian
+        }
+        
+        var cal = Calendar(identifier: calendarID)
+        cal.timeZone = timeZone
+        if let locale = locale {
+            cal.locale = locale
+        }
+        return cal
+    }
+    
+    /// Locale 객체 (계산된 프로퍼티)
+    public var locale: Locale? {
+        localeIdentifier.map { Locale(identifier: $0) }
+    }
+    
+    /// 기본 생성자
+    public init(
+        timeZoneIdentifier: String,
+        calendarIdentifier: String = "gregorian",
+        localeIdentifier: String? = nil
+    ) {
+        self.timeZoneIdentifier = timeZoneIdentifier
+        self.calendarIdentifier = calendarIdentifier
+        self.localeIdentifier = localeIdentifier
+    }
+    
+    /// 현재 기기 설정 기반 생성자
+    public static var current: TransactionTimeContext {
+        return TransactionTimeContext(
+            timeZoneIdentifier: TimeZone.current.identifier,
+            calendarIdentifier: Calendar.current.identifier.toString,
+            localeIdentifier: Locale.current.identifier
+        )
+    }
+}
+
 // MARK: KST
 /// 앱 전역에서 사용하는 KST(Asia/Seoul) 캘린더 유틸
 /// - Locale: ko_KR

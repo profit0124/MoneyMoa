@@ -12,13 +12,17 @@ import Foundation
 public struct TransactionDTO: Sendable, Hashable, Identifiable {
     public let id: UUID
     public let amount: Decimal
-    public let date: Date
+    public let date: Date  // 사용자 경험 시간 (localDate or currentDate) 
     public let place: String?  // 거래 장소/대상 (맥도날드, 친구들과 더치페이, 어머니 용돈 등)
     public let memo: String?
     public let transactionType: TransactionType
     public let isFavorite: Bool
     public let subCategory: SubCategoryDTO
     public let paymentMethod: PaymentMethodDTO
+    
+    // MARK: - TimeZone Context
+    /// 거래 발생 시점의 시간대 컨텍스트
+    public let timeContext: TransactionTimeContext
     
     public init(
         id: UUID = UUID(),
@@ -29,7 +33,8 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         transactionType: TransactionType,
         isFavorite: Bool = false,
         subCategory: SubCategoryDTO,
-        paymentMethod: PaymentMethodDTO
+        paymentMethod: PaymentMethodDTO,
+        timeContext: TransactionTimeContext = .current
     ) {
         self.id = id
         self.amount = amount
@@ -40,6 +45,7 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         self.isFavorite = isFavorite
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
+        self.timeContext = timeContext
     }
 }
 // MARK: - for Sorting
@@ -75,7 +81,8 @@ extension TransactionDTO {
         memo: "점심식사",
         transactionType: .variableExpense,
         subCategory: .mockFoodExpense,
-        paymentMethod: .mockCreditCard
+        paymentMethod: .mockCreditCard,
+        timeContext: .current
     )
     
     static let mockTransport = TransactionDTO(
@@ -85,7 +92,8 @@ extension TransactionDTO {
         memo: "교통비",
         transactionType: .variableExpense,
         subCategory: .mockTransportBus,
-        paymentMethod: .mockCreditCard
+        paymentMethod: .mockCreditCard,
+        timeContext: .current
     )
     
     static let mockAllowance = TransactionDTO(
@@ -95,7 +103,8 @@ extension TransactionDTO {
         memo: "용돈",
         transactionType: .income,
         subCategory: .mockIncomeAllowance,
-        paymentMethod: .mockCash
+        paymentMethod: .mockCash,
+        timeContext: .current
     )
     
     static let mockBeauty = TransactionDTO(
@@ -105,7 +114,8 @@ extension TransactionDTO {
         memo: "화장품",
         transactionType: .variableExpense,
         subCategory: .mockBeauty,
-        paymentMethod: .mockDebitCard
+        paymentMethod: .mockDebitCard,
+        timeContext: .current
     )
     
     static let mockSalary = TransactionDTO(
@@ -115,7 +125,8 @@ extension TransactionDTO {
         memo: "월급",
         transactionType: .income,
         subCategory: .mockSalary,
-        paymentMethod: .mockTransfer
+        paymentMethod: .mockTransfer,
+        timeContext: .current
     )
     
     static let mockDatas: [TransactionDTO] = [
@@ -126,14 +137,16 @@ extension TransactionDTO {
         amount: 10000,
         transactionType: .variableExpense,
         subCategory: .mockFoodExpense,
-        paymentMethod: .mockCreditCard
+        paymentMethod: .mockCreditCard,
+        timeContext: .current
     )
     
     static let mockStandardIncome = TransactionDTO(
         amount: 50000,
         transactionType: .income,
         subCategory: .mockIncomeAllowance,
-        paymentMethod: .mockCash
+        paymentMethod: .mockCash,
+        timeContext: .current
     )
     
     static func mockWith(
@@ -144,7 +157,8 @@ extension TransactionDTO {
         transactionType: TransactionType = .variableExpense,
         isFavorite: Bool = false,
         subCategory: SubCategoryDTO,
-        paymentMethod: PaymentMethodDTO
+        paymentMethod: PaymentMethodDTO,
+        timeContext: TransactionTimeContext = .current
     ) -> TransactionDTO {
         return TransactionDTO(
             amount: amount,
@@ -154,7 +168,8 @@ extension TransactionDTO {
             transactionType: transactionType,
             isFavorite: isFavorite,
             subCategory: subCategory,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            timeContext: timeContext
         )
     }
 }
