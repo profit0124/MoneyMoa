@@ -78,6 +78,51 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
+    
+    /// 예산 설정 화면용 포맷된 타이틀을 반환합니다
+    /// 예: "2025년 1월 예산 설정" (한국어) 또는 "January 2025 Budget Setup" (영어)
+    public var budgetSetupTitle: String {
+        if isKoreanLocale {
+            let parts = formattedComponents.split(separator: " ")
+            return "\(parts[0])년 \(parts[1])월 예산 설정"
+        }
+
+        return "\(formattedComponents) Budget Setup"
+    }
+    
+    /// 포맷된 연월 문자열을 반환합니다
+    /// 예: "2025년 1월" (한국어) 또는 "January 2025" (영어)
+    public var formattedString: String {
+        if isKoreanLocale {
+            let parts = formattedComponents.split(separator: " ")
+            return "\(parts[0])년 \(parts[1])월"
+        }
+
+        return formattedComponents
+    }
+
+    /// DateFormatter를 사용해서 로케일별 포맷된 컴포넌트를 추출
+    private var formattedComponents: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale.current
+
+        if isKoreanLocale {
+            dateFormatter.dateFormat = "yyyy M"  // "2025 1"
+        } else {
+            dateFormatter.dateFormat = "MMM yyyy"  // "Jan 2025"
+        }
+        
+        let components = DateComponents(year: year, month: month)
+        let date = Calendar.current.date(from: components) ?? Date()
+        let formatted = dateFormatter.string(from: date)
+
+        return formatted
+    }
+    
+    /// 한국어 로케일인지 확인하는 방법 (iOS 17+)
+    private var isKoreanLocale: Bool {
+        Locale.current.language.languageCode == "ko"
+    }
 }
 
 // MARK: - Transaction Type Enum
