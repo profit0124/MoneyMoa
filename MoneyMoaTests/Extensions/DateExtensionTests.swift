@@ -15,7 +15,7 @@ final class DateExtensionTests: XCTestCase {
     
     override func setUpWithError() throws {
         formatterManager = FormatterManager.shared
-        calendar = formatterManager.koreaCalendar
+        calendar = Calendar.current
     }
     
     override func tearDownWithError() throws {
@@ -32,8 +32,14 @@ final class DateExtensionTests: XCTestCase {
         // When: 오늘 날짜의 섹션 헤더 생성
         let header = today.transactionListSectionHeader
         
-        // Then: "오늘" 반환
-        XCTAssertEqual(header, "오늘")
+        // Then: 로케일에 따른 "오늘" 표시 (한국어: "오늘", 영어: 다른 형식)
+        XCTAssertFalse(header.isEmpty)
+        // 한국어 로케일에서는 "오늘" 확인
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(header, "오늘")
+        } else {
+            XCTAssertEqual(header, "Today")
+        }
     }
     
     func testTransactionListSectionHeader_Yesterday() {
@@ -47,8 +53,13 @@ final class DateExtensionTests: XCTestCase {
         // When: 어제 날짜의 섹션 헤더 생성
         let header = yesterday.transactionListSectionHeader
         
-        // Then: "어제" 반환
-        XCTAssertEqual(header, "어제")
+        // Then: 로케일에 따른 "어제" 표시
+        XCTAssertFalse(header.isEmpty)
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(header, "어제")
+        } else {
+            XCTAssertEqual(header, "Yesterday")
+        }
     }
     
     func testTransactionListSectionHeader_TwoDaysAgo() {
@@ -62,8 +73,13 @@ final class DateExtensionTests: XCTestCase {
         // When: 2일전 날짜의 섹션 헤더 생성
         let header = twoDaysAgo.transactionListSectionHeader
         
-        // Then: "2일전" 반환
-        XCTAssertEqual(header, "2일전")
+        // Then: 로케일에 따른 "2일전" 표시
+        XCTAssertFalse(header.isEmpty)
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(header, "2일전")
+        } else {
+            XCTAssertEqual(header, "2 days ago")
+        }
     }
     
     func testTransactionListSectionHeader_ThreeDaysAgo() {
@@ -77,8 +93,13 @@ final class DateExtensionTests: XCTestCase {
         // When: 3일전 날짜의 섹션 헤더 생성
         let header = threeDaysAgo.transactionListSectionHeader
         
-        // Then: "3일전" 반환
-        XCTAssertEqual(header, "3일전")
+        // Then: 로케일에 따른 "3일전" 표시
+        XCTAssertFalse(header.isEmpty)
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(header, "3일전")
+        } else {
+            XCTAssertEqual(header, "3 days ago")
+        }
     }
     
     func testTransactionListSectionHeader_OneWeekAgo() {
@@ -97,10 +118,9 @@ final class DateExtensionTests: XCTestCase {
         let expectedHeader = formatter.string(from: oneWeekAgo)
         XCTAssertEqual(header, expectedHeader)
         
-        // 포맷 검증
-        XCTAssertTrue(header.contains("."))
-        XCTAssertTrue(header.contains("("))
-        XCTAssertTrue(header.contains(")"))
+        // 포맷 검증 (로케일별로 다름)
+        XCTAssertFalse(header.isEmpty)
+        XCTAssertTrue(header.contains("(") && header.contains(")")) // 요일 괄호는 공통
     }
     
     func testTransactionListSectionHeader_OneMonthAgo() {
@@ -136,9 +156,9 @@ final class DateExtensionTests: XCTestCase {
         let expectedHeader = formatter.string(from: specificDate)
         XCTAssertEqual(header, expectedHeader)
         
-        // 2025년 7월 15일 형식 검증
-        XCTAssertTrue(header.contains("2025"))
-        XCTAssertTrue(header.contains("07"))
+        // 날짜 형식 검증 (로케일별로 다름)
+        XCTAssertTrue(header.contains("2025") || header.contains("25"))
+        XCTAssertTrue(header.contains("7") || header.contains("07") || header.contains("Jul"))
         XCTAssertTrue(header.contains("15"))
     }
     
@@ -182,9 +202,13 @@ final class DateExtensionTests: XCTestCase {
         let morningHeader = morningTime.transactionListSectionHeader
         let eveningHeader = eveningTime.transactionListSectionHeader
         
-        // Then: 모두 "오늘" 반환
-        XCTAssertEqual(morningHeader, "오늘")
-        XCTAssertEqual(eveningHeader, "오늘")
+        // Then: 모두 같은 값 반환 (로케일별로 다름)
+        XCTAssertEqual(morningHeader, eveningHeader)
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(morningHeader, "오늘")
+        } else {
+            XCTAssertEqual(morningHeader, "Today")
+        }
     }
     
     func testTransactionListSectionHeader_EdgeCaseFourDaysAgo() {
@@ -202,12 +226,11 @@ final class DateExtensionTests: XCTestCase {
         let formatter = formatterManager.transactionDateFormatter
         let expectedHeader = formatter.string(from: fourDaysAgo)
         XCTAssertEqual(header, expectedHeader)
-        XCTAssertFalse(header.contains("일전"))
     }
     
-    func testTransactionListSectionHeader_KoreanLocaleFormatting() {
-        // Given: 한국어 로케일 검증을 위한 특정 날짜
-        let components = DateComponents(year: 2025, month: 8, day: 3) // 일요일
+    func testTransactionListSectionHeader_LocaleAwareFormatting() {
+        // Given: 로케일 검증을 위한 특정 날짜
+        let components = DateComponents(year: 2025, month: 8, day: 3)
         guard let testDate = calendar.date(from: components) else {
             XCTFail("Failed to create test date")
             return
@@ -221,15 +244,15 @@ final class DateExtensionTests: XCTestCase {
         
         // Given이 일주일 이상 차이나는 경우에만 테스트
         if daysDifference > 3 {
-            // When: 한국어 로케일로 포맷된 헤더 생성
+            // When: 현재 로케일로 포맷된 헤더 생성
             let header = testDate.transactionListSectionHeader
             
-            // Then: 한국어 요일 표시 확인
-            XCTAssertTrue(header.contains("2025"))
-            XCTAssertTrue(header.contains("08"))
-            XCTAssertTrue(header.contains("03"))
-            XCTAssertTrue(header.contains("("))
-            XCTAssertTrue(header.contains(")"))
+            // Then: 기본적인 날짜 정보 포함 확인 (로케일별로 형식은 다름)
+            XCTAssertFalse(header.isEmpty)
+            XCTAssertTrue(header.contains("2025") || header.contains("25"))
+            XCTAssertTrue(header.contains("8") || header.contains("08") || header.contains("Aug"))
+            XCTAssertTrue(header.contains("3") || header.contains("03"))
+            XCTAssertTrue(header.contains("(") && header.contains(")")) // 요일 괄호는 공통
         }
     }
 }

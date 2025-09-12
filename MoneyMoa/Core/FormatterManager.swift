@@ -23,7 +23,7 @@ public final class FormatterManager {
     
     /// 현재 로케일이 한국어인지 확인
     private var isKoreanLocale: Bool {
-        Locale.current.identifier == "ko"
+        Locale.current.language.languageCode == "ko"
     }
     
     // MARK: - Formatters
@@ -105,7 +105,7 @@ public final class FormatterManager {
         if isKoreanLocale {
             titleFormatter.dateFormat = "YY.MM.dd"
         } else {
-            titleFormatter.dateFormat = "MMM dd"
+            titleFormatter.dateFormat = "MMM dd, yy"
         }
 
         let startStr = titleFormatter.string(from: range.start)

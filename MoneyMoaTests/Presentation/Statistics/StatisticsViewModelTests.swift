@@ -200,7 +200,7 @@ struct StatisticsViewModelTests {
         
         // Then
         #expect(!formatted.isEmpty) // 포맷팅된 문자열이 비어있지 않음
-        #expect(formatted.contains("25.")) // 연도가 포함되어 있는지 확인 (YY.MM.DD 형식)
+        #expect(formatted.contains("25")) // 연도가 포함되어 있는지 확인 (YY.MM.DD 형식)
     }
     
     // MARK: - Action Tests - updateDateRange

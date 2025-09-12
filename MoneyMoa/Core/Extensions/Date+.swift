@@ -11,18 +11,22 @@ import Foundation
 
 extension Date {
     
-    /// 스마트 헤더 텍스트로 변환 ("오늘", "어제", "N일전", "yyyy.MM.dd (E)")
+    /// 스마트 헤더 텍스트로 변환 (로케일별 대응)
+    /// - 한국어: "오늘", "어제", "N일전", "yyyy.MM.dd (E)"
+    /// - 영어: "Today", "Yesterday", "N days ago", "MMM dd, yyyy (E)"
     public var transactionListSectionHeader: String {
         let calendar = Calendar.current
         let today = Date()
-        
+        /// 현재 로케일이 한국어인지 확인
+        let isKoreanLocale: Bool = Locale.current.language.languageCode == "ko"
+
         if calendar.isDate(self, inSameDayAs: today) {
-            return "오늘"
+            return isKoreanLocale ? "오늘" : "Today"
         }
         
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: today),
            calendar.isDate(self, inSameDayAs: yesterday) {
-            return "어제"
+            return isKoreanLocale ? "어제" : "Yesterday"
         }
         
         let startSelf = calendar.startOfDay(for: self)
@@ -30,10 +34,10 @@ extension Date {
         let daysDifference = calendar.dateComponents([.day], from: startSelf, to: startToday).day ?? 0
         
         if daysDifference > 0 && daysDifference <= 3 {
-            return "\(daysDifference)일전"
+            return isKoreanLocale ? "\(daysDifference)일전" : "\(daysDifference) days ago"
         }
         
-        // 일주일 이상 차이나는 경우 DateFormatter 사용
+        // 4일 이상 차이나는 경우 DateFormatter 사용
         let formatter = FormatterManager.shared.transactionDateFormatter
         return formatter.string(from: self)
     }

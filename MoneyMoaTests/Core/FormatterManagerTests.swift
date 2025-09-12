@@ -29,7 +29,6 @@ final class FormatterManagerTests: XCTestCase {
         let formatter = formatterManager.amountFormatter
         
         // When & Then
-        XCTAssertEqual(formatter.locale.identifier, "ko_KR")
         XCTAssertEqual(formatter.numberStyle, .decimal)
         XCTAssertEqual(formatter.maximumFractionDigits, 0)
     }
@@ -39,8 +38,11 @@ final class FormatterManagerTests: XCTestCase {
         let formatter = formatterManager.transactionDateFormatter
         
         // When & Then
-        XCTAssertEqual(formatter.locale.identifier, "ko_KR")
-        XCTAssertEqual(formatter.dateFormat, "yyyy.MM.dd (E)")
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(formatter.dateFormat, "yyyy.MM.dd (E)")
+        } else {
+            XCTAssertEqual(formatter.dateFormat, "MMM dd, yyyy (E)")
+        }
     }
     
     // MARK: - Amount Formatting Tests
@@ -75,7 +77,7 @@ final class FormatterManagerTests: XCTestCase {
         
         // Then
         XCTAssertTrue(formattedDate.contains("2025"))
-        XCTAssertTrue(formattedDate.contains("08"))
+        XCTAssertTrue(formattedDate.contains("08") || formattedDate.contains("Aug"))
         XCTAssertTrue(formattedDate.contains("03"))
     }
     
