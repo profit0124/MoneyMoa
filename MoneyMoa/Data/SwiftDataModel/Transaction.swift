@@ -47,9 +47,9 @@ final class Transaction {
         isFavorite: Bool = false,
         subCategory: SubCategory,
         paymentMethod: PaymentMethod,
-        timeZoneIdentifier: String? = nil,
-        calendarIdentifier: String? = nil,
-        localeIdentifier: String? = nil
+        timeZoneIdentifier: String,
+        calendarIdentifier: String,
+        localeIdentifier: String?
     ) {
         self.id = id
         self.amount = amount
@@ -62,9 +62,9 @@ final class Transaction {
         self.paymentMethod = paymentMethod
         
         // TimeZone Context - 제공되지 않으면 현재 기기 설정 사용
-        self.timeZoneIdentifier = timeZoneIdentifier ?? TimeZone.current.identifier
-        self.calendarIdentifier = calendarIdentifier ?? TransactionTimeContext.current.calendarIdentifier
-        self.localeIdentifier = localeIdentifier ?? Locale.current.identifier
+        self.timeZoneIdentifier = timeZoneIdentifier
+        self.calendarIdentifier = calendarIdentifier
+        self.localeIdentifier = localeIdentifier
     }
 }
 
