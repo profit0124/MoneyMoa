@@ -20,24 +20,24 @@ struct CategoryFormView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 24) {
                 TransactionTypeSelectionView(selectedTransactionType: $viewModel.selectedTransactionType)
+                    .padding(4)
+                    .clipped(antialiased: false)
 
                 categoryNameSection
 
-                if viewModel.mode == .selection {
+                if viewModel.selectedCategory == nil {
                     subCategoryNameSection
                 }
 
                 IconSelectionView(color: viewModel.selectedTransactionType.color, selectedIcon: $viewModel.categoryIconName)
 
-                if viewModel.mode == .configuration {
+                if viewModel.selectedCategory != nil {
                     subCategoriesSection
                 }
             }
         }
+        .padding(.horizontal, 16)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-//                Button("취소") { dismiss() }
-            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("저장") {
                     viewModel.send(.tappedSubmitButton(router))
