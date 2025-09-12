@@ -188,11 +188,12 @@
 				};
 			};
 			buildConfigurationList = 31B4A3E32E334CAA00BA3397 /* Build configuration list for PBXProject "MoneyMoa" */;
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = 31B4A3DF2E334CAA00BA3397;
 			minimizedProjectReferenceProxies = 1;

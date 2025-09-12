@@ -22,6 +22,11 @@ struct BudgetSetupView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 24) {
+                        // 새 예산 생성시 템플릿 안내 메시지
+                        if viewModel.budget == nil {
+                            templateInfoSection
+                        }
+                        
                         // 총 예산 설정
                         totalBudgetSection
 
@@ -33,7 +38,7 @@ struct BudgetSetupView: View {
                 }
             }
         }
-        .navigationTitle("\(viewModel.yearMonth.year)년 \(viewModel.yearMonth.month)월 예산 설정")
+        .navigationTitle(viewModel.yearMonth.budgetSetupTitle)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -67,11 +72,44 @@ struct BudgetSetupView: View {
             
             Button("취소", role: .cancel) { }
         } message: {
-            Text("\(viewModel.yearMonth.year)년 \(viewModel.yearMonth.month)월 예산이 이미 설정되어 있습니다.\n어떻게 수정하시겠습니까?")
+            Text("\(viewModel.yearMonth.formattedString) 예산만 수정하시겠습니까?")
         }
         .onAppear {
             viewModel.send(.onAppear)
         }
+    }
+
+    // MARK: - TemplateInfoSection
+    
+    private var templateInfoSection: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "info.circle.fill")
+                .foregroundColor(.blue)
+                .font(.system(size: 16))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("예산 템플릿 자동 적용")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                Text("설정한 예산이 다음 달부터 자동으로 적용됩니다.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            
+            Spacer()
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.blue.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+        )
     }
 
     // MARK: - TotalBudgetSection
