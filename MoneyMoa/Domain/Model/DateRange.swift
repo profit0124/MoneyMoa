@@ -19,7 +19,7 @@ public struct DateRange: Equatable, Sendable {
     public let end: Date      // exclusive
     public let grouping: StatisticsGrouping
 
-    public init(start: Date, end: Date, calendar: Calendar = KST.calendar) {
+    public init(start: Date, end: Date, calendar: Calendar = Calendar.current) {
         self.start = start
         self.end = end
         // 월 단위 길이가 1개월을 초과하면 monthly, 아니면 daily로 자동 결정
@@ -28,23 +28,23 @@ public struct DateRange: Equatable, Sendable {
         self.grouping = months > 1 ? .monthly : .daily
     }
 
-    func inclusiveRange(cal: Calendar = KST.calendar) -> (Date, Date) {
+    func inclusiveRange(cal: Calendar = Calendar.current) -> (Date, Date) {
         let endInclusive = cal.date(byAdding: .second, value: -1, to: self.end) ?? self.end
         return (self.start, endInclusive)
     }
 
-    func months(cal: Calendar = KST.calendar) -> [YearMonth] {
+    func months(cal: Calendar = Calendar.current) -> [YearMonth] {
         cal.yearMonths(in: self)
     }
 }
 
-/// 자주 쓰는 기간 프리셋 (KST 기준)
+/// 자주 쓰는 기간 프리셋 (Calendar.current 기준)
 public enum DateRangePreset: Sendable, Equatable, Hashable {
     case thisMonth, lastMonth, threeMonths, sixMonths, thisYear
     case custom(Date, Date)
 
-    /// 현재 시각(now)과 KST 캘린더를 기준으로 실제 DateRange로 변환
-    public func resolve(now: Date = .now, calendar: Calendar = KST.calendar) -> DateRange {
+    /// 현재 시각(now)과 Calendar.current 캘린더를 기준으로 실제 DateRange로 변환
+    public func resolve(now: Date = .now, calendar: Calendar = Calendar.current) -> DateRange {
         switch self {
         case .thisMonth:
             let s = calendar.startOfMonth(for: now)

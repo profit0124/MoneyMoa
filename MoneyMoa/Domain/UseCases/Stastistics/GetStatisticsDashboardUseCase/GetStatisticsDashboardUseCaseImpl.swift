@@ -12,7 +12,7 @@ public final class GetStatisticsDashboardUseCaseImpl: GetStatisticsDashboardUseC
     private let ma: MovingAverageService
     private let burndown: BurndownService
     private let completeness: BudgetCompletenessService
-    private let cal = KST.calendar
+    private let cal = Calendar.current
     private let cache = StatisticsCache()
 
     public init(repo: StatisticsRepository,
@@ -107,7 +107,7 @@ public final class GetStatisticsDashboardUseCaseImpl: GetStatisticsDashboardUseC
 }
 
 public enum WeeklyPatternService {
-    public static func make(_ daily: [DailyPointDTO], calendar: Calendar = KST.calendar) -> WeeklyPatternDTO {
+    public static func make(_ daily: [DailyPointDTO], calendar: Calendar = Calendar.current) -> WeeklyPatternDTO {
         guard !daily.isEmpty else { return .init(days: []) }
         var sum: [Int: (amount: Decimal, count: Int)] = [:]
         for p in daily {

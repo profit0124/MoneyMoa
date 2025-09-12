@@ -25,7 +25,7 @@ public class GetExpenseSumUntilDateUseCaseImpl: GetExpenseSumUntilDateUseCase {
     
     public func execute(yearMonth: YearMonth, untilDay: Date = Date()) async throws -> Decimal {
         let startOfMonth = yearMonth.startOfMonth
-        let calendar = FormatterManager.shared.koreaCalendar
+        let calendar = Calendar.current
         
         // 종료 날짜 결정: 현재 월, 직전 월, 그 이전 월에 따라 분기
         let endOfDay: Date

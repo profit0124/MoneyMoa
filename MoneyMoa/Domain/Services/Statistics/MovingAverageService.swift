@@ -12,7 +12,7 @@ public protocol MovingAverageService { func ma7(_ daily: [DailyPointDTO], calend
 
 public struct MovingAverageServiceImpl: MovingAverageService {
     public init() {}
-    public func ma7(_ daily: [DailyPointDTO], calendar: Calendar = KST.calendar) -> [DailyPointDTO] {
+    public func ma7(_ daily: [DailyPointDTO], calendar: Calendar = Calendar.current) -> [DailyPointDTO] {
         // 입력이 비어 있으면 빈 배열 반환 (차트 처리 단순화를 위한 계약)
         guard !daily.isEmpty else { return [] }
         // 날짜 오름차순 정렬 후 슬라이딩 윈도우(최대 7개)로 평균 계산

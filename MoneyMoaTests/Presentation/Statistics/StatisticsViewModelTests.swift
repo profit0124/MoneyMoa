@@ -172,7 +172,7 @@ struct StatisticsViewModelTests {
     func testCurrentDateRange_Custom() {
         // Given
         let viewModel = createViewModel()
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: DateComponents(year: 2025, month: 6, day: 1))!
         let end = cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!
         let customRange = DateRange(start: start, end: end, calendar: cal)
@@ -234,7 +234,7 @@ struct StatisticsViewModelTests {
         mockUseCase.result = .success(createMockDashboardData())
         let viewModel = createViewModel(useCase: mockUseCase)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: DateComponents(year: 2025, month: 6, day: 1))!
         let end = cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!
         let customRange = DateRange(start: start, end: end, calendar: cal)

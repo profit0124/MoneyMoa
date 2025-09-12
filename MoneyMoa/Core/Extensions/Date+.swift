@@ -13,7 +13,7 @@ extension Date {
     
     /// 스마트 헤더 텍스트로 변환 ("오늘", "어제", "N일전", "yyyy.MM.dd (E)")
     public var transactionListSectionHeader: String {
-        let calendar = FormatterManager.shared.koreaCalendar
+        let calendar = Calendar.current
         let today = Date()
         
         if calendar.isDate(self, inSameDayAs: today) {

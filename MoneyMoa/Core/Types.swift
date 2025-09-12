@@ -21,7 +21,7 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     static public var current: YearMonth {
         let date = Date()
-        let calendar = FormatterManager.shared.koreaCalendar
+        let calendar = Calendar.current
         return YearMonth(
             year: calendar.component(.year, from: date),
             month: calendar.component(.month, from: date)
@@ -46,14 +46,14 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     /// 해당 월의 첫날 00:00:00 Date를 반환
     public var startOfMonth: Date {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         let components = DateComponents(year: year, month: month, day: 1, hour: 0, minute: 0, second: 0)
         return calendar.date(from: components) ?? Date()
     }
     
     /// 해당 월의 마지막날 23:59:59 Date를 반환
     public var endOfMonth: Date {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         let nextMonth = self.nextMonth()
         let nextMonthStart = nextMonth.startOfMonth
         // 다음 달 첫날에서 1초를 빼서 이번 달 마지막날 23:59:59를 만듦
@@ -68,13 +68,13 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     /// Date로부터 YearMonth를 생성합니다
     public init(from date: Date) {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
 
     /// Date와 Calendar 로부터 YearMonth를 생성합니다
-    public init(date: Date, calendar: Calendar = KST.calendar) {
+    public init(date: Date, calendar: Calendar = Calendar.current) {
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
@@ -188,16 +188,4 @@ public struct TransactionTimeContext: Codable, Sendable, Hashable {
             localeIdentifier: Locale.current.identifier
         )
     }
-}
-
-// MARK: KST
-/// 앱 전역에서 사용하는 KST(Asia/Seoul) 캘린더 유틸
-/// - Locale: ko_KR
-/// - TimeZone: Asia/Seoul
-/// - Calendar: gregorian
-public enum KST {
-    public static let timeZone = TimeZone(identifier: "Asia/Seoul")!
-    public static var calendar: Calendar = {
-        FormatterManager.shared.koreaCalendar
-    }()
 }

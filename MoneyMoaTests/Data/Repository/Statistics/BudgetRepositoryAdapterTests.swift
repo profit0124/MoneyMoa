@@ -26,7 +26,7 @@ struct BudgetRepositoryAdapterTests {
     }
     
     private func createTestRange() -> DateRange {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: DateComponents(year: 2025, month: 6, day: 1))!
         let end = cal.date(from: DateComponents(year: 2025, month: 8, day: 31))!
         return DateRange(start: start, end: end, calendar: cal)
@@ -97,7 +97,7 @@ struct BudgetRepositoryAdapterTests {
         
         // 테스트에서 사용할 고정된 월
         let range = createSingleMonthRange()
-        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        let targetMonth = YearMonth(date: range.start, calendar: Calendar.current)
         
         // 해당 월에 대한 예산을 명시적으로 생성
         let budget = BudgetFactory.normal(for: targetMonth)
@@ -158,7 +158,7 @@ struct BudgetRepositoryAdapterTests {
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
         let range = createSingleMonthRange() // 8월
-        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        let targetMonth = YearMonth(date: range.start, calendar: Calendar.current)
         
         // 테스트 월에 맞는 예산과 거래 생성
         let budget = BudgetFactory.normal(for: targetMonth)
@@ -186,7 +186,7 @@ struct BudgetRepositoryAdapterTests {
         #expect(row.budget > 0, "예산이 있어야 함")
         #expect(row.expense == 200000, "지출이 예상값과 일치해야 함")
         
-        #expect(KST.calendar.isDate(row.monthStart, equalTo: range.start, toGranularity: .month),
+        #expect(Calendar.current.isDate(row.monthStart, equalTo: range.start, toGranularity: .month),
                "monthStart가 요청한 범위의 월과 같아야 함")
     }
     
@@ -264,7 +264,7 @@ struct BudgetRepositoryAdapterTests {
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
         let range = createSingleMonthRange()
-        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        let targetMonth = YearMonth(date: range.start, calendar: Calendar.current)
         
         // 해당 월에 대한 예산을 명시적으로 생성
         let budget = BudgetFactory.normal(for: targetMonth)
@@ -349,7 +349,7 @@ struct BudgetRepositoryAdapterTests {
         let adapter = makeBudgetRepositoryAdapter(budgetRepo: budgetRepo, txRepo: txRepo)
         
         let range = createSingleMonthRange()
-        let targetMonth = YearMonth(date: range.start, calendar: KST.calendar)
+        let targetMonth = YearMonth(date: range.start, calendar: Calendar.current)
         
         // 예산 생성
         let budget = BudgetFactory.normal(for: targetMonth)

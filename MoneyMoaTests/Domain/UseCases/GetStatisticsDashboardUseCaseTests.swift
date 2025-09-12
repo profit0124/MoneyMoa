@@ -20,7 +20,7 @@ final class UCFactory {
 struct GetStatisticsDashboardUseCaseTests {
     @Test
     func dashboard_appliesCompleteBudgetOnlyPolicy() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.threeMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -33,7 +33,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_oneMonthRange_usesDailyGrouping() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.thisMonth.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -46,7 +46,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_multiMonthRange_usesMonthlyGrouping() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.sixMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -59,7 +59,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_hasPatternSection() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.threeMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -73,7 +73,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_hasBudgetSection() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.threeMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -85,7 +85,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_hasCategorySection() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.threeMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -97,7 +97,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_hasPaymentSection() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.threeMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)
@@ -108,7 +108,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_customRange_handlesCorrectly() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 6, day: 1))!
         let end = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let range = DateRange(start: start, end: end, calendar: cal)
@@ -123,7 +123,7 @@ struct GetStatisticsDashboardUseCaseTests {
 
     @Test
     func dashboard_allSectionsPresent() async throws {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRangePreset.threeMonths.resolve(calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)

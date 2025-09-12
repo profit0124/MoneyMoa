@@ -19,6 +19,13 @@ public final class FormatterManager {
     
     private init() {}
     
+    // MARK: - Locale Helper
+    
+    /// 현재 로케일이 한국어인지 확인
+    private var isKoreanLocale: Bool {
+        Locale.current.identifier == "ko"
+    }
+    
     // MARK: - Formatters
     
     /// 금액 표시용 NumberFormatter (천단위 구분)
@@ -26,37 +33,37 @@ public final class FormatterManager {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
-        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.locale = Locale.current
         return formatter
     }()
     
     /// 거래 날짜 표시용 DateFormatter (스마트 헤더 fallback용)
     public private(set) lazy var transactionDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.calendar = koreaCalendar
-        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        formatter.dateFormat = "yyyy.MM.dd (E)"
+        formatter.locale = Locale.current
+        formatter.calendar = Calendar.current
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = isKoreanLocale ? "yyyy.MM.dd (E)" : "MMM dd, yyyy (E)"
         return formatter
     }()
     
     /// 날짜만 표시용 DateFormatter
     public private(set) lazy var dateOnlyFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.calendar = koreaCalendar
-        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        formatter.dateFormat = "yyyy년 MM월 dd일 (E)"
+        formatter.locale = Locale.current
+        formatter.calendar = Calendar.current
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = isKoreanLocale ? "yyyy년 MM월 dd일 (E)" : "MMMM dd, yyyy (EEEE)"
         return formatter
     }()
     
     /// 시간만 표시용 DateFormatter
     public private(set) lazy var timeOnlyFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.calendar = koreaCalendar
-        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        formatter.dateFormat = "HH:mm"
+        formatter.locale = Locale.current
+        formatter.calendar = Calendar.current
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = isKoreanLocale ? "HH:mm" : "h:mm a"
         return formatter
     }()
     
@@ -90,26 +97,21 @@ public final class FormatterManager {
     
     /// 날짜 범위 포맷팅 (통계 제목용)
     /// - Parameter range: 날짜 범위
-    /// - Returns: "8.1-8.31" 형식의 간단한 문자열
+    /// - Returns: "8.1-8.31" (한국) 또는 "Aug 1-Aug 31" (영어) 형식의 간단한 문자열
     public func formatDateRange(_ range: DateRange) -> String {
         let titleFormatter = DateFormatter()
-        titleFormatter.locale = Locale(identifier: "ko_KR")
-        titleFormatter.dateFormat = "YY.MM.dd"
+        titleFormatter.locale = Locale.current
+        
+        if isKoreanLocale {
+            titleFormatter.dateFormat = "YY.MM.dd"
+        } else {
+            titleFormatter.dateFormat = "MMM dd"
+        }
 
         let startStr = titleFormatter.string(from: range.start)
-        let endStr = titleFormatter.string(from: koreaCalendar.date(byAdding: .day, value: -1, to: range.end) ?? range.end)
+        let endStr = titleFormatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: range.end) ?? range.end)
         return "\(startStr)-\(endStr)"
     }
-    
-    // MARK: - Calendar
-    /// 한국 로케일 캘린더 (날짜 계산용)
-    /// 추후 Localization 고려
-    public private(set) lazy var koreaCalendar: Calendar = {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.locale = Locale(identifier: "ko_KR")
-        calendar.timeZone = TimeZone(identifier: "Asia/Seoul") ?? TimeZone.current
-        return calendar
-    }()
 }
 
 // MARK: - Date Format Types
