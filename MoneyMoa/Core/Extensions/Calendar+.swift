@@ -19,3 +19,30 @@ public extension Calendar {
         return self.date(byAdding: .month, value: 1, to: s)!
     }
 }
+
+// MARK: - Calendar.Identifier Extension
+
+extension Calendar.Identifier {
+    /// Calendar.Identifier를 문자열로 변환
+    public var toString: String {
+        switch self {
+        case .gregorian: return "gregorian"
+        case .buddhist: return "buddhist"
+        case .chinese: return "chinese"
+        case .coptic: return "coptic"
+        case .ethiopicAmeteMihret: return "ethiopicAmeteMihret"
+        case .ethiopicAmeteAlem: return "ethiopicAmeteAlem"
+        case .hebrew: return "hebrew"
+        case .iso8601: return "iso8601"
+        case .indian: return "indian"
+        case .islamic: return "islamic"
+        case .islamicCivil: return "islamicCivil"
+        case .japanese: return "japanese"
+        case .persian: return "persian"
+        case .republicOfChina: return "republicOfChina"
+        case .islamicTabular: return "islamicTabular"
+        case .islamicUmmAlQura: return "islamicUmmAlQura"
+        @unknown default: return "gregorian"
+        }
+    }
+}

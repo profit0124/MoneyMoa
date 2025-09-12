@@ -90,7 +90,7 @@ struct StatisticsRepositoryImplAnalyticsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let aug2025 = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         let sep2025 = cal.date(from: DateComponents(year: 2025, month: 9, day: 15))!
         
@@ -181,7 +181,7 @@ struct StatisticsRepositoryImplAnalyticsTests {
         // Given
         let repos = createRepository(txScenario: .empty)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let baseDate = FixedDateHelper.fixedDate // August 15, 2025
         let dates = [
             baseDate,

@@ -14,7 +14,7 @@ import SwiftData
 final class Transaction {
     @Attribute(.unique) var id: UUID
     var amount: Decimal
-    var date: Date
+    var date: Date  // UTC로 저장되는 절대 시점
     var place: String?  // 거래 장소/대상 (맥도날드, 친구들과 더치페이, 어머니 용돈 등)
     var memo: String?
     var isFavorite: Bool
@@ -23,6 +23,16 @@ final class Transaction {
         get { TransactionType(rawValue: transactionTypeRawValue) ?? .variableExpense }
         set { transactionTypeRawValue = newValue.rawValue }
     }
+    
+    // MARK: - TimeZone Context Fields
+    /// 거래 발생 시점의 시간대 식별자 (e.g., "Asia/Seoul", "America/New_York")
+    var timeZoneIdentifier: String?
+    
+    /// 거래 발생 시점의 캘린더 식별자 (e.g., "gregorian", "japanese")
+    var calendarIdentifier: String?
+    
+    /// 거래 발생 시점의 로케일 식별자 (e.g., "ko_KR", "en_US")
+    var localeIdentifier: String?
     
     @Relationship var subCategory: SubCategory
     @Relationship var paymentMethod: PaymentMethod
@@ -36,7 +46,10 @@ final class Transaction {
         transactionType: TransactionType,
         isFavorite: Bool = false,
         subCategory: SubCategory,
-        paymentMethod: PaymentMethod
+        paymentMethod: PaymentMethod,
+        timeZoneIdentifier: String,
+        calendarIdentifier: String,
+        localeIdentifier: String?
     ) {
         self.id = id
         self.amount = amount
@@ -47,6 +60,11 @@ final class Transaction {
         self.isFavorite = isFavorite
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
+        
+        // TimeZone Context - 제공되지 않으면 현재 기기 설정 사용
+        self.timeZoneIdentifier = timeZoneIdentifier
+        self.calendarIdentifier = calendarIdentifier
+        self.localeIdentifier = localeIdentifier
     }
 }
 
@@ -54,17 +72,26 @@ final class Transaction {
 
 extension Transaction {
     /// Transaction을 TransactionDTO로 변환
+    /// - date는 UTC로 저장된 값을 로컬 시간으로 변환하여 반환
     public func toDTO() -> TransactionDTO {
+        let timeContext = TransactionTimeContext(
+            timeZoneIdentifier: timeZoneIdentifier ?? TimeZone.current.identifier,
+            calendarIdentifier: calendarIdentifier ?? TransactionTimeContext.current.calendarIdentifier,
+            localeIdentifier: localeIdentifier ?? Locale.current.identifier
+        )
+        // UTC로 저장된 date를 사용자 경험 시간(로컬)으로 변환
+        let localDate = self.date.toTimeContext(timeContext)
         return TransactionDTO(
             id: self.id,
             amount: self.amount,
-            date: self.date,
+            date: localDate,  // 로컬 시간으로 변환된 값
             place: self.place,
             memo: self.memo,
             transactionType: self.transactionType,
             isFavorite: self.isFavorite,
             subCategory: self.subCategory.toDTO(),
-            paymentMethod: self.paymentMethod.toDTO()
+            paymentMethod: self.paymentMethod.toDTO(),
+            timeContext: timeContext
         )
     }
 }
@@ -85,17 +112,24 @@ extension TransactionDTO {
     /// - Parameters:
     ///   - subCategory: 연결할 SubCategory 모델 (필수)
     ///   - paymentMethod: 연결할 PaymentMethod 모델 (필수)
+    /// - Note: date는 로컬 시간에서 UTC로 변환되어 저장됨
     func toModel(subCategory: SubCategory, paymentMethod: PaymentMethod) -> Transaction {
+        // 로컬 시간(사용자 경험 시간)을 UTC로 변환하여 저장
+        let utcDate = self.date.toUTC
+
         return Transaction(
             id: self.id,
             amount: self.amount,
-            date: self.date,
+            date: utcDate,  // UTC로 변환된 시간
             place: self.place,
             memo: self.memo,
             transactionType: self.transactionType,
             isFavorite: self.isFavorite,
             subCategory: subCategory,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            timeZoneIdentifier: self.timeContext.timeZoneIdentifier,
+            calendarIdentifier: self.timeContext.calendarIdentifier,
+            localeIdentifier: self.timeContext.localeIdentifier
         )
     }
 }

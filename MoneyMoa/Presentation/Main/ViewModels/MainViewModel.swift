@@ -210,7 +210,7 @@ public class MainViewModel {
     private func calculateCurrentMonthExpense() {
         handleLoading({
             let currentDate = Date()
-            let calendar = FormatterManager.shared.koreaCalendar
+            let calendar = Calendar.current
             let currentDay = calendar.component(.day, from: currentDate)
             
             currentMonthExpenseAmount = transactions

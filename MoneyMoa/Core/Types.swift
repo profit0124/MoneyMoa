@@ -21,7 +21,7 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     static public var current: YearMonth {
         let date = Date()
-        let calendar = FormatterManager.shared.koreaCalendar
+        let calendar = Calendar.current
         return YearMonth(
             year: calendar.component(.year, from: date),
             month: calendar.component(.month, from: date)
@@ -46,14 +46,14 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     /// 해당 월의 첫날 00:00:00 Date를 반환
     public var startOfMonth: Date {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         let components = DateComponents(year: year, month: month, day: 1, hour: 0, minute: 0, second: 0)
         return calendar.date(from: components) ?? Date()
     }
     
     /// 해당 월의 마지막날 23:59:59 Date를 반환
     public var endOfMonth: Date {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         let nextMonth = self.nextMonth()
         let nextMonthStart = nextMonth.startOfMonth
         // 다음 달 첫날에서 1초를 빼서 이번 달 마지막날 23:59:59를 만듦
@@ -68,13 +68,13 @@ public struct YearMonth: Codable, Comparable, Sendable, Equatable, Hashable {
     
     /// Date로부터 YearMonth를 생성합니다
     public init(from date: Date) {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
 
     /// Date와 Calendar 로부터 YearMonth를 생성합니다
-    public init(date: Date, calendar: Calendar = KST.calendar) {
+    public init(date: Date, calendar: Calendar = Calendar.current) {
         self.year = calendar.component(.year, from: date)
         self.month = calendar.component(.month, from: date)
     }
@@ -113,14 +113,79 @@ public enum RepositoryError: Error, Sendable {
     case custom(String)
 }
 
-// MARK: KST
-/// 앱 전역에서 사용하는 KST(Asia/Seoul) 캘린더 유틸
-/// - Locale: ko_KR
-/// - TimeZone: Asia/Seoul
-/// - Calendar: gregorian
-public enum KST {
-    public static let timeZone = TimeZone(identifier: "Asia/Seoul")!
-    public static var calendar: Calendar = {
-        FormatterManager.shared.koreaCalendar
-    }()
+// MARK: - TransactionTimeContext
+
+/// 거래 발생 시점의 시간대 및 로케일 컨텍스트
+/// Experience-Based Time을 위한 핵심 타입
+public struct TransactionTimeContext: Codable, Sendable, Hashable {
+    /// 시간대 식별자 (e.g., "Asia/Seoul", "America/New_York")
+    public let timeZoneIdentifier: String
+    
+    /// 캘린더 식별자 (e.g., "gregorian", "japanese", "chinese")
+    public let calendarIdentifier: String
+    
+    /// 로케일 식별자 (e.g., "ko_KR", "en_US")
+    public let localeIdentifier: String?
+    
+    /// TimeZone 객체 (계산된 프로퍼티)
+    public var timeZone: TimeZone {
+        TimeZone(identifier: timeZoneIdentifier) ?? .current
+    }
+    
+    /// Calendar 객체 (계산된 프로퍼티)
+    public var calendar: Calendar {
+        // Calendar.Identifier를 문자열에서 직접 생성하는 방법
+        let calendarID: Calendar.Identifier
+        switch calendarIdentifier.lowercased() {
+        case "gregorian": calendarID = .gregorian
+        case "buddhist": calendarID = .buddhist
+        case "chinese": calendarID = .chinese
+        case "coptic": calendarID = .coptic
+        case "ethiopicAmeteMihret": calendarID = .ethiopicAmeteMihret
+        case "ethiopicAmeteAlem": calendarID = .ethiopicAmeteAlem
+        case "hebrew": calendarID = .hebrew
+        case "iso8601": calendarID = .iso8601
+        case "indian": calendarID = .indian
+        case "islamic": calendarID = .islamic
+        case "islamicCivil": calendarID = .islamicCivil
+        case "japanese": calendarID = .japanese
+        case "persian": calendarID = .persian
+        case "republicOfChina": calendarID = .republicOfChina
+        case "islamicTabular": calendarID = .islamicTabular
+        case "islamicUmmAlQura": calendarID = .islamicUmmAlQura
+        default: calendarID = .gregorian
+        }
+        
+        var cal = Calendar(identifier: calendarID)
+        cal.timeZone = timeZone
+        if let locale = locale {
+            cal.locale = locale
+        }
+        return cal
+    }
+    
+    /// Locale 객체 (계산된 프로퍼티)
+    public var locale: Locale? {
+        localeIdentifier.map { Locale(identifier: $0) }
+    }
+    
+    /// 기본 생성자
+    public init(
+        timeZoneIdentifier: String,
+        calendarIdentifier: String = "gregorian",
+        localeIdentifier: String? = nil
+    ) {
+        self.timeZoneIdentifier = timeZoneIdentifier
+        self.calendarIdentifier = calendarIdentifier
+        self.localeIdentifier = localeIdentifier
+    }
+    
+    /// 현재 기기 설정 기반 생성자
+    public static var current: TransactionTimeContext {
+        return TransactionTimeContext(
+            timeZoneIdentifier: TimeZone.current.identifier,
+            calendarIdentifier: Calendar.current.identifier.toString,
+            localeIdentifier: Locale.current.identifier
+        )
+    }
 }

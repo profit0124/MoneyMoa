@@ -19,7 +19,7 @@ struct TransactionRepositoryAdapterTests {
     }
     
     private func createTestTransactions() -> [TransactionDTO] {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let baseDate = cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!
         
         return [
@@ -84,7 +84,7 @@ struct TransactionRepositoryAdapterTests {
             try await mockRepo.insertTransaction(transaction)
         }
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let startDate = cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!
         let endDate = cal.date(from: DateComponents(year: 2025, month: 8, day: 31))!
         let range = DateRange(start: startDate, end: endDate, calendar: cal)
@@ -120,7 +120,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         
         // Insert only income transaction
@@ -155,7 +155,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let aug2025 = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         let sep2025 = cal.date(from: DateComponents(year: 2025, month: 9, day: 15))!
         
@@ -209,7 +209,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let aug2025 = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         
         // Same month, different categories
@@ -249,7 +249,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         
         // Multiple transactions with same payment method
@@ -299,7 +299,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         
         // 300000 income, 200000 expense
@@ -334,7 +334,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let range = DateRange(
             start: cal.date(from: DateComponents(year: 2025, month: 8, day: 1))!,
             end: cal.date(from: DateComponents(year: 2025, month: 8, day: 31))!,
@@ -357,7 +357,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let date = cal.date(from: DateComponents(year: 2025, month: 8, day: 15))!
         
         // Multiple transactions at same merchant
@@ -419,7 +419,7 @@ struct TransactionRepositoryAdapterTests {
         let mockRepo = MockTransactionRepository(scenario: .empty)
         let adapter = TransactionRepositoryAdapter(repo: mockRepo)
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let startDate = cal.date(from: DateComponents(year: 2025, month: 8, day: 1, hour: 0, minute: 0, second: 0))!
         let endDate = cal.date(from: DateComponents(year: 2025, month: 9, day: 1, hour: 0, minute: 0, second: 0))!
         

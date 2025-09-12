@@ -13,7 +13,7 @@ struct ServicesTests {
     // MARK: MA7
     @Test
     func ma7_computesRollingAverage_andKeepsCount() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = (0..<10).map { i in DailyPointDTO(date: cal.date(byAdding: .day, value: i, to: start)!, amount: Decimal(i+1)) }
         let svc = MovingAverageServiceImpl()
@@ -27,13 +27,13 @@ struct ServicesTests {
 
     @Test
     func ma7_emptyInput_returnsEmpty() {
-        let out = MovingAverageServiceImpl().ma7([], calendar: KST.calendar)
+        let out = MovingAverageServiceImpl().ma7([], calendar: Calendar.current)
         #expect(out.isEmpty)
     }
 
     @Test
     func ma7_singleItem_returnsSame() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let daily = [DailyPointDTO(date: cal.date(from: .init(year: 2025, month: 8, day: 1))!, amount: 100)]
         let out = MovingAverageServiceImpl().ma7(daily, calendar: cal)
         #expect(out.count == 1)
@@ -42,7 +42,7 @@ struct ServicesTests {
 
     @Test
     func ma7_twoItems_correctAverages() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [
             DailyPointDTO(date: start, amount: 100),
@@ -56,7 +56,7 @@ struct ServicesTests {
 
     @Test
     func ma7_unsortedInput_sortsBeforeProcessing() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [
             DailyPointDTO(date: cal.date(byAdding: .day, value: 2, to: start)!, amount: 30),
@@ -72,7 +72,7 @@ struct ServicesTests {
 
     @Test
     func ma7_exactlySevenItems_lastItemUsesAllSeven() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = (0..<7).map { i in 
             DailyPointDTO(date: cal.date(byAdding: .day, value: i, to: start)!, amount: Decimal(i+1))
@@ -84,7 +84,7 @@ struct ServicesTests {
 
     @Test
     func ma7_moreThanSevenItems_slidingWindow() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = (0..<12).map { i in 
             DailyPointDTO(date: cal.date(byAdding: .day, value: i, to: start)!, amount: Decimal(i+1))
@@ -99,7 +99,7 @@ struct ServicesTests {
 
     @Test
     func ma7_zeroAmounts_handledCorrectly() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [
             DailyPointDTO(date: start, amount: 0),
@@ -115,7 +115,7 @@ struct ServicesTests {
 
     @Test
     func ma7_preservesDateOrder() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = (0..<5).map { i in 
             DailyPointDTO(date: cal.date(byAdding: .day, value: i, to: start)!, amount: Decimal(i+1))
@@ -130,7 +130,7 @@ struct ServicesTests {
     // MARK: Burndown
     @Test
     func burndown_buildsExpectedVsActual_forMonth() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily: [DailyPointDTO] = [
             .init(date: start, amount: 10),
@@ -145,13 +145,13 @@ struct ServicesTests {
 
     @Test
     func burndown_emptyInput_returnsEmpty() {
-        let out = BurndownServiceImpl().make(expectedMonthlyBudget: 1000, dailyExpenses: [], calendar: KST.calendar)
+        let out = BurndownServiceImpl().make(expectedMonthlyBudget: 1000, dailyExpenses: [], calendar: Calendar.current)
         #expect(out.isEmpty)
     }
 
     @Test
     func burndown_singleDayExpense_correctCalculation() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [DailyPointDTO(date: start, amount: 100)]
         let out = BurndownServiceImpl().make(expectedMonthlyBudget: 3100, dailyExpenses: daily, calendar: cal) // 31일 × 100 = 3100
@@ -167,7 +167,7 @@ struct ServicesTests {
 
     @Test
     func burndown_multipleDaysWithGaps_fillsGaps() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [
             DailyPointDTO(date: start, amount: 50), // Day 1
@@ -183,7 +183,7 @@ struct ServicesTests {
 
     @Test
     func burndown_sameDayMultipleExpenses_sumsCorrectly() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [
             DailyPointDTO(date: start, amount: 50),
@@ -199,7 +199,7 @@ struct ServicesTests {
 
     @Test
     func burndown_februaryLeapYear_correctDayCount() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2024, month: 2, day: 1))! // 2024 is leap year
         let daily = [DailyPointDTO(date: start, amount: 100)]
         let out = BurndownServiceImpl().make(expectedMonthlyBudget: 2900, dailyExpenses: daily, calendar: cal) // 29 × 100
@@ -211,7 +211,7 @@ struct ServicesTests {
 
     @Test
     func burndown_februaryNonLeapYear_correctDayCount() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 2, day: 1))! // 2025 is not leap year
         let daily = [DailyPointDTO(date: start, amount: 100)]
         let out = BurndownServiceImpl().make(expectedMonthlyBudget: 2800, dailyExpenses: daily, calendar: cal) // 28 × 100
@@ -223,7 +223,7 @@ struct ServicesTests {
 
     @Test
     func burndown_zeroBudget_correctExpectedValues() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [DailyPointDTO(date: start, amount: 100)]
         let out = BurndownServiceImpl().make(expectedMonthlyBudget: 0, dailyExpenses: daily, calendar: cal)
@@ -236,7 +236,7 @@ struct ServicesTests {
 
     @Test
     func burndown_expensesFromDifferentMonths_usesOnlyFirstMonth() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let nextMonth = cal.date(from: .init(year: 2025, month: 9, day: 1))!
         let daily = [
@@ -251,7 +251,7 @@ struct ServicesTests {
 
     @Test
     func burndown_fractionalBudgetPerDay_correctCalculation() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [DailyPointDTO(date: start, amount: 33)]
         let out = BurndownServiceImpl().make(expectedMonthlyBudget: 100, dailyExpenses: daily, calendar: cal) // 100/31 per day
@@ -264,7 +264,7 @@ struct ServicesTests {
 
     @Test
     func burndown_unsortedExpenses_sortsCorrectly() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: .init(year: 2025, month: 8, day: 1))!
         let daily = [
             DailyPointDTO(date: cal.date(byAdding: .day, value: 2, to: start)!, amount: 200), // Day 3
@@ -281,7 +281,7 @@ struct ServicesTests {
     // MARK: BudgetCompleteness
     @Test
     func budgetCompleteness_filtersOnlyCompleteCategories() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let s = cal.date(from: .init(year: 2025, month: 6, day: 1))!
         let e = cal.date(from: .init(year: 2025, month: 9, day: 1))!
         let range = DateRange(start: s, end: e, calendar: cal)
@@ -302,7 +302,7 @@ struct ServicesTests {
 
     @Test
     func weeklyPattern_normalizesCountByMonthCount() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         // 두 달에 걸친 동일 요일 4건 → 평균건수는 4/2 = 2 로 정규화
         let d1 = cal.date(from: .init(year: 2025, month: 7, day: 6))! // 일
         let d2 = cal.date(from: .init(year: 2025, month: 7, day: 13))!
@@ -318,13 +318,13 @@ struct ServicesTests {
 
     @Test
     func weeklyPattern_emptyInput_returnsEmptyDays() {
-        let pat = WeeklyPatternService.make([], calendar: KST.calendar)
+        let pat = WeeklyPatternService.make([], calendar: Calendar.current)
         #expect(pat.days.isEmpty)
     }
 
     @Test
     func weeklyPattern_singleMonth_correctAvgCount() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         // 같은 달 내 월요일 3건
         let d1 = cal.date(from: .init(year: 2025, month: 8, day: 4))! // 월
         let d2 = cal.date(from: .init(year: 2025, month: 8, day: 11))!
@@ -339,7 +339,7 @@ struct ServicesTests {
 
     @Test
     func weeklyPattern_multipleWeekdays_separateCalculation() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let monday = cal.date(from: .init(year: 2025, month: 8, day: 4))!
         let tuesday = cal.date(from: .init(year: 2025, month: 8, day: 5))!
         let friday = cal.date(from: .init(year: 2025, month: 8, day: 8))!
@@ -366,7 +366,7 @@ struct ServicesTests {
 
     @Test
     func weeklyPattern_sameWeekdayDifferentAmounts_correctAverage() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let d1 = cal.date(from: .init(year: 2025, month: 8, day: 4))! // 월
         let d2 = cal.date(from: .init(year: 2025, month: 8, day: 11))!
         
@@ -383,7 +383,7 @@ struct ServicesTests {
 
     @Test
     func weeklyPattern_allSevenDays_correctStructure() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let pat = WeeklyPatternService.make([
             .init(date: cal.date(from: .init(year: 2025, month: 8, day: 3))!, amount: 10), // 일
             .init(date: cal.date(from: .init(year: 2025, month: 8, day: 4))!, amount: 20), // 월
@@ -402,7 +402,7 @@ struct ServicesTests {
 
     @Test
     func weeklyPattern_zeroAmountDays_handledCorrectly() {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let daily: [DailyPointDTO] = [
             .init(date: cal.date(from: .init(year: 2025, month: 8, day: 4))!, amount: 0),
             .init(date: cal.date(from: .init(year: 2025, month: 8, day: 5))!, amount: 100)

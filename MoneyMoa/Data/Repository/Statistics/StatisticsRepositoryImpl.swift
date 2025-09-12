@@ -55,7 +55,7 @@ public final class StatisticsRepositoryImpl: StatisticsRepository {
     }
     
     private func calculateDailyAnalytics(_ rows: [TransactionRow]) -> [DailyPointDTO] {
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         
         return rows.map { row in
             DailyPointDTO(

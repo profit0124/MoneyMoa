@@ -14,7 +14,7 @@ struct CalendarView: View {
     let transactionsByDate: [Date: [TransactionDTO]]
     let onDateTap: (Date) -> Void
     
-    private let calendar = FormatterManager.shared.koreaCalendar
+    private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
     var body: some View {
@@ -93,7 +93,7 @@ private struct CalendarDayView: View {
     let isToday: Bool
     let onTap: () -> Void
     
-    private let calendar = FormatterManager.shared.koreaCalendar
+    private let calendar = Calendar.current
     
     var body: some View {
         Button(action: onTap) {

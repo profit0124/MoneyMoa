@@ -63,8 +63,13 @@ public final class TransactionRepositoryImpl: TransactionRepository {
         let range = dateRange(for: yearMonth)
         return try await fetchTransactions(from: range.start, to: range.end)
     }
-    
+
+    /// 기간 검색 공용 함수
+    /// startDate, endDate => 기기설정 기준
+    /// toUTC 로 변환 후 predicate 생성
     public func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [TransactionDTO] {
+        let startDate = startDate.toUTC
+        let endDate = endDate.toUTC
         let predicate = #Predicate<Transaction> { transaction in
             transaction.date >= startDate && transaction.date <= endDate
         }
@@ -80,6 +85,8 @@ public final class TransactionRepositoryImpl: TransactionRepository {
     
     public func getTotalAmountByType(from startDate: Date, to endDate: Date) async throws -> [(TransactionType, Decimal)] {
         return try await database.withModelContext { context in
+            let startDate = startDate.toUTC
+            let endDate = endDate.toUTC
             let predicate = #Predicate<Transaction> { transaction in
                 transaction.date >= startDate && transaction.date <= endDate
             }
@@ -100,6 +107,8 @@ public final class TransactionRepositoryImpl: TransactionRepository {
     
     public func getTotalAmountBySubCategory(from startDate: Date, to endDate: Date) async throws -> [(SubCategoryDTO, Decimal)] {
         return try await database.withModelContext { context in
+            let startDate = startDate.toUTC
+            let endDate = endDate.toUTC
             let predicate = #Predicate<Transaction> { transaction in
                 transaction.date >= startDate && transaction.date <= endDate
             }
@@ -146,6 +155,7 @@ public final class TransactionRepositoryImpl: TransactionRepository {
             }
             
             // DTO를 SwiftData 모델로 변환
+            // toModel 에서 utcDate로 변환 진행
             let newTransaction = transaction.toModel(
                 subCategory: subCategory,
                 paymentMethod: paymentMethod
@@ -191,13 +201,17 @@ public final class TransactionRepositoryImpl: TransactionRepository {
             }
             
             // 거래 정보 업데이트
+            // TransactionDTO -> Transaction 일 땐 toUTC
             existingTransaction.amount = transaction.amount
-            existingTransaction.date = transaction.date
+            existingTransaction.date = transaction.date.toUTC
             existingTransaction.place = transaction.place
             existingTransaction.memo = transaction.memo
             existingTransaction.transactionType = transaction.transactionType
             existingTransaction.isFavorite = transaction.isFavorite
-            
+            existingTransaction.timeZoneIdentifier = transaction.timeContext.timeZoneIdentifier
+            existingTransaction.calendarIdentifier = transaction.timeContext.calendarIdentifier
+            existingTransaction.localeIdentifier = transaction.timeContext.localeIdentifier
+
             try context.save()
         }
     }

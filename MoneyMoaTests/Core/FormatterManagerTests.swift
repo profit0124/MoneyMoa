@@ -29,7 +29,6 @@ final class FormatterManagerTests: XCTestCase {
         let formatter = formatterManager.amountFormatter
         
         // When & Then
-        XCTAssertEqual(formatter.locale.identifier, "ko_KR")
         XCTAssertEqual(formatter.numberStyle, .decimal)
         XCTAssertEqual(formatter.maximumFractionDigits, 0)
     }
@@ -39,17 +38,11 @@ final class FormatterManagerTests: XCTestCase {
         let formatter = formatterManager.transactionDateFormatter
         
         // When & Then
-        XCTAssertEqual(formatter.locale.identifier, "ko_KR")
-        XCTAssertEqual(formatter.dateFormat, "yyyy.MM.dd (E)")
-    }
-    
-    func testKoreaCalendarConfiguration() {
-        // Given
-        let calendar = formatterManager.koreaCalendar
-        
-        // When & Then
-        XCTAssertEqual(calendar.locale?.identifier, "ko_KR")
-        XCTAssertEqual(calendar.timeZone.identifier, "Asia/Seoul")
+        if Locale.current.language.languageCode == "ko" {
+            XCTAssertEqual(formatter.dateFormat, "yyyy.MM.dd (E)")
+        } else {
+            XCTAssertEqual(formatter.dateFormat, "MMM dd, yyyy (E)")
+        }
     }
     
     // MARK: - Amount Formatting Tests
@@ -70,8 +63,8 @@ final class FormatterManagerTests: XCTestCase {
     func testTransactionDateFormatterOutput() {
         // Given
         let formatter = formatterManager.transactionDateFormatter
-        let calendar = formatterManager.koreaCalendar
-        
+        let calendar = Calendar.current
+
         // Create test date: 2025년 8월 3일
         let components = DateComponents(year: 2025, month: 8, day: 3)
         guard let testDate = calendar.date(from: components) else {
@@ -84,7 +77,7 @@ final class FormatterManagerTests: XCTestCase {
         
         // Then
         XCTAssertTrue(formattedDate.contains("2025"))
-        XCTAssertTrue(formattedDate.contains("08"))
+        XCTAssertTrue(formattedDate.contains("08") || formattedDate.contains("Aug"))
         XCTAssertTrue(formattedDate.contains("03"))
     }
     
@@ -103,10 +96,8 @@ final class FormatterManagerTests: XCTestCase {
         
         // Different property access should return different objects
         let dateFormatter = shared.transactionDateFormatter
-        let calendar = shared.koreaCalendar
         
         XCTAssertNotNil(dateFormatter)
-        XCTAssertNotNil(calendar)
     }
     
     // MARK: - Shared Instance Tests

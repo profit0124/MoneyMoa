@@ -54,7 +54,7 @@ final class TransactionFactoryTests: XCTestCase {
         assertValidTransaction(transaction)
         
         // Test with specific date
-        let specificDate = KST.calendar.date(byAdding: .day, value: -10, to: Date())!
+        let specificDate = Calendar.current.date(byAdding: .day, value: -10, to: Date())!
         let dated = TransactionFactory.createRandom(date: specificDate)
         XCTAssertEqual(dated.date, specificDate)
         
@@ -79,11 +79,11 @@ final class TransactionFactoryTests: XCTestCase {
         set25.forEach { assertValidTransaction($0) }
         
         // Test with context
-        let yearMonth = YearMonth(from: KST.calendar.date(from: DateComponents(year: 2024, month: 3))!)
+        let yearMonth = YearMonth(from: Calendar.current.date(from: DateComponents(year: 2024, month: 3))!)
         let contextSet = TransactionFactory.randomSet(count: 10, context: yearMonth)
         XCTAssertEqual(contextSet.count, 10)
         contextSet.forEach {
-            let components = KST.calendar.dateComponents([.year, .month], from: $0.date)
+            let components = Calendar.current.dateComponents([.year, .month], from: $0.date)
             XCTAssertEqual(components.year, 2024)
             XCTAssertEqual(components.month, 3)
         }
@@ -102,7 +102,7 @@ final class TransactionFactoryTests: XCTestCase {
         XCTAssertGreaterThan(transactions.count, 50)
         
         // Check month span
-        let months = Set(transactions.map { KST.calendar.component(.month, from: $0.date) })
+        let months = Set(transactions.map { Calendar.current.component(.month, from: $0.date) })
         XCTAssertGreaterThanOrEqual(months.count, 3)
         
         // Check sorting
@@ -153,7 +153,7 @@ final class TransactionFactoryTests: XCTestCase {
         XCTAssertTrue(amounts.contains(10_000_000))
         XCTAssertTrue(edge.contains { $0.date > Date() })
         XCTAssertTrue(edge.contains { 
-            $0.date < KST.calendar.date(byAdding: .year, value: -1, to: Date())!
+            $0.date < Calendar.current.date(byAdding: .year, value: -1, to: Date())!
         })
     }
     
@@ -163,7 +163,7 @@ final class TransactionFactoryTests: XCTestCase {
         let transactions = TransactionFactory.randomSet(count: 100)
         
         // Date distribution
-        let calendar = KST.calendar
+        let calendar = Calendar.current
         let days = Set(transactions.map { calendar.component(.day, from: $0.date) })
         XCTAssertGreaterThan(days.count, 10)
         

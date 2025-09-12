@@ -34,14 +34,14 @@ struct StatisticsRepositoryImplStatsTests {
     }
     
     private func createTestRange(months: Int = 3) -> DateRange {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let endDate = Date()
         let startDate = cal.date(byAdding: .month, value: -months, to: endDate)!
         return DateRange(start: startDate, end: endDate, calendar: cal)
     }
     
     private func createFixedRange() -> DateRange {
-        let cal = KST.calendar
+        let cal = Calendar.current
         let start = cal.date(from: DateComponents(year: 2025, month: 6, day: 1))!
         let end = cal.date(from: DateComponents(year: 2025, month: 9, day: 1))!
         return DateRange(start: start, end: end, calendar: cal)
@@ -266,7 +266,7 @@ struct StatisticsRepositoryImplStatsTests {
             budgetScenario: .empty
         )
         
-        let cal = KST.calendar
+        let cal = Calendar.current
         let currentMonth = FixedDateHelper.fixedYearMonth
         let range = DateRange(
             start: currentMonth.startOfMonth,

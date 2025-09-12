@@ -15,7 +15,7 @@ public protocol BurndownService {
 
 public struct BurndownServiceImpl: BurndownService {
     public init() {}
-    public func make(expectedMonthlyBudget: Decimal, dailyExpenses: [DailyPointDTO], calendar: Calendar = KST.calendar) -> [BurndownPointDTO] {
+    public func make(expectedMonthlyBudget: Decimal, dailyExpenses: [DailyPointDTO], calendar: Calendar = Calendar.current) -> [BurndownPointDTO] {
         guard !dailyExpenses.isEmpty else { return [] }
         let sorted = dailyExpenses.sorted { $0.date < $1.date }
         let monthStart = calendar.startOfMonth(for: sorted[0].date)

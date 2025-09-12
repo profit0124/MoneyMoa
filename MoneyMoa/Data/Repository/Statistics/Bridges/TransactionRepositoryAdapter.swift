@@ -34,7 +34,7 @@ public protocol TransactionQuerying {
 }
 
 /// 기존 TransactionRepository → TransactionQuerying 어댑터
-/// - KST 기준의 집계 규칙과 [start, end) 경계 변환을 이 계층에서 강제
+/// - Calendar.current 기준의 집계 규칙과 [start, end) 경계 변환을 이 계층에서 강제
 public final class TransactionRepositoryAdapter: TransactionQuerying {
     private let repo: TransactionRepository
 
@@ -43,12 +43,12 @@ public final class TransactionRepositoryAdapter: TransactionQuerying {
     }
 
     public func fetchExpenses(range: DateRange) async throws -> [TransactionRow] {
-        // 일별 합계가 필요: 트랜잭션을 가져와 KST 자정 기준으로 그룹화
+        // 일별 합계가 필요: 트랜잭션을 가져와 Calendar.current 자정 기준으로 그룹화
         let (s, e) = range.inclusiveRange()
         let txs = try await repo.fetchTransactions(from: s, to: e)
         var daily: [Date: Decimal] = [:]
         for t in txs where t.transactionType == .fixedExpense || t.transactionType == .variableExpense {
-            let dayKey = KST.calendar.startOfDay(for: t.date)
+            let dayKey = Calendar.current.startOfDay(for: t.date)
             daily[dayKey, default: 0] += t.amount
         }
         return daily.keys.sorted().map { TransactionRow(date: $0, amount: daily[$0]!) }
