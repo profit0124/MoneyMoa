@@ -23,7 +23,8 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
     // MARK: - TimeZone Context
     /// 거래 발생 시점의 시간대 컨텍스트
     public let timeContext: TransactionTimeContext
-    
+    public let transactionTemplate: TransactionTemplateDTO?
+
     public init(
         id: UUID = UUID(),
         amount: Decimal,
@@ -34,7 +35,8 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         isFavorite: Bool = false,
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO,
-        timeContext: TransactionTimeContext = .current
+        timeContext: TransactionTimeContext = .current,
+        transactionTemplate: TransactionTemplateDTO? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -46,6 +48,7 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
         self.timeContext = timeContext
+        self.transactionTemplate = transactionTemplate
     }
 }
 // MARK: - for Sorting

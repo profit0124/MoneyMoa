@@ -234,3 +234,26 @@ public struct TransactionTimeContext: Codable, Sendable, Hashable {
         )
     }
 }
+
+// MARK: - RecurrencePeriod
+
+//// Template 의 반복주기를 나타내는 Property
+public enum RecurrencePeriod: String, CaseIterable, Codable, Sendable {
+    case none
+    case weekly
+    case monthly
+    case yearly
+
+    public var displayName: String {
+        switch self {
+        case .none:
+            "반복 없음"
+        case .weekly:
+            "매주"
+        case .monthly:
+            "매월"
+        case .yearly:
+            "매년"
+        }
+    }
+}

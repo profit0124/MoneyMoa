@@ -284,4 +284,77 @@ final class DatabaseTests: XCTestCase, @unchecked Sendable {
         
         XCTAssertEqual(categories.count, 1, "Category should be inserted successfully")
     }
+
+    func testDeleteRuleNullify() async throws {
+        // Given
+        let database = try createFreshDatabase()
+        let templateID = UUID()
+        let transactionID = UUID()
+
+        try await database.withModelContext { context in
+            let category = CategoryDTO.mockFood.toModel()
+            let subCategory = SubCategoryDTO.mockFoodExpense.toModel(parentCategory: category)
+            let paymentMethod = PaymentMethodDTO.mockCreditCard.toModel()
+            let template = MoneyMoa.TransactionTemplate(
+                id: templateID,
+                amount: 100000,
+                place: "버거킹",
+                transactionType: .fixedExpense,
+                recurrencePeriod: .none,
+                timeZoneIdentifier: Calendar.current.timeZone.identifier,
+                calendarIdentifier: Calendar.current.identifier.toString,
+                subCategory: subCategory,
+                paymentMethod: paymentMethod
+            )
+            let transaction = self.makeTransaction(id: transactionID, template: template)
+            context.insert(subCategory)
+            context.insert(paymentMethod)
+            context.insert(transaction)
+            try context.save()
+        }
+
+        // When
+        try await database.withModelContext { context in
+            let predicate = #Predicate<MoneyMoa.TransactionTemplate> { $0.id == templateID }
+            let descriptor = FetchDescriptor<MoneyMoa.TransactionTemplate>(predicate: predicate)
+            if let template = try context.fetch(descriptor).first {
+                context.delete(template)
+                try context.save()
+            }
+        }
+
+        // Then
+        let afterTransactions = try await database.withModelContext { context in
+            let predicate = #Predicate<MoneyMoa.Transaction> { $0.id == transactionID }
+            let descriptor = FetchDescriptor<MoneyMoa.Transaction>(predicate: predicate)
+            let transactions = try context.fetch(descriptor)
+            
+            guard let transaction = transactions.first else {
+                XCTFail("Transaction should still exist after template deletion")
+                return []
+            }
+            XCTAssertNil(transaction.template, "Template reference should be nullified")
+            XCTAssertEqual(transaction.amount, 100000, "Transaction amount should be preserved")
+            return transactions.toDTOs()
+        }
+
+        XCTAssertEqual(afterTransactions.count, 1, "Transaction should still exist after template deletion")
+    }
+}
+
+extension DatabaseTests {
+    private func makeTransaction(id: UUID, template: TransactionTemplate) -> Transaction {
+        Transaction(
+            id: id,
+            amount: template.amount,
+            place: template.place,
+            memo: template.memo,
+            transactionType: template.transactionType,
+            subCategory: template.subCategory,
+            paymentMethod: template.paymentMethod,
+            timeZoneIdentifier: template.timeZoneIdentifier,
+            calendarIdentifier: template.calendarIdentifier,
+            localeIdentifier: template.localeIdentifier,
+        )
+    }
 }
