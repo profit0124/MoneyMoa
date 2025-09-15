@@ -32,7 +32,7 @@ public struct TransactionTemplateDTO: Sendable, Hashable, Identifiable {
         transactionType: TransactionType,
         recurrencePeriod: RecurrencePeriod = .none,
         createdAt: Date = Date(),
-        processedCount: Int = 0,
+        processedCount: Int = 1,
         lastAddedAt: Date?,
         nextDueDate: Date? = nil,
         timeContext: TransactionTimeContext = .current,
@@ -48,7 +48,7 @@ public struct TransactionTemplateDTO: Sendable, Hashable, Identifiable {
         self.createdAt = createdAt
         self.processedCount = processedCount
         self.lastAddedAt = lastAddedAt ?? createdAt
-        self.nextDueDate = nextDueDate
+        self.nextDueDate = nextDueDate ?? recurrencePeriod.calculateOccurenceDate(from: createdAt, processCount: processedCount)
         self.timeContext = timeContext
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod

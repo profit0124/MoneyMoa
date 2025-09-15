@@ -256,4 +256,20 @@ public enum RecurrencePeriod: String, CaseIterable, Codable, Sendable {
             "매년"
         }
     }
+
+    public func calculateOccurenceDate(from base: Date, processCount: Int, calendar: Calendar = Calendar.current) -> Date? {
+        let component: Calendar.Component
+        switch self {
+        case .none:
+            return nil
+        case .weekly:
+            component = .weekOfYear
+        case .monthly:
+            component = .month
+        case .yearly:
+            component = .year
+        }
+
+        return calendar.date(byAdding: component, value: processCount, to: base)
+    }
 }
