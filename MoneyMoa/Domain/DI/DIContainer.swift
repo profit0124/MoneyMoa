@@ -63,6 +63,11 @@ protocol DIContainer {
     
     /// GetTransactionByIdUseCase를 생성합니다
     func makeGetTransactionByIdUseCase() -> GetTransactionByIdUseCase
+
+    // MARK: - TransactionTemplate UseCase Factory Methods
+
+    /// TransactionTemplateProcessingUseCase를 생성합니다
+    func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase
     
     // MARK: - Category UseCase Factory Methods
     
@@ -328,5 +333,4 @@ extension DIContainer {
             getStatisticsDashboardUseCase: makeGetStatisticsDashboardUseCase()
         )
     }
-    
 }

@@ -115,7 +115,18 @@ final class AppDIContainer: DIContainer {
         let reader = makeTransactionReader()
         return GetTransactionByIdUseCaseImpl(transactionReader: reader)
     }
-    
+
+    // MARK: - TransactionTemplate UseCase Factory Methods
+
+    func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase {
+        let templateRepository = makeTransactionTemplateRepository()
+        let transactionWriter = makeTransactionWriter()
+        return TransactionTemplateProcessingUseCaseImpl(
+            templateRepository: templateRepository,
+            transactionWriter: transactionWriter
+        )
+    }
+
     // MARK: - Category UseCase Factory Methods
     
     /// Production GetCategoriesByTypeUseCase를 생성합니다
@@ -173,6 +184,11 @@ final class AppDIContainer: DIContainer {
     /// TransactionRepository 구현체를 생성합니다 (통합 인터페이스)
     private func makeTransactionRepository() -> TransactionRepository {
         return TransactionRepositoryImpl(database: database)
+    }
+
+    /// TransactionTemplateRepository 구현체를 생성합니다
+    private func makeTransactionTemplateRepository() -> TransactionTemplateRepository {
+        return TransactionTemplateRepositoryImpl(database: database)
     }
     
     /// TransactionReader 구현체를 생성합니다 (읽기 전용)

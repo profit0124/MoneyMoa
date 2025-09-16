@@ -20,6 +20,7 @@ final class MockDIContainer: DIContainer {
         var transactionScenario: MockTransactionRepository.DataScenario = .empty
         var budgetScenario: MockBudgetRepository.DataScenario = .empty
         var budgetTemplateScenario: MockBudgetTemplateRepository.DataScenario = .empty
+        var transactionTemplateScenario: MockTransactionTemplateRepository.DataScenario = .empty
         var paymentMethodScenario: MockPaymentMethodRepository.DataScenario = .normal()
         
         static let empty = Configuration()
@@ -28,6 +29,7 @@ final class MockDIContainer: DIContainer {
             transactionScenario: .normal(),
             budgetScenario: .normal,
             budgetTemplateScenario: .normal,
+            transactionTemplateScenario: .standard,
             paymentMethodScenario: .normal()
         )
         
@@ -35,6 +37,7 @@ final class MockDIContainer: DIContainer {
             transactionScenario: .realistic,
             budgetScenario: .realistic,
             budgetTemplateScenario: .highIncome,
+            transactionTemplateScenario: .dueOnly,
             paymentMethodScenario: .normal()
         )
     }
@@ -51,6 +54,10 @@ final class MockDIContainer: DIContainer {
     
     private lazy var _mockTransactionRepository: MockTransactionRepository = {
         MockTransactionRepository(scenario: configuration.transactionScenario)
+    }()
+
+    private lazy var _mockTransactionTemplateRepository: MockTransactionTemplateRepository = {
+        MockTransactionTemplateRepository(scenario: configuration.transactionTemplateScenario)
     }()
     
     private lazy var _mockCategoryRepository: MockCategoryRepository = {
@@ -93,6 +100,11 @@ final class MockDIContainer: DIContainer {
     var mockBudgetRepository: MockBudgetRepository {
         return _mockBudgetRepository
     }
+
+    /// 테스트에서 직접 접근할 수 있는 MockTransactionTemplateRepository
+    var mockTransactionTemplateRepository: MockTransactionTemplateRepository {
+        return _mockTransactionTemplateRepository
+    }
     
     // MARK: - Repository Factory Methods
     
@@ -107,7 +119,11 @@ final class MockDIContainer: DIContainer {
     private func makeTransactionWriter() -> TransactionWriter {
         return _mockTransactionRepository
     }
-    
+
+    private func makeTransactionTemplateRepository() -> TransactionTemplateRepository {
+        return _mockTransactionTemplateRepository
+    }
+
     private func makeCategoryRepository() -> CategoryRepository {
         return _mockCategoryRepository
     }
@@ -212,7 +228,18 @@ final class MockDIContainer: DIContainer {
         let reader = makeTransactionReader()
         return GetTransactionByIdUseCaseImpl(transactionReader: reader)
     }
-    
+
+    // MARK: - TransactionTemplate UseCase Factory Methods
+
+    func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase {
+        let templateRepository = makeTransactionTemplateRepository()
+        let transactionWriter = makeTransactionWriter()
+        return TransactionTemplateProcessingUseCaseImpl(
+            templateRepository: templateRepository,
+            transactionWriter: transactionWriter
+        )
+    }
+
     // MARK: - Category UseCase Factory Methods
     
     /// GetCategoriesByTypeUseCase를 생성합니다 (Mock Repository 기반)

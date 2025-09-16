@@ -37,6 +37,7 @@ final class AppState {
 
             await checkInitialCategories()
             await checkCurrentMonthBudget()
+            await processDueTransactionTemplates()
 
             isLoading = false
             initializationTask = nil
@@ -107,6 +108,22 @@ final class AppState {
         } catch {
             print("예산 확인/생성 실패: \(error)")
             // 예산 생성 실패해도 앱은 계속 진행
+        }
+    }
+
+    private func processDueTransactionTemplates() async {
+        loadingMessage = "반복 거래를 처리하고 있습니다..."
+
+        do {
+            let templateProcessingUseCase = diContainer.makeTransactionTemplateProcessingUseCase()
+            let processedCount = try await templateProcessingUseCase.execute(upToDate: Date())
+
+            if processedCount > 0 {
+                print("처리된 반복 거래: \(processedCount)개")
+            }
+        } catch {
+            print("반복 거래 처리 실패: \(error)")
+            // 반복 거래 처리 실패해도 앱은 계속 진행
         }
     }
 }
