@@ -354,7 +354,7 @@ extension DatabaseTests {
             paymentMethod: template.paymentMethod,
             timeZoneIdentifier: template.timeZoneIdentifier,
             calendarIdentifier: template.calendarIdentifier,
-            localeIdentifier: template.localeIdentifier,
+            localeIdentifier: template.localeIdentifier
         )
     }
 }
