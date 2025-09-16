@@ -39,8 +39,12 @@ final class AddTransactionViewModel {
         dateAdditionalFormViewModel.memo
     }
     
-    var currentIsFavorite: Bool {
-        dateAdditionalFormViewModel.isFavorite
+    var currentCreateAsTemplate: Bool {
+        dateAdditionalFormViewModel.createAsTemplate
+    }
+
+    var currentSelectedRecurrencePeriod: RecurrencePeriod? {
+        dateAdditionalFormViewModel.selectedRecurrencePeriod
     }
 
     var isValid: Bool {
@@ -119,7 +123,6 @@ final class AddTransactionViewModel {
                 place: amountPlacePaymentViewModel.place,
                 memo: dateAdditionalFormViewModel.memo,
                 transactionType: transactionTypeSelectionViewModel.selectedTransactionType,
-                isFavorite: dateAdditionalFormViewModel.isFavorite,
                 subCategory: subCategory,
                 paymentMethod: paymentMethod
             )

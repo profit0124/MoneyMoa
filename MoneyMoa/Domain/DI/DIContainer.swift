@@ -131,7 +131,7 @@ protocol DIContainer {
     func makeTransactionTypeCategoryFormViewModel(transactionType: TransactionType, subCategory: SubCategoryDTO?) -> TransactionTypeCategoryFormViewModel
 
     /// DateAdditionalFormViewModel을 생성합니다
-    func makeDateAdditionalFormViewModel(date: Date, memo: String, isFavorite: Bool) -> DateAdditionalFormViewModel
+    func makeDateAdditionalFormViewModel(date: Date, memo: String) -> DateAdditionalFormViewModel
 
     // MARK: - Service Factory Methods
     
@@ -200,8 +200,7 @@ extension DIContainer {
         )
         let dateAdditionalFormViewModel = makeDateAdditionalFormViewModel(
             date: transaction.date,
-            memo: transaction.memo ?? "",
-            isFavorite: transaction.isFavorite
+            memo: transaction.memo ?? ""
         )
         return UpdateTransactionViewModel(
             transaction: transaction,
@@ -261,13 +260,11 @@ extension DIContainer {
     /// DateAdditionalFormViewModel을 생성합니다 (기본 구현)
     func makeDateAdditionalFormViewModel(
         date: Date = Date(),
-        memo: String = "",
-        isFavorite: Bool = false
+        memo: String = ""
     ) -> DateAdditionalFormViewModel {
         return DateAdditionalFormViewModel(
             selectedDate: date,
-            memo: memo,
-            isFavorite: isFavorite
+            memo: memo
         )
     }
 

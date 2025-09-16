@@ -27,7 +27,7 @@ struct TransactionDetailView: View {
                         additionalInfoSection
 
                         // MARK: - 메모 및 기타 정보
-                        if (viewModel.transaction.memo != nil && !viewModel.transaction.memo!.isEmpty) || viewModel.transaction.isFavorite {
+                        if viewModel.transaction.memo != nil && !viewModel.transaction.memo!.isEmpty {
                             memoAndExtraSection
                         }
 
@@ -277,11 +277,6 @@ private extension TransactionDetailView {
             // 메모
             if let memo = viewModel.transaction.memo, !memo.isEmpty {
                 memoDisplay
-            }
-            
-            // 즐겨찾기
-            if viewModel.transaction.isFavorite {
-                favoriteDisplay
             }
         }
     }

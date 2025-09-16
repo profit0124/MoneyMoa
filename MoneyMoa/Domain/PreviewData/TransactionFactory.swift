@@ -21,7 +21,6 @@ public enum TransactionFactory {
             place: "Sample Place",
             memo: "Sample Memo",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: .mockFoodExpense,
             paymentMethod: .mockCreditCard
         )
@@ -35,7 +34,6 @@ public enum TransactionFactory {
         place: String? = nil,
         memo: String? = nil,
         transactionType: TransactionType,
-        isFavorite: Bool = false,
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO
     ) -> TransactionDTO {
@@ -46,7 +44,6 @@ public enum TransactionFactory {
             place: place,
             memo: memo,
             transactionType: transactionType,
-            isFavorite: isFavorite,
             subCategory: subCategory,
             paymentMethod: paymentMethod
         )
@@ -64,7 +61,6 @@ public enum TransactionFactory {
             place: scenario.randomPlace(),
             memo: scenario.randomMemo(),
             transactionType: scenario.transactionType,
-            isFavorite: Bool.random() && Double.random(in: 0...1) < 0.1, // 10% chance of favorite
             subCategory: scenario.randomSubCategory(),
             paymentMethod: scenario.randomPaymentMethod()
         )

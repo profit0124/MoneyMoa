@@ -129,7 +129,7 @@ public final class MockTransactionRepository: @unchecked Sendable, TransactionRe
         
         return await withCheckedContinuation { continuation in
             serialQueue.async {
-                let result = self.transactions.filter { $0.isFavorite }
+                let result = self.transactions.filter { $0.transactionTemplate != nil }
                     .sorted { $0.date > $1.date }
                 continuation.resume(returning: result)
             }

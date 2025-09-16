@@ -16,7 +16,6 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
     public let place: String?  // 거래 장소/대상 (맥도날드, 친구들과 더치페이, 어머니 용돈 등)
     public let memo: String?
     public let transactionType: TransactionType
-    public let isFavorite: Bool
     public let subCategory: SubCategoryDTO
     public let paymentMethod: PaymentMethodDTO
     
@@ -32,7 +31,6 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         place: String? = nil,
         memo: String? = nil,
         transactionType: TransactionType,
-        isFavorite: Bool = false,
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO,
         timeContext: TransactionTimeContext = .current,
@@ -44,7 +42,6 @@ public struct TransactionDTO: Sendable, Hashable, Identifiable {
         self.place = place
         self.memo = memo
         self.transactionType = transactionType
-        self.isFavorite = isFavorite
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
         self.timeContext = timeContext
@@ -158,7 +155,6 @@ extension TransactionDTO {
         place: String? = nil,
         memo: String? = nil,
         transactionType: TransactionType = .variableExpense,
-        isFavorite: Bool = false,
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO,
         timeContext: TransactionTimeContext = .current
@@ -169,7 +165,6 @@ extension TransactionDTO {
             place: place,
             memo: memo,
             transactionType: transactionType,
-            isFavorite: isFavorite,
             subCategory: subCategory,
             paymentMethod: paymentMethod,
             timeContext: timeContext
