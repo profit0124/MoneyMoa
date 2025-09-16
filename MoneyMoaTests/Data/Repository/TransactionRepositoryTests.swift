@@ -165,27 +165,6 @@ extension TransactionRepositoryTests {
         XCTAssertEqual(Set(transactions.map { $0.amount }), Set([10000, 20000]))
     }
     
-    func testTransactionReader_fetchFavoriteTransactions_returnsOnlyFavorites() async throws {
-        // Given
-        try await setupBasicTestData()
-        
-        let favoriteTransaction = createTransaction(amount: 10000, isFavorite: true)
-        let normalTransaction = createTransaction(amount: 20000, isFavorite: false)
-        let anotherFavoriteTransaction = createTransaction(amount: 30000, isFavorite: true)
-        
-        try await transactionWriter.insertTransaction(favoriteTransaction)
-        try await transactionWriter.insertTransaction(normalTransaction)
-        try await transactionWriter.insertTransaction(anotherFavoriteTransaction)
-        
-        // When
-        let favoriteTransactions = try await transactionReader.fetchFavoriteTransactions()
-        
-        // Then
-        XCTAssertEqual(favoriteTransactions.count, 2)
-        XCTAssertTrue(favoriteTransactions.allSatisfy { $0.isFavorite })
-        XCTAssertEqual(Set(favoriteTransactions.map { $0.amount }), Set([10000, 30000]))
-    }
-    
     func testTransactionReader_getTotalAmountByType_returnsCorrectTotals() async throws {
         // Given
         try await setupBasicTestData()
@@ -298,7 +277,6 @@ extension TransactionRepositoryTests {
         XCTAssertEqual(retrievedTransaction?.amount, 20000)
         XCTAssertEqual(retrievedTransaction?.place, "Updated Place")
         XCTAssertEqual(retrievedTransaction?.memo, "Updated Memo")
-        XCTAssertTrue(retrievedTransaction?.isFavorite ?? false)
     }
     
     func testTransactionWriter_deleteTransaction_deletesSuccessfully() async throws {
@@ -399,9 +377,9 @@ extension TransactionRepositoryTests {
         let allTransactions = try await transactionReader.fetchTransactions(for: YearMonth.current)
         XCTAssertEqual(allTransactions.count, 2)
         
-        let favoriteTransactions = try await transactionReader.fetchFavoriteTransactions()
-        XCTAssertEqual(favoriteTransactions.count, 1)
-        XCTAssertEqual(favoriteTransactions[0].id, transaction1.id)
+//        let favoriteTransactions = try await transactionReader.fetchFavoriteTransactions()
+//        XCTAssertEqual(favoriteTransactions.count, 1)
+//        XCTAssertEqual(favoriteTransactions[0].id, transaction1.id)
         
         // Combined operation: Update through Writer, verify through Reader
         let updatedTransaction1 = TransactionDTO(
@@ -419,12 +397,12 @@ extension TransactionRepositoryTests {
         try await transactionWriter.updateTransaction(updatedTransaction1)
         
         // Verify changes through Reader
-        let updatedFavorites = try await transactionReader.fetchFavoriteTransactions()
-        XCTAssertEqual(updatedFavorites.count, 0) // Should be empty now
+//        let updatedFavorites = try await transactionReader.fetchFavoriteTransactions()
+//        XCTAssertEqual(updatedFavorites.count, 0) // Should be empty now
         
         let retrievedUpdated = try await transactionReader.fetchTransaction(id: transaction1.id)
         XCTAssertEqual(retrievedUpdated?.amount, 15000)
         XCTAssertEqual(retrievedUpdated?.memo, "Updated memo")
-        XCTAssertFalse(retrievedUpdated?.isFavorite ?? true)
+//        XCTAssertFalse(retrievedUpdated?.isFavorite ?? true)
     }
 }

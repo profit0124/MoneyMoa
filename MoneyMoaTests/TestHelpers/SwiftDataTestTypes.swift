@@ -19,3 +19,4 @@ public typealias BudgetTemplateModel = MoneyMoa.BudgetTemplate
 public typealias CategoryBudgetTemplateModel = MoneyMoa.CategoryBudgetTemplate
 public typealias BudgetModel = MoneyMoa.Budget
 public typealias CategoryBudgetModel = MoneyMoa.CategoryBudget
+public typealias TransactionTemplateModel = MoneyMoa.TransactionTemplate

@@ -104,7 +104,7 @@ struct TestDataFactory {
     }
     
     // MARK: - Transaction Factory Methods
-    
+
     static func createTransaction(
         id: UUID = UUID(),
         amount: Decimal = 10000,
@@ -124,6 +124,74 @@ struct TestDataFactory {
             memo: memo,
             transactionType: transactionType,
             isFavorite: isFavorite,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+    }
+
+    // MARK: - TransactionTemplate Factory Methods
+
+    static func createTransactionTemplate(
+        id: UUID = UUID(),
+        amount: Decimal = 100000,
+        place: String? = "넷플릭스",
+        memo: String? = "월간 구독",
+        transactionType: TransactionType = .fixedExpense,
+        recurrencePeriod: RecurrencePeriod = .monthly,
+        createdAt: Date = Date(),
+        processedCount: Int = 0,
+        lastAddedAt: Date? = nil,
+        nextDueDate: Date? = nil,
+        subCategory: SubCategoryDTO,
+        paymentMethod: PaymentMethodDTO
+    ) -> TransactionTemplateDTO {
+        TransactionTemplateDTO(
+            id: id,
+            amount: amount,
+            place: place,
+            memo: memo,
+            transactionType: transactionType,
+            recurrencePeriod: recurrencePeriod,
+            createdAt: createdAt,
+            processedCount: processedCount,
+            lastAddedAt: lastAddedAt,
+            nextDueDate: nextDueDate,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+    }
+
+    static func createMonthlySubscriptionTemplate(
+        place: String,
+        amount: Decimal,
+        nextDueDate: Date? = nil,
+        subCategory: SubCategoryDTO,
+        paymentMethod: PaymentMethodDTO
+    ) -> TransactionTemplateDTO {
+        createTransactionTemplate(
+            amount: amount,
+            place: place,
+            memo: "월간 구독",
+            recurrencePeriod: .monthly,
+            nextDueDate: nextDueDate,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+    }
+
+    static func createWeeklyTemplate(
+        place: String,
+        amount: Decimal,
+        nextDueDate: Date? = nil,
+        subCategory: SubCategoryDTO,
+        paymentMethod: PaymentMethodDTO
+    ) -> TransactionTemplateDTO {
+        createTransactionTemplate(
+            amount: amount,
+            place: place,
+            memo: "주간 정기결제",
+            recurrencePeriod: .weekly,
+            nextDueDate: nextDueDate,
             subCategory: subCategory,
             paymentMethod: paymentMethod
         )

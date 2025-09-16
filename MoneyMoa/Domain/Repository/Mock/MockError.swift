@@ -31,7 +31,10 @@ public enum MockError: Error, LocalizedError {
     
     // MARK: - PaymentMethod Domain Errors
     case paymentMethodNotFound
-    
+
+    // MARK: - TransactionTemplate Domain Errors
+    case templateNotFound
+
     // MARK: - Statistics Domain Errors
     case statisticsDataNotAvailable
     
@@ -68,7 +71,11 @@ public enum MockError: Error, LocalizedError {
             // PaymentMethod
         case .paymentMethodNotFound:
             return "Payment method not found"
-            
+
+            // TransactionTemplate
+        case .templateNotFound:
+            return "Transaction template not found"
+
             // Statistics
         case .statisticsDataNotAvailable:
             return "Statistics data not available"

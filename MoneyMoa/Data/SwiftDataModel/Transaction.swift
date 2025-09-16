@@ -17,7 +17,6 @@ final class Transaction {
     var date: Date  // UTC로 저장되는 절대 시점
     var place: String?  // 거래 장소/대상 (맥도날드, 친구들과 더치페이, 어머니 용돈 등)
     var memo: String?
-    var isFavorite: Bool
     var transactionTypeRawValue: String
     var transactionType: TransactionType {
         get { TransactionType(rawValue: transactionTypeRawValue) ?? .variableExpense }
@@ -36,7 +35,8 @@ final class Transaction {
     
     @Relationship var subCategory: SubCategory
     @Relationship var paymentMethod: PaymentMethod
-    
+    @Relationship var template: TransactionTemplate?
+
     init(
         id: UUID = UUID(),
         amount: Decimal,
@@ -44,12 +44,12 @@ final class Transaction {
         place: String? = nil,
         memo: String? = nil,
         transactionType: TransactionType,
-        isFavorite: Bool = false,
         subCategory: SubCategory,
         paymentMethod: PaymentMethod,
         timeZoneIdentifier: String,
         calendarIdentifier: String,
-        localeIdentifier: String?
+        localeIdentifier: String?,
+        template: TransactionTemplate? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -57,7 +57,6 @@ final class Transaction {
         self.place = place
         self.memo = memo
         self.transactionTypeRawValue = transactionType.rawValue
-        self.isFavorite = isFavorite
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
         
@@ -65,6 +64,7 @@ final class Transaction {
         self.timeZoneIdentifier = timeZoneIdentifier
         self.calendarIdentifier = calendarIdentifier
         self.localeIdentifier = localeIdentifier
+        self.template = template
     }
 }
 
@@ -88,7 +88,6 @@ extension Transaction {
             place: self.place,
             memo: self.memo,
             transactionType: self.transactionType,
-            isFavorite: self.isFavorite,
             subCategory: self.subCategory.toDTO(),
             paymentMethod: self.paymentMethod.toDTO(),
             timeContext: timeContext
@@ -124,7 +123,6 @@ extension TransactionDTO {
             place: self.place,
             memo: self.memo,
             transactionType: self.transactionType,
-            isFavorite: self.isFavorite,
             subCategory: subCategory,
             paymentMethod: paymentMethod,
             timeZoneIdentifier: self.timeContext.timeZoneIdentifier,

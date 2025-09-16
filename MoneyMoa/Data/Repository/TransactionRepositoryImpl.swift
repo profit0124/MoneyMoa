@@ -77,7 +77,7 @@ public final class TransactionRepositoryImpl: TransactionRepository {
     }
     
     public func fetchFavoriteTransactions() async throws -> [TransactionDTO] {
-        let predicate = #Predicate<Transaction> { $0.isFavorite == true }
+        let predicate = #Predicate<Transaction> { $0.template != nil }
         return try await fetchTransactionDTOs(predicate: predicate)
     }
     
@@ -207,7 +207,7 @@ public final class TransactionRepositoryImpl: TransactionRepository {
             existingTransaction.place = transaction.place
             existingTransaction.memo = transaction.memo
             existingTransaction.transactionType = transaction.transactionType
-            existingTransaction.isFavorite = transaction.isFavorite
+//            existingTransaction.isFavorite = transaction.isFavorite
             existingTransaction.timeZoneIdentifier = transaction.timeContext.timeZoneIdentifier
             existingTransaction.calendarIdentifier = transaction.timeContext.calendarIdentifier
             existingTransaction.localeIdentifier = transaction.timeContext.localeIdentifier

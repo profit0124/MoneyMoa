@@ -243,4 +243,49 @@ final class MockDIContainerTests: XCTestCase {
         let activePaymentMethods = try await getActiveUseCase.execute()
         XCTAssertTrue(activePaymentMethods.contains { $0.name == "테스트카드" })
     }
+
+    // MARK: - Test Methods - TransactionTemplate UseCases
+
+    func test_makeTransactionTemplateProcessingUseCase_returnsMockUseCase() {
+        // Given & When
+        let useCase = container.makeTransactionTemplateProcessingUseCase()
+
+        // Then
+        XCTAssertNotNil(useCase)
+        XCTAssertTrue(useCase is TransactionTemplateProcessingUseCaseImpl)
+    }
+}
+
+// MARK: - MockDIContainerConfigurationTests
+
+final class MockDIContainerConfigurationTests: XCTestCase {
+
+    // MARK: - Test Methods - Configuration Scenarios
+
+    func test_mockDIContainer_withStandardScenario_createsUseCaseWithCorrectData() async throws {
+        // Given
+        let config = MockDIContainer.Configuration.normal
+        let container = MockDIContainer(configuration: config)
+
+        // When
+        let useCase = container.makeTransactionTemplateProcessingUseCase()
+        let now = Date()
+
+        // Then: Standard scenario should have 2 due templates (Netflix: 5일 전, Insurance: 오늘)
+        let result = try await useCase.execute(upToDate: now)
+        XCTAssertEqual(result, 2) // Netflix and Insurance templates should be processed
+    }
+
+    func test_mockDIContainer_withEmptyScenario_createsUseCaseWithNoData() async throws {
+        // Given
+        let config = MockDIContainer.Configuration.empty
+        let container = MockDIContainer(configuration: config)
+
+        // When
+        let useCase = container.makeTransactionTemplateProcessingUseCase()
+
+        // Then: Should process 0 templates (empty scenario)
+        let result = try await useCase.execute(upToDate: Date())
+        XCTAssertEqual(result, 0) // Empty scenario has no templates
+    }
 }
