@@ -90,7 +90,8 @@ extension Transaction {
             transactionType: self.transactionType,
             subCategory: self.subCategory.toDTO(),
             paymentMethod: self.paymentMethod.toDTO(),
-            timeContext: timeContext
+            timeContext: timeContext,
+            transactionTemplate: self.template?.toDTO()
         )
     }
 }
@@ -112,7 +113,7 @@ extension TransactionDTO {
     ///   - subCategory: 연결할 SubCategory 모델 (필수)
     ///   - paymentMethod: 연결할 PaymentMethod 모델 (필수)
     /// - Note: date는 로컬 시간에서 UTC로 변환되어 저장됨
-    func toModel(subCategory: SubCategory, paymentMethod: PaymentMethod) -> Transaction {
+    func toModel(subCategory: SubCategory, paymentMethod: PaymentMethod, template: TransactionTemplate? = nil) -> Transaction {
         // 로컬 시간(사용자 경험 시간)을 UTC로 변환하여 저장
         let utcDate = self.date.toUTC
 
@@ -127,7 +128,49 @@ extension TransactionDTO {
             paymentMethod: paymentMethod,
             timeZoneIdentifier: self.timeContext.timeZoneIdentifier,
             calendarIdentifier: self.timeContext.calendarIdentifier,
-            localeIdentifier: self.timeContext.localeIdentifier
+            localeIdentifier: self.timeContext.localeIdentifier,
+            template: template
+        )
+    }
+
+    func toModelWithTemplate(subCategory: SubCategory, paymentMethod: PaymentMethod, template: TransactionTemplate) -> Transaction {
+        let utcDate = self.date.toUTC
+
+        return Transaction(
+            id: self.id,
+            amount: self.amount,
+            date: utcDate,  // UTC로 변환된 시간
+            place: self.place,
+            memo: self.memo,
+            transactionType: self.transactionType,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod,
+            timeZoneIdentifier: self.timeContext.timeZoneIdentifier,
+            calendarIdentifier: self.timeContext.calendarIdentifier,
+            localeIdentifier: self.timeContext.localeIdentifier,
+            template: template
+        )
+    }
+
+    func toTemplate(subCategory: SubCategory, paymentMethod: PaymentMethod, recurrencePeriod: RecurrencePeriod) -> TransactionTemplate {
+        let calendar = self.timeContext.calendar
+        let processCount = 1
+        return TransactionTemplate(
+            amount: self.amount,
+            place: self.place,
+            memo: self.memo,
+            transactionType: self.transactionType,
+            recurrencePeriod: recurrencePeriod,
+            createdAt: self.date,
+            processedCount: processCount,
+            lastAddedAt: self.date,
+            nextDueDate: recurrencePeriod.calculateOccurenceDate(from: self.date, processCount: processCount, calendar: calendar),
+            timeZoneIdentifier: self.timeContext.timeZoneIdentifier,
+            calendarIdentifier: self.timeContext.calendarIdentifier,
+            localeIdentifier: self.timeContext.localeIdentifier,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod,
+
         )
     }
 }

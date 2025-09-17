@@ -64,12 +64,39 @@ extension TransactionDTO: Comparable {
 // MARK: - TransactionDTO Extensions for Formatting
 
 extension TransactionDTO {
-    
+
     /// 거래 금액을 포맷된 문자열로 반환
     public var formattedAmount: String {
         return transactionType.formatAmount(amount)
     }
-    
+
+    /// TransactionDTO를 TransactionTemplateDTO로 변환
+    /// - Parameters:
+    ///   - recurrencePeriod: 템플릿의 반복 주기
+    ///   - nextDueDate: 다음 실행 예정일 (nil이면 자동 계산)
+    /// - Returns: 변환된 TransactionTemplateDTO
+    public func toTemplateDTO(
+        recurrencePeriod: RecurrencePeriod,
+        nextDueDate: Date? = nil
+    ) -> TransactionTemplateDTO {
+        let calculatedNextDueDate = nextDueDate ?? recurrencePeriod.calculateOccurenceDate(from: self.date, processCount: 1, calendar: self.timeContext.calendar)
+
+        return TransactionTemplateDTO(
+            id: UUID(), // 새 템플릿 ID 생성
+            amount: self.amount,
+            place: self.place,
+            memo: self.memo,
+            transactionType: self.transactionType,
+            recurrencePeriod: recurrencePeriod,
+            createdAt: self.date,
+            processedCount: 1, // 첫 거래가 생성되었으므로 1
+            lastAddedAt: self.date,
+            nextDueDate: calculatedNextDueDate,
+            timeContext: self.timeContext,
+            subCategory: self.subCategory,
+            paymentMethod: self.paymentMethod
+        )
+    }
 }
 
 #if DEBUG

@@ -37,7 +37,7 @@ public protocol TransactionTemplateWriter {
     /// 새 거래 템플릿 생성
     /// - Parameter template: 생성할 템플릿 정보
     /// - Throws: 존재하지 않는 서브카테고리/결제수단, 유효하지 않은 데이터 등의 에러
-    func insertTemplate(_ template: TransactionTemplateDTO) async throws
+    func insertTemplate(_ template: TransactionTemplateDTO, shouldSave: Bool) async throws
 
     /// 거래 템플릿 정보 수정
     /// - Parameter template: 수정할 템플릿 정보

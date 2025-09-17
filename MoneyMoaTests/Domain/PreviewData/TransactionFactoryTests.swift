@@ -26,13 +26,11 @@ final class TransactionFactoryTests: XCTestCase {
             amount: 75000,
             place: "테스트장소",
             transactionType: .income,
-            isFavorite: true,
             subCategory: SubCategoryDTO.mockSalary,
             paymentMethod: PaymentMethodDTO.mockTransfer
         )
         XCTAssertEqual(custom.amount, 75000)
         XCTAssertEqual(custom.place, "테스트장소")
-        XCTAssertTrue(custom.isFavorite)
         
         // Test create with defaults
         let defaulted = TransactionFactory.create(
@@ -43,7 +41,6 @@ final class TransactionFactoryTests: XCTestCase {
         )
         XCTAssertEqual(defaulted.amount, 30000)
         XCTAssertNil(defaulted.place)
-        XCTAssertFalse(defaulted.isFavorite)
     }
     
     // MARK: - Random Generation Tests
@@ -64,10 +61,10 @@ final class TransactionFactoryTests: XCTestCase {
         XCTAssertGreaterThan(uniqueAmounts.count, 5, "Should generate varied amounts")
         
         // Test favorite distribution in 100 transactions
-        let manyTransactions = (0..<100).map { _ in TransactionFactory.createRandom() }
-        let favoriteRatio = Double(manyTransactions.filter { $0.isFavorite }.count) / 100.0
-        XCTAssertLessThan(favoriteRatio, 0.2)
-        XCTAssertGreaterThan(favoriteRatio, 0.0)
+//        let manyTransactions = (0..<100).map { _ in TransactionFactory.createRandom() }
+//        let favoriteRatio = Double(manyTransactions.filter { $0.isFavorite }.count) / 100.0
+//        XCTAssertLessThan(favoriteRatio, 0.2)
+//        XCTAssertGreaterThan(favoriteRatio, 0.0)
     }
     
     // MARK: - Bulk Generation Tests

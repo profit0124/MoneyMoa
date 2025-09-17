@@ -52,9 +52,6 @@ protocol DIContainer {
     /// CreateTransactionUseCase를 생성합니다
     func makeCreateTransactionUseCase() -> CreateTransactionUseCase
     
-    /// GetFavoriteTransactionsUseCase를 생성합니다
-    func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase
-    
     /// DeleteTransactionUseCase를 생성합니다
     func makeDeleteTransactionUseCase() -> DeleteTransactionUseCase
     
@@ -169,7 +166,6 @@ extension DIContainer {
     func makeAddTransactionViewModel() -> AddTransactionViewModel {
         return AddTransactionViewModel(
             createTransactionUseCase: makeCreateTransactionUseCase(),
-            getFavoriteTransactionsUseCase: makeGetFavoriteTransactionsUseCase(),
             transactionEventPublisher: makeTransactionEventPublisher(),
             amountPlacePaymentViewModel: makeAmountPlacePaymentMethodFormViewModel(),
             transactionTypeSelectionViewModel: makeTransactionTypeCategoryFormViewModel(),

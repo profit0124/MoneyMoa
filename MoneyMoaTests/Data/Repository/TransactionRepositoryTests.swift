@@ -10,11 +10,13 @@ import SwiftData
 @testable import MoneyMoa
 
 final class TransactionRepositoryTests: XCTestCase {
-    
+
     private var database: Database!
     private var repository: TransactionRepositoryImpl!
     private var transactionReader: TransactionReader!
     private var transactionWriter: TransactionWriter!
+    private var templateRepository: TransactionTemplateRepositoryImpl!
+    private var templateReader: TransactionTemplateReader!
     
     // 테스트용 기본 데이터
     private var testCategory: CategoryModel!
@@ -24,10 +26,12 @@ final class TransactionRepositoryTests: XCTestCase {
     override func setUpWithError() throws {
         database = try Database(isStoredInMemoryOnly: true)
         repository = TransactionRepositoryImpl(database: database)
-        
+        templateRepository = TransactionTemplateRepositoryImpl(database: database)
+
         // Interface Segregation을 위한 분리된 인터페이스
         transactionReader = repository
         transactionWriter = repository
+        templateReader = templateRepository
     }
     
     override func tearDownWithError() throws {
@@ -35,6 +39,8 @@ final class TransactionRepositoryTests: XCTestCase {
         repository = nil
         transactionReader = nil
         transactionWriter = nil
+        templateRepository = nil
+        templateReader = nil
         testCategory = nil
         testSubCategory = nil
         testPaymentMethod = nil
@@ -68,8 +74,7 @@ final class TransactionRepositoryTests: XCTestCase {
         date: Date = Date(),
         place: String? = "맥도날드",
         memo: String? = "점심식사",
-        transactionType: TransactionType = .variableExpense,
-        isFavorite: Bool = false
+        transactionType: TransactionType = .variableExpense
     ) -> TransactionDTO {
         return TransactionDTO(
             amount: amount,
@@ -77,7 +82,6 @@ final class TransactionRepositoryTests: XCTestCase {
             place: place,
             memo: memo,
             transactionType: transactionType,
-            isFavorite: isFavorite,
             subCategory: testSubCategory.toDTO(),
             paymentMethod: testPaymentMethod.toDTO()
         )
@@ -94,11 +98,11 @@ extension TransactionRepositoryTests {
         // Given
         try await setupBasicTestData()
         let originalTransaction = createTransaction()
-        try await transactionWriter.insertTransaction(originalTransaction)
-        
+        try await transactionWriter.insertTransaction(originalTransaction, shouldSave: true)
+
         // When
         let transaction = try await transactionReader.fetchTransaction(id: originalTransaction.id)
-        
+
         // Then
         XCTAssertNotNil(transaction)
         XCTAssertEqual(transaction?.id, originalTransaction.id)
@@ -127,8 +131,8 @@ extension TransactionRepositoryTests {
             date: Calendar.current.date(byAdding: .month, value: -1, to: yearMonth.startOfMonth) ?? Date()
         )
         
-        try await transactionWriter.insertTransaction(transactionInMonth)
-        try await transactionWriter.insertTransaction(transactionOutsideMonth)
+        try await transactionWriter.insertTransaction(transactionInMonth, shouldSave: true)
+        try await transactionWriter.insertTransaction(transactionOutsideMonth, shouldSave: true)
         
         // When
         let transactions = try await transactionReader.fetchTransactions(for: yearMonth)
@@ -150,10 +154,10 @@ extension TransactionRepositoryTests {
         let transaction1 = createTransaction(amount: 10000, date: today)
         let transaction2 = createTransaction(amount: 20000, date: yesterday)
         let transaction3 = createTransaction(amount: 30000, date: lastWeek)
-        
-        try await transactionWriter.insertTransaction(transaction1)
-        try await transactionWriter.insertTransaction(transaction2)
-        try await transactionWriter.insertTransaction(transaction3)
+
+        try await transactionWriter.insertTransaction(transaction1, shouldSave: true)
+        try await transactionWriter.insertTransaction(transaction2, shouldSave: true)
+        try await transactionWriter.insertTransaction(transaction3, shouldSave: true)
         
         // When
         let startDate = calendar.date(byAdding: .day, value: -2, to: today)!
@@ -177,9 +181,9 @@ extension TransactionRepositoryTests {
         let expense2 = createTransaction(amount: 15000, date: startDate, transactionType: .fixedExpense)
         let income1 = createTransaction(amount: 100000, date: startDate, transactionType: .income)
         
-        try await transactionWriter.insertTransaction(expense1)
-        try await transactionWriter.insertTransaction(expense2)
-        try await transactionWriter.insertTransaction(income1)
+        try await transactionWriter.insertTransaction(expense1, shouldSave: true)
+        try await transactionWriter.insertTransaction(expense2, shouldSave: true)
+        try await transactionWriter.insertTransaction(income1, shouldSave: true)
         
         // When
         let totals = try await transactionReader.getTotalAmountByType(from: startDate, to: endDate)
@@ -201,9 +205,9 @@ extension TransactionRepositoryTests {
         
         let transaction1 = createTransaction(amount: 10000, date: startDate)
         let transaction2 = createTransaction(amount: 15000, date: startDate)
-        
-        try await transactionWriter.insertTransaction(transaction1)
-        try await transactionWriter.insertTransaction(transaction2)
+
+        try await transactionWriter.insertTransaction(transaction1, shouldSave: true)
+        try await transactionWriter.insertTransaction(transaction2, shouldSave: true)
         
         // When
         let totals = try await transactionReader.getTotalAmountBySubCategory(from: startDate, to: endDate)
@@ -241,8 +245,8 @@ extension TransactionRepositoryTests {
         let transaction = createTransaction()
         
         // When
-        try await transactionWriter.insertTransaction(transaction)
-        
+        try await transactionWriter.insertTransaction(transaction, shouldSave: true)
+
         // Then
         let retrievedTransaction = try await transactionReader.fetchTransaction(id: transaction.id)
         XCTAssertNotNil(retrievedTransaction)
@@ -254,7 +258,7 @@ extension TransactionRepositoryTests {
         // Given
         try await setupBasicTestData()
         let originalTransaction = createTransaction(amount: 10000, place: "Original Place")
-        try await transactionWriter.insertTransaction(originalTransaction)
+        try await transactionWriter.insertTransaction(originalTransaction, shouldSave: true)
         
         let updatedTransaction = TransactionDTO(
             id: originalTransaction.id,
@@ -263,7 +267,6 @@ extension TransactionRepositoryTests {
             place: "Updated Place",
             memo: "Updated Memo",
             transactionType: originalTransaction.transactionType,
-            isFavorite: true,
             subCategory: originalTransaction.subCategory,
             paymentMethod: originalTransaction.paymentMethod
         )
@@ -283,7 +286,7 @@ extension TransactionRepositoryTests {
         // Given
         try await setupBasicTestData()
         let transaction = createTransaction()
-        try await transactionWriter.insertTransaction(transaction)
+        try await transactionWriter.insertTransaction(transaction, shouldSave: true)
         
         // Verify transaction exists
         let existingTransaction = try await transactionReader.fetchTransaction(id: transaction.id)
@@ -318,11 +321,11 @@ extension TransactionRepositoryTests {
         let transaction1 = createTransaction(amount: 10000, place: "Place 1")
         let transaction2 = createTransaction(amount: 20000, place: "Place 2")
         let transaction3 = createTransaction(amount: 30000, place: "Place 3")
-        
+
         // When - Multiple insertions
-        try await transactionWriter.insertTransaction(transaction1)
-        try await transactionWriter.insertTransaction(transaction2)
-        try await transactionWriter.insertTransaction(transaction3)
+        try await transactionWriter.insertTransaction(transaction1, shouldSave: true)
+        try await transactionWriter.insertTransaction(transaction2, shouldSave: true)
+        try await transactionWriter.insertTransaction(transaction3, shouldSave: true)
         
         // Then - All transactions should exist
         let allTransactions = try await transactionReader.fetchTransactions(for: YearMonth.current)
@@ -336,7 +339,6 @@ extension TransactionRepositoryTests {
             place: "Updated Place 2",
             memo: transaction2.memo,
             transactionType: transaction2.transactionType,
-            isFavorite: transaction2.isFavorite,
             subCategory: transaction2.subCategory,
             paymentMethod: transaction2.paymentMethod
         )
@@ -367,11 +369,11 @@ extension TransactionRepositoryTests {
         try await setupBasicTestData()
         
         // Writer operations
-        let transaction1 = createTransaction(amount: 10000, isFavorite: true)
-        let transaction2 = createTransaction(amount: 20000, isFavorite: false)
-        
-        try await transactionWriter.insertTransaction(transaction1)
-        try await transactionWriter.insertTransaction(transaction2)
+        let transaction1 = createTransaction(amount: 10000)
+        let transaction2 = createTransaction(amount: 20000)
+
+        try await transactionWriter.insertTransaction(transaction1, shouldSave: true)
+        try await transactionWriter.insertTransaction(transaction2, shouldSave: true)
         
         // Reader operations to verify
         let allTransactions = try await transactionReader.fetchTransactions(for: YearMonth.current)
@@ -389,7 +391,6 @@ extension TransactionRepositoryTests {
             place: transaction1.place,
             memo: "Updated memo",
             transactionType: transaction1.transactionType,
-            isFavorite: false, // Changed favorite status
             subCategory: transaction1.subCategory,
             paymentMethod: transaction1.paymentMethod
         )
@@ -404,5 +405,67 @@ extension TransactionRepositoryTests {
         XCTAssertEqual(retrievedUpdated?.amount, 15000)
         XCTAssertEqual(retrievedUpdated?.memo, "Updated memo")
 //        XCTAssertFalse(retrievedUpdated?.isFavorite ?? true)
+    }
+
+    // MARK: - shouldSave Parameter Tests
+
+    func testTransactionWriter_insertTransaction_withShouldSaveTrue_savesToDatabase() async throws {
+        // Given
+        try await setupBasicTestData()
+        let transaction = createTransaction(amount: 10000, place: "테스트 장소")
+
+        // When
+        try await transactionWriter.insertTransaction(transaction, shouldSave: true)
+
+        // Then
+        let retrievedTransaction = try await transactionReader.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(retrievedTransaction, "shouldSave: true일 때 DB에 저장되어야 함")
+        XCTAssertEqual(retrievedTransaction?.amount, 10000)
+        XCTAssertEqual(retrievedTransaction?.place, "테스트 장소")
+    }
+
+    func testTransactionWriter_insertTransaction_withShouldSaveFalse_doesNotCommitToDatabase() async throws {
+        // Given
+        try await setupBasicTestData()
+        let transaction = createTransaction(amount: 15000, place: "임시 데이터")
+
+        // When
+        try await transactionWriter.insertTransaction(transaction, shouldSave: false)
+
+        // Then
+        // 새로운 context에서 조회했을 때 데이터가 없어야 함 (커밋되지 않았으므로)
+        let retrievedTransaction = try await transactionReader.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(retrievedTransaction, "shouldSave: false일 때 DB에 커밋되지 않아야 함")
+        let id = transaction.id
+        try await database.withModelContext { context in
+            context.rollback()
+            let predicate = #Predicate<Transaction> { $0.id == id }
+            let descriptor = FetchDescriptor<Transaction>(predicate: predicate)
+            let result = try context.fetch(descriptor).first
+            XCTAssertNil(result, "shouldSave: false일 때 DB에 커밋되지 않아야 함")
+        }
+    }
+
+    func testTransactionWriter_multipleOperations_withBatchSave_maintainsAtomicity() async throws {
+        // Given
+        try await setupBasicTestData()
+        let transaction1 = createTransaction(amount: 10000, place: "장소1")
+        let transaction2 = createTransaction(amount: 20000, place: "장소2")
+
+        // When - 여러 작업을 shouldSave: false로 수행 후 마지막에 커밋
+        try await transactionWriter.insertTransaction(transaction1, shouldSave: false)
+        try await transactionWriter.insertTransaction(transaction2, shouldSave: false)
+        try await database.withModelContext { context in
+            try context.save()
+        }
+
+        // Then - 모든 거래가 한 번에 저장되어야 함
+        let retrievedTransaction1 = try await transactionReader.fetchTransaction(id: transaction1.id)
+        let retrievedTransaction2 = try await transactionReader.fetchTransaction(id: transaction2.id)
+
+        XCTAssertNotNil(retrievedTransaction1, "배치 저장 후 첫 번째 거래가 존재해야 함")
+        XCTAssertNotNil(retrievedTransaction2, "배치 저장 후 두 번째 거래가 존재해야 함")
+        XCTAssertEqual(retrievedTransaction1?.place, "장소1")
+        XCTAssertEqual(retrievedTransaction2?.place, "장소2")
     }
 }

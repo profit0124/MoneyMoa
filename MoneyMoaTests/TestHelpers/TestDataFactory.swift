@@ -123,7 +123,6 @@ struct TestDataFactory {
             place: place,
             memo: memo,
             transactionType: transactionType,
-            isFavorite: isFavorite,
             subCategory: subCategory,
             paymentMethod: paymentMethod
         )

@@ -77,7 +77,7 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
 
     // MARK: - TransactionTemplateWriter Implementation
 
-    public func insertTemplate(_ template: TransactionTemplateDTO) async throws {
+    public func insertTemplate(_ template: TransactionTemplateDTO, shouldSave: Bool = true) async throws {
         let subCategoryId = template.subCategory.id
         let paymentMethodId = template.paymentMethod.id
 
@@ -103,7 +103,10 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
             )
 
             context.insert(newTemplate)
-            try context.save()
+
+            if shouldSave {
+                try context.save()
+            }
         }
     }
 

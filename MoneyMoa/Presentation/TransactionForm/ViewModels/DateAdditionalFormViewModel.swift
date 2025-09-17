@@ -45,7 +45,6 @@ final class DateAdditionalFormViewModel: Identifiable {
         }
     }
 
-
     /// 카드 요약 정보 생성
     /// - 날짜는 항상 표시
     /// - 메모는 20자 이상 시 "..." 처리

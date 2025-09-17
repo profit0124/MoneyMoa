@@ -44,7 +44,7 @@ public final class TransactionTemplateProcessingUseCaseImpl: TransactionTemplate
                     ) ?? upToDate
 
                     let transaction = template.toTransaction(date: occurrenceDate)
-                    try await transactionWriter.insertTransaction(transaction)
+                    try await transactionWriter.insertTransaction(transaction, shouldSave: true)
                     totalProcessedCount += 1
                 }
 

@@ -53,7 +53,6 @@ final class AddTransactionViewModelTests: XCTestCase {
         // Create viewModel with mock dependencies
         viewModel = AddTransactionViewModel(
             createTransactionUseCase: mockContainer.makeCreateTransactionUseCase(),
-            getFavoriteTransactionsUseCase: mockContainer.makeGetFavoriteTransactionsUseCase(),
             transactionEventPublisher: mockTransactionEventPublisher,
             amountPlacePaymentViewModel: mockContainer.makeAmountPlacePaymentMethodFormViewModel(),
             transactionTypeSelectionViewModel: mockContainer.makeTransactionTypeCategoryFormViewModel(),
@@ -264,20 +263,6 @@ final class AddTransactionViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.currentMemo, testMemo)
     }
     
-    func test_currentIsFavorite_returnsFavoriteFromDateViewModel() {
-        // Given
-        viewModel.dateAdditionalFormViewModel.isFavorite = true
-        
-        // Then
-        XCTAssertTrue(viewModel.currentIsFavorite)
-        
-        // When
-        viewModel.dateAdditionalFormViewModel.isFavorite = false
-        
-        // Then
-        XCTAssertFalse(viewModel.currentIsFavorite)
-    }
-    
     // MARK: - Test Methods - Transaction Event Publishing
     
     func test_createTransaction_publishesCorrectEvent() async {
@@ -328,6 +313,5 @@ final class AddTransactionViewModelTests: XCTestCase {
     private func setupValidDateStep() {
         viewModel.dateAdditionalFormViewModel.selectedDate = Date()
         viewModel.dateAdditionalFormViewModel.memo = "Test memo"
-        viewModel.dateAdditionalFormViewModel.isFavorite = false
     }
 }

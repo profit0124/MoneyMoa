@@ -88,14 +88,12 @@ final class AppDIContainer: DIContainer {
     
     /// Production CreateTransactionUseCase를 생성합니다
     func makeCreateTransactionUseCase() -> CreateTransactionUseCase {
-        let writer = makeTransactionWriter()
-        return CreateTransactionUseCaseImpl(transactionWriter: writer)
-    }
-    
-    /// Production GetFavoriteTransactionsUseCase를 생성합니다
-    func makeGetFavoriteTransactionsUseCase() -> GetFavoriteTransactionsUseCase {
-        let reader = makeTransactionReader()
-        return GetFavoriteTransactionsUseCaseImpl(transactionReader: reader)
+        let transactionWriter = makeTransactionWriter()
+        let templateWriter = makeTransactionTemplateRepository()
+        return CreateTransactionUseCaseImpl(
+            transactionWriter: transactionWriter,
+            templateWriter: templateWriter
+        )
     }
     
     /// Production DeleteTransactionUseCase를 생성합니다
