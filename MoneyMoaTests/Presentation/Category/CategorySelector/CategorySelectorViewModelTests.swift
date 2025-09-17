@@ -25,8 +25,10 @@ final class CategorySelectorViewModelTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        
+
         mockDIContainer = MockDIContainer()
+        // Mock 상태 초기화로 테스트 간 격리 보장
+        mockDIContainer.mockCategoryRepository.loadScenario(.normal)
         mockSelectCategoryPublisher = MockSelectCategoryEventPublisher()
         mockRouter = AppRouter()
     }

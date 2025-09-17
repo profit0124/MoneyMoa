@@ -65,7 +65,6 @@ final class TransactionDetailViewModelTests: XCTestCase {
             place: "Custom Place",
             memo: "Custom Memo",
             transactionType: .income,
-            isFavorite: true,
             subCategory: SubCategoryDTO.mockIncomeAllowance,
             paymentMethod: PaymentMethodDTO.mockCash
         )
@@ -83,7 +82,6 @@ final class TransactionDetailViewModelTests: XCTestCase {
         XCTAssertEqual(customViewModel.transaction.id, customTransaction.id)
         XCTAssertEqual(customViewModel.transaction.amount, 50000)
         XCTAssertEqual(customViewModel.transaction.place, "Custom Place")
-        XCTAssertTrue(customViewModel.transaction.isFavorite)
         XCTAssertEqual(customViewModel.transaction.transactionType, .income)
     }
     
@@ -235,7 +233,6 @@ final class TransactionDetailViewModelTests: XCTestCase {
             place: "Updated Place",
             memo: "Updated Memo",
             transactionType: sampleTransaction.transactionType,
-            isFavorite: true,
             subCategory: sampleTransaction.subCategory,
             paymentMethod: sampleTransaction.paymentMethod
         )
@@ -253,7 +250,6 @@ final class TransactionDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.transaction.amount, 75000)
         XCTAssertEqual(viewModel.transaction.place, "Updated Place")
         XCTAssertEqual(viewModel.transaction.memo, "Updated Memo")
-        XCTAssertTrue(viewModel.transaction.isFavorite)
     }
     
     func test_fetchTransaction_withNonExistentTransaction_keepsOriginalData() async throws {
@@ -334,7 +330,6 @@ final class TransactionDetailViewModelTests: XCTestCase {
             place: "Integration Test Place",
             memo: "Integration Test Memo",
             transactionType: sampleTransaction.transactionType,
-            isFavorite: false,
             subCategory: sampleTransaction.subCategory,
             paymentMethod: sampleTransaction.paymentMethod
         )
@@ -352,7 +347,6 @@ final class TransactionDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.transaction.amount, 99000)
         XCTAssertEqual(viewModel.transaction.place, "Integration Test Place")
         XCTAssertEqual(viewModel.transaction.memo, "Integration Test Memo")
-        XCTAssertFalse(viewModel.transaction.isFavorite)
     }
     
     // MARK: - Edge Cases Tests

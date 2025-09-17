@@ -59,7 +59,6 @@ final class MainViewModelTests: XCTestCase {
                 place: "맥도날드",
                 memo: "점심식사",
                 transactionType: .variableExpense,
-                isFavorite: false,
                 subCategory: SubCategoryDTO.mockFoodExpense,
                 paymentMethod: PaymentMethodDTO.mockCreditCard
             ),
@@ -69,7 +68,6 @@ final class MainViewModelTests: XCTestCase {
                 place: "스타벅스",
                 memo: "커피",
                 transactionType: .variableExpense,
-                isFavorite: false,
                 subCategory: SubCategoryDTO.mockFoodExpense,
                 paymentMethod: PaymentMethodDTO.mockCreditCard
             ),
@@ -79,7 +77,6 @@ final class MainViewModelTests: XCTestCase {
                 place: "회사",
                 memo: "급여",
                 transactionType: .income,
-                isFavorite: false,
                 subCategory: SubCategoryDTO.mockIncomeAllowance,
                 paymentMethod: PaymentMethodDTO.mockTransfer
             )

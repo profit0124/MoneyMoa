@@ -14,7 +14,6 @@ final class AddTransactionViewModel {
     // MARK: - Dependencies
     
     private let createTransactionUseCase: CreateTransactionUseCase
-    private let getFavoriteTransactionsUseCase: GetFavoriteTransactionsUseCase
     private let transactionEventPublisher: TransactionEventPublisher
 
     let amountPlacePaymentViewModel: AmountPlacePaymentMethodFormViewModel
@@ -39,8 +38,12 @@ final class AddTransactionViewModel {
         dateAdditionalFormViewModel.memo
     }
     
-    var currentIsFavorite: Bool {
-        dateAdditionalFormViewModel.isFavorite
+    var currentCreateAsTemplate: Bool {
+        dateAdditionalFormViewModel.createAsTemplate
+    }
+
+    var currentSelectedRecurrencePeriod: RecurrencePeriod? {
+        dateAdditionalFormViewModel.selectedRecurrencePeriod
     }
 
     var isValid: Bool {
@@ -69,14 +72,12 @@ final class AddTransactionViewModel {
 
     public init(
         createTransactionUseCase: CreateTransactionUseCase,
-        getFavoriteTransactionsUseCase: GetFavoriteTransactionsUseCase,
         transactionEventPublisher: TransactionEventPublisher,
         amountPlacePaymentViewModel: AmountPlacePaymentMethodFormViewModel,
         transactionTypeSelectionViewModel: TransactionTypeCategoryFormViewModel,
         dateAdditionalFormViewModel: DateAdditionalFormViewModel
     ) {
         self.createTransactionUseCase = createTransactionUseCase
-        self.getFavoriteTransactionsUseCase = getFavoriteTransactionsUseCase
         self.transactionEventPublisher = transactionEventPublisher
         
         self.amountPlacePaymentViewModel = amountPlacePaymentViewModel
@@ -119,15 +120,14 @@ final class AddTransactionViewModel {
                 place: amountPlacePaymentViewModel.place,
                 memo: dateAdditionalFormViewModel.memo,
                 transactionType: transactionTypeSelectionViewModel.selectedTransactionType,
-                isFavorite: dateAdditionalFormViewModel.isFavorite,
                 subCategory: subCategory,
                 paymentMethod: paymentMethod
             )
-
+            let recurrencePeriod = dateAdditionalFormViewModel.selectedRecurrencePeriod
             Task {
                 do {
-                    try await createTransactionUseCase.execute(transactionDTO)
-                    
+                    try await createTransactionUseCase.execute(transactionDTO, with: recurrencePeriod)
+
                     // 트랜잭션 생성 성공 이벤트 발행
                     await MainActor.run {
                         let event = TransactionEvent(

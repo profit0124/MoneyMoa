@@ -35,8 +35,7 @@ final class UpdateTransactionViewModel {
         transaction.transactionType != transactionTypeSelectionViewModel.selectedTransactionType ||
         transaction.subCategory != transactionTypeSelectionViewModel.selectedSubCategory ||
         transaction.date != dateAdditionalFormViewModel.selectedDate ||
-        transaction.memo != dateAdditionalFormViewModel.memo ||
-        transaction.isFavorite != dateAdditionalFormViewModel.isFavorite
+        transaction.memo != dateAdditionalFormViewModel.memo
     }
 
     init(
@@ -92,8 +91,8 @@ final class UpdateTransactionViewModel {
                 amount: amount,
                 date: dateAdditionalFormViewModel.selectedDate,
                 place: amountPlacePaymentViewModel.place,
+                memo: dateAdditionalFormViewModel.memo,
                 transactionType: transactionTypeSelectionViewModel.selectedTransactionType,
-                isFavorite: dateAdditionalFormViewModel.isFavorite,
                 subCategory: subCategory,
                 paymentMethod: paymentMethod
             )

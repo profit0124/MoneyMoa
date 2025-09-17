@@ -134,7 +134,7 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
 
     // MARK: - TransactionTemplateWriter Implementation
 
-    public func insertTemplate(_ template: TransactionTemplateDTO) async throws {
+    public func insertTemplate(_ template: TransactionTemplateDTO, shouldSave: Bool = false) async throws {
         try await simulateDelay()
         try checkFailure()
 
@@ -226,6 +226,11 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
 
     public func getTemplateCount() -> Int {
         return templates.count
+    }
+
+    /// 테스트를 위한 템플릿 조회 메서드
+    public func fetchTemplates() async throws -> [TransactionTemplateDTO] {
+        return try await fetchAllTemplates()
     }
 }
 

@@ -43,7 +43,6 @@ final class UpdateTransactionUseCaseTests: XCTestCase {
             place: "Updated Place",  // Changed from original
             memo: "Updated Memo",    // Changed from original
             transactionType: originalTransaction.transactionType,
-            isFavorite: true,        // Changed from original
             subCategory: originalTransaction.subCategory,
             paymentMethod: originalTransaction.paymentMethod
         )
@@ -57,7 +56,6 @@ final class UpdateTransactionUseCaseTests: XCTestCase {
         XCTAssertEqual(storedTransaction?.amount, 75000)
         XCTAssertEqual(storedTransaction?.place, "Updated Place")
         XCTAssertEqual(storedTransaction?.memo, "Updated Memo")
-        XCTAssertTrue(storedTransaction?.isFavorite ?? false)
     }
     
     // MARK: - Test Methods - Error Cases
@@ -69,7 +67,6 @@ final class UpdateTransactionUseCaseTests: XCTestCase {
             place: "Test Place",
             memo: "Test Memo",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -90,7 +87,6 @@ final class UpdateTransactionUseCaseTests: XCTestCase {
             place: "Test Place", 
             memo: "Test Memo",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -132,7 +128,6 @@ final class UpdateTransactionUseCaseTests: XCTestCase {
             place: "Business Rule Test",
             memo: "Testing business logic validation",
             transactionType: originalTransaction.transactionType,
-            isFavorite: originalTransaction.isFavorite,
             subCategory: originalTransaction.subCategory,
             paymentMethod: originalTransaction.paymentMethod
         )

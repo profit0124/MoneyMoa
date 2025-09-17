@@ -129,7 +129,7 @@ public final class MockTransactionRepository: @unchecked Sendable, TransactionRe
         
         return await withCheckedContinuation { continuation in
             serialQueue.async {
-                let result = self.transactions.filter { $0.isFavorite }
+                let result = self.transactions.filter { $0.transactionTemplate != nil }
                     .sorted { $0.date > $1.date }
                 continuation.resume(returning: result)
             }
@@ -187,7 +187,7 @@ public final class MockTransactionRepository: @unchecked Sendable, TransactionRe
     
     // MARK: - TransactionWriter Implementation
     
-    public func insertTransaction(_ transaction: TransactionDTO) async throws {
+    public func insertTransaction(_ transaction: TransactionDTO, shouldSave: Bool = true) async throws {
         try await simulateDelay()
         try checkFailure()
         
@@ -198,7 +198,32 @@ public final class MockTransactionRepository: @unchecked Sendable, TransactionRe
             }
         }
     }
-    
+
+    public func insertTransactionWithTemplate(_ transaction: TransactionDTO, with recurrencePeriod: RecurrencePeriod) async throws {
+        try await simulateDelay()
+        try checkFailure()
+        let template = transaction.toTemplateDTO(recurrencePeriod: recurrencePeriod)
+
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let transaction = TransactionDTO(
+                    id: transaction.id,
+                    amount: transaction.amount,
+                    date: transaction.date,  // 로컬 시간으로 변환된 값
+                    place: transaction.place,
+                    memo: transaction.memo,
+                    transactionType: transaction.transactionType,
+                    subCategory: transaction.subCategory,
+                    paymentMethod: transaction.paymentMethod,
+                    timeContext: transaction.timeContext,
+                    transactionTemplate: template
+                )
+                self.transactions.append(transaction)
+                continuation.resume()
+            }
+        }
+    }
+
     public func updateTransaction(_ transaction: TransactionDTO) async throws {
         try await simulateDelay()
         try checkFailure()

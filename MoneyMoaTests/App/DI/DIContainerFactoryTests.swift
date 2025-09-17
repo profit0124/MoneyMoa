@@ -136,7 +136,6 @@ final class MockDIContainerTests: XCTestCase {
         // Then
         XCTAssertNotNil(viewModel)
         XCTAssertEqual(viewModel.memo, "")
-        XCTAssertFalse(viewModel.isFavorite)
         
         // selectedDate는 현재 날짜와 거의 같아야 함
         let currentDate = Date()
@@ -168,14 +167,6 @@ final class MockDIContainerTests: XCTestCase {
         
         // Then
         XCTAssertTrue(useCase is CreateTransactionUseCaseImpl)
-    }
-    
-    func test_makeGetFavoriteTransactionsUseCase_returnsMockUseCase() {
-        // Given & When
-        let useCase = container.makeGetFavoriteTransactionsUseCase()
-        
-        // Then
-        XCTAssertTrue(useCase is GetFavoriteTransactionsUseCaseImpl)
     }
     
     // MARK: - Test Methods - TransactionEventPublisher

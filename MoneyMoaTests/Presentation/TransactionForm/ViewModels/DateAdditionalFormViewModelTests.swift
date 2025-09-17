@@ -38,9 +38,10 @@ final class DateAdditionalFormViewModelTests: XCTestCase {
     func test_initialization_setsCorrectInitialValues() {
         // Then
         XCTAssertEqual(viewModel.memo, "")
-        XCTAssertFalse(viewModel.isFavorite)
         XCTAssertNotNil(viewModel.id)
-        
+        XCTAssertNil(viewModel.selectedRecurrencePeriod, "초기 상태에서는 템플릿 생성하지 않음")
+        XCTAssertFalse(viewModel.createAsTemplate, "초기 상태에서는 템플릿 생성 비활성화")
+
         // selectedDate는 현재 날짜와 거의 같아야 함 (몇 초 차이 허용)
         let currentDate = Date()
         let timeDifference = abs(viewModel.selectedDate.timeIntervalSince(currentDate))
@@ -71,68 +72,28 @@ final class DateAdditionalFormViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.memo, testMemo)
     }
     
-    func test_isFavorite_canBeToggled() {
-        // Given
-        let initialFavoriteState = viewModel.isFavorite
-        
-        // When
-        viewModel.isFavorite = !initialFavoriteState
-        
-        // Then
-        XCTAssertNotEqual(viewModel.isFavorite, initialFavoriteState)
-        XCTAssertEqual(viewModel.isFavorite, !initialFavoriteState)
-        
-        // When - 다시 토글
-        viewModel.isFavorite = initialFavoriteState
-        
-        // Then - 원래 상태로 돌아와야 함
-        XCTAssertEqual(viewModel.isFavorite, initialFavoriteState)
-    }
-    
-    func test_isFavorite_canBeSetToTrue() {
-        // Given
-        viewModel.isFavorite = false
-        
-        // When
-        viewModel.isFavorite = true
-        
-        // Then
-        XCTAssertTrue(viewModel.isFavorite)
-    }
-    
-    func test_isFavorite_canBeSetToFalse() {
-        // Given
-        viewModel.isFavorite = true
-        
-        // When
-        viewModel.isFavorite = false
-        
-        // Then
-        XCTAssertFalse(viewModel.isFavorite)
-    }
-    
     // MARK: - Test Methods - Summary Generation
     
     func test_summary_withAllData_returnsCompleteInfo() {
         // Given
         viewModel.selectedDate = Date()
         viewModel.memo = "테스트 메모"
-        viewModel.isFavorite = true
-        
+        viewModel.selectedRecurrencePeriod = .monthly
+
         // When
         let summary = viewModel.summary
-        
+
         // Then
         XCTAssertTrue(summary.contains("📅"))
         XCTAssertTrue(summary.contains("📝"))
-        XCTAssertTrue(summary.contains("⭐"))
         XCTAssertTrue(summary.contains("테스트 메모"))
+        XCTAssertTrue(summary.contains("🔄"))
+        XCTAssertTrue(summary.contains("매월"))
     }
     
     func test_summary_withNoData_returnsDateOnly() {
         // Given - 기본 상태 (날짜만 있음)
         viewModel.memo = ""
-        viewModel.isFavorite = false
         
         // When
         let summary = viewModel.summary
@@ -140,7 +101,6 @@ final class DateAdditionalFormViewModelTests: XCTestCase {
         // Then
         XCTAssertTrue(summary.contains("📅"))
         XCTAssertFalse(summary.contains("📝"))
-        XCTAssertFalse(summary.contains("⭐"))
     }
     
     // MARK: - Test Methods - Date Handling
@@ -260,34 +220,149 @@ final class DateAdditionalFormViewModelTests: XCTestCase {
         XCTAssertNotEqual(viewModel.memo, initialMemo)
         XCTAssertEqual(viewModel.memo, newMemo)
     }
-    
-    func test_favoriteToggle_triggersPropertyChange() {
-        // Given
-        let initialFavorite = viewModel.isFavorite
-        
-        // When
-        viewModel.isFavorite = !initialFavorite
-        
-        // Then
-        XCTAssertNotEqual(viewModel.isFavorite, initialFavorite)
-        XCTAssertEqual(viewModel.isFavorite, !initialFavorite)
-    }
-    
     // MARK: - Test Methods - State Consistency
     
     func test_multipleUpdates_maintainConsistentState() {
         // Given & When - 여러 값을 동시에 업데이트
         let testDate = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
         let testMemo = "통합 테스트 메모"
-        let testFavorite = true
-        
+
         viewModel.selectedDate = testDate
         viewModel.memo = testMemo
-        viewModel.isFavorite = testFavorite
-        
+        viewModel.selectedRecurrencePeriod = .weekly
+
         // Then - 모든 값이 올바르게 설정되어야 함
         XCTAssertEqual(viewModel.selectedDate, testDate)
         XCTAssertEqual(viewModel.memo, testMemo)
-        XCTAssertEqual(viewModel.isFavorite, testFavorite)
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod ?? .none, .weekly)
+        XCTAssertTrue(viewModel.createAsTemplate)
+    }
+
+    // MARK: - Template Creation Tests
+
+    func test_createAsTemplate_initialState_isFalse() {
+        // Then
+        XCTAssertFalse(viewModel.createAsTemplate)
+        XCTAssertNil(viewModel.selectedRecurrencePeriod)
+    }
+
+    func test_createAsTemplate_setToTrue_setsDefaultRecurrencePeriod() {
+        // When
+        viewModel.createAsTemplate = true
+
+        // Then
+        XCTAssertTrue(viewModel.createAsTemplate)
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod ?? .monthly, .none)
+    }
+
+    func test_createAsTemplate_setToFalse_clearsRecurrencePeriod() {
+        // Given
+        viewModel.selectedRecurrencePeriod = .monthly
+        XCTAssertTrue(viewModel.createAsTemplate)
+
+        // When
+        viewModel.createAsTemplate = false
+
+        // Then
+        XCTAssertFalse(viewModel.createAsTemplate)
+        XCTAssertNil(viewModel.selectedRecurrencePeriod)
+    }
+
+    func test_selectedRecurrencePeriod_setToNil_makesCreateAsTemplateFalse() {
+        // Given
+        viewModel.selectedRecurrencePeriod = .weekly
+        XCTAssertTrue(viewModel.createAsTemplate)
+
+        // When
+        viewModel.selectedRecurrencePeriod = nil
+
+        // Then
+        XCTAssertFalse(viewModel.createAsTemplate)
+        XCTAssertNil(viewModel.selectedRecurrencePeriod)
+    }
+
+    func test_selectedRecurrencePeriod_setToValue_makesCreateAsTemplateTrue() {
+        // Given
+        XCTAssertFalse(viewModel.createAsTemplate)
+
+        // When
+        viewModel.selectedRecurrencePeriod = .yearly
+
+        // Then
+        XCTAssertTrue(viewModel.createAsTemplate)
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod, .yearly)
+    }
+
+    // MARK: - Action Handling Tests
+
+    func test_send_toggleTemplate_fromTrueToFalse() {
+        // Given
+        viewModel.selectedRecurrencePeriod = .monthly
+        XCTAssertTrue(viewModel.createAsTemplate)
+
+        // When
+        viewModel.send(.toggleTemplate)
+
+        // Then
+        XCTAssertFalse(viewModel.createAsTemplate)
+        XCTAssertNil(viewModel.selectedRecurrencePeriod)
+    }
+
+    func test_send_selectRecurrencePeriod_updatesCorrectly() {
+        // When
+        viewModel.send(.selectRecurrencePeriod(.weekly))
+
+        // Then
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod, .weekly)
+        XCTAssertTrue(viewModel.createAsTemplate)
+    }
+
+    func test_send_multipleRecurrencePeriodChanges_maintainsConsistency() {
+        // When - 여러 번 변경
+        viewModel.send(.selectRecurrencePeriod(.weekly))
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod, .weekly)
+
+        viewModel.send(.selectRecurrencePeriod(.monthly))
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod, .monthly)
+
+        viewModel.send(.selectRecurrencePeriod(.yearly))
+        XCTAssertEqual(viewModel.selectedRecurrencePeriod, .yearly)
+
+        // Then - 항상 템플릿 생성 상태 유지
+        XCTAssertTrue(viewModel.createAsTemplate)
+    }
+
+    // MARK: - Summary with Template Tests
+
+    func test_summary_withTemplate_includesRecurrencePeriod() {
+        // Given
+        viewModel.selectedDate = Date()
+        viewModel.memo = "테스트"
+        viewModel.selectedRecurrencePeriod = .weekly
+
+        // When
+        let summary = viewModel.summary
+
+        // Then
+        XCTAssertTrue(summary.contains("📅"))
+        XCTAssertTrue(summary.contains("📝"))
+        XCTAssertTrue(summary.contains("🔄"))
+        XCTAssertTrue(summary.contains("매주"))
+    }
+
+    func test_summary_withTemplateButNoMemo_showsDateAndTemplate() {
+        // Given
+        viewModel.selectedDate = Date()
+        viewModel.memo = ""
+        viewModel.selectedRecurrencePeriod = .monthly
+
+        // When
+        let summary = viewModel.summary
+
+        // Then
+        XCTAssertTrue(summary.contains("📅"))
+        XCTAssertFalse(summary.contains("📝"))
+        XCTAssertTrue(summary.contains("🔄"))
+        XCTAssertTrue(summary.contains("매월"))
     }
 }

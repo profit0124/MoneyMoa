@@ -67,7 +67,6 @@ extension TransactionTemplateDTO {
             place: self.place,
             memo: self.memo,
             transactionType: self.transactionType,
-            isFavorite: false,
             subCategory: self.subCategory,
             paymentMethod: self.paymentMethod,
             timeContext: self.timeContext,

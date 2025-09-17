@@ -38,7 +38,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
             place: "스타벅스",
             memo: "커피",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -55,7 +54,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
         XCTAssertEqual(result?.place, "스타벅스")
         XCTAssertEqual(result?.memo, "커피")
         XCTAssertEqual(result?.transactionType, .variableExpense)
-        XCTAssertFalse(result?.isFavorite ?? true)
     }
     
     func test_execute_withIncomeTransaction_returnsCorrectData() async throws {
@@ -65,7 +63,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
             place: "회사",
             memo: "월급",
             transactionType: .income,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockIncomeAllowance,
             paymentMethod: PaymentMethodDTO.mockCash
         )
@@ -89,7 +86,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
             place: "맥도날드",
             memo: "점심식사",
             transactionType: .variableExpense,
-            isFavorite: true,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -101,7 +97,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
         
         // Then
         XCTAssertNotNil(result)
-        XCTAssertTrue(result?.isFavorite ?? false)
     }
     
     // MARK: - Test Methods - Non-existing Transaction
@@ -142,7 +137,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
             place: "카페",
             memo: "커피",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -152,7 +146,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
             place: "마트",
             memo: "장보기",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCash
         )
@@ -181,7 +174,6 @@ final class GetTransactionByIdUseCaseTests: XCTestCase {
             place: "Business Rule Test",
             memo: "Testing business logic validation",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )

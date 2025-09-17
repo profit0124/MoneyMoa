@@ -13,8 +13,9 @@ import XCTest
 final class CreateTransactionUseCaseTests: XCTestCase {
     
     // MARK: - Properties
-    
+
     private var mockRepository: MockTransactionRepository!
+    private var mockTemplateRepository: MockTransactionTemplateRepository!
     private var useCase: CreateTransactionUseCaseImpl!
     
     // MARK: - Setup & Teardown
@@ -22,11 +23,16 @@ final class CreateTransactionUseCaseTests: XCTestCase {
     override func setUp() {
         super.setUp()
         mockRepository = MockTransactionRepository(scenario: .empty)
-        useCase = CreateTransactionUseCaseImpl(transactionWriter: mockRepository)
+        mockTemplateRepository = MockTransactionTemplateRepository(scenario: .empty)
+        useCase = CreateTransactionUseCaseImpl(
+            transactionWriter: mockRepository,
+            templateWriter: mockTemplateRepository
+        )
     }
     
     override func tearDown() {
         mockRepository = nil
+        mockTemplateRepository = nil
         useCase = nil
         super.tearDown()
     }
@@ -40,7 +46,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "스타벅스",
             memo: "커피",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -55,7 +60,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
         XCTAssertEqual(storedTransaction?.place, "스타벅스")
         XCTAssertEqual(storedTransaction?.memo, "커피")
         XCTAssertEqual(storedTransaction?.transactionType, .variableExpense)
-        XCTAssertFalse(storedTransaction?.isFavorite ?? true)
     }
     
     func test_execute_withIncomeTransaction_createsTransactionSuccessfully() async throws {
@@ -65,7 +69,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "회사",
             memo: "월급",
             transactionType: .income,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockIncomeAllowance,
             paymentMethod: PaymentMethodDTO.mockCash
         )
@@ -87,7 +90,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "통신사",
             memo: "휴대폰 요금",
             transactionType: .fixedExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockTransportBus,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -101,25 +103,75 @@ final class CreateTransactionUseCaseTests: XCTestCase {
         XCTAssertEqual(storedTransaction?.transactionType, .fixedExpense)
     }
     
-    func test_execute_withFavoriteTransaction_createsFavoriteSuccessfully() async throws {
+    // MARK: - Template Creation Tests
+
+    func test_execute_withRecurrencePeriod_createsTemplateAndTransaction() async throws {
         // Given
         let transaction = TransactionDTO(
             amount: 15000,
             place: "맥도날드",
             memo: "점심식사",
             transactionType: .variableExpense,
-            isFavorite: true,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
-        
+
         // When
-        try await useCase.execute(transaction)
-        
+        try await useCase.execute(transaction, with: .weekly)
+
         // Then
         let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
         XCTAssertNotNil(storedTransaction)
-        XCTAssertTrue(storedTransaction?.isFavorite ?? false)
+        XCTAssertNotNil(storedTransaction?.transactionTemplate, "템플릿이 생성되고 거래에 연결되어야 함")
+
+        // Template이 실제로 생성되었는지 확인
+        let templates = try await mockTemplateRepository.fetchTemplates()
+        XCTAssertEqual(templates.count, 1, "템플릿이 1개 생성되어야 함")
+        XCTAssertEqual(templates.first?.recurrencePeriod, .weekly)
+    }
+
+    func test_execute_withMonthlyRecurrence_createsMonthlyTemplate() async throws {
+        // Given
+        let transaction = TransactionDTO(
+            amount: 50000,
+            place: "임대료",
+            memo: "월세",
+            transactionType: .fixedExpense,
+            subCategory: SubCategoryDTO.mockTransportBus,
+            paymentMethod: PaymentMethodDTO.mockCreditCard
+        )
+
+        // When
+        try await useCase.execute(transaction, with: .monthly)
+
+        // Then
+        let templates = try await mockTemplateRepository.fetchTemplates()
+        XCTAssertEqual(templates.count, 1)
+        XCTAssertEqual(templates.first?.recurrencePeriod, .monthly)
+        XCTAssertEqual(templates.first?.amount, 50000)
+    }
+
+    func test_execute_withoutRecurrencePeriod_doesNotCreateTemplate() async throws {
+        // Given
+        let transaction = TransactionDTO(
+            amount: 5000,
+            place: "일회성 구매",
+            memo: "테스트",
+            transactionType: .variableExpense,
+            subCategory: SubCategoryDTO.mockFoodExpense,
+            paymentMethod: PaymentMethodDTO.mockCash
+        )
+
+        // When
+        try await useCase.execute(transaction, with: nil)
+
+        // Then
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        XCTAssertNotNil(storedTransaction)
+        XCTAssertNil(storedTransaction?.transactionTemplate, "템플릿이 생성되지 않아야 함")
+
+        let templates = try await mockTemplateRepository.fetchTemplates()
+        XCTAssertEqual(templates.count, 0, "템플릿이 생성되지 않아야 함")
     }
     
     // MARK: - Test Methods - Error Cases
@@ -131,7 +183,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "테스트",
             memo: "테스트",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -152,7 +203,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "테스트",
             memo: "테스트",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -173,7 +223,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "테스트",
             memo: "테스트",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -199,7 +248,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "카페",
             memo: "커피",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
@@ -209,7 +257,6 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "마트",
             memo: "장보기",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCash
         )
@@ -229,7 +276,7 @@ final class CreateTransactionUseCaseTests: XCTestCase {
     }
     
     // MARK: - Test Methods - Business Logic Validation
-    
+
     func test_execute_validatesBusinessRules() async throws {
         // Given
         let transaction = TransactionDTO(
@@ -237,17 +284,65 @@ final class CreateTransactionUseCaseTests: XCTestCase {
             place: "비즈니스 로직 테스트",
             memo: "실제 UseCase 로직이 실행되는지 확인",
             transactionType: .variableExpense,
-            isFavorite: false,
             subCategory: SubCategoryDTO.mockFoodExpense,
             paymentMethod: PaymentMethodDTO.mockCreditCard
         )
-        
+
         // When
         try await useCase.execute(transaction)
-        
+
         // Then
         let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
         XCTAssertNotNil(storedTransaction, "실제 UseCase 비즈니스 로직이 실행되어 거래가 저장되어야 함")
         XCTAssertEqual(storedTransaction?.amount, 100000, "금액 검증 로직이 올바르게 동작해야 함")
+    }
+
+    // MARK: - Atomicity Tests
+
+    func test_execute_withTemplate_maintainsAtomicity() async throws {
+        // Given
+        let transaction = TransactionDTO(
+            amount: 25000,
+            place: "원자성 테스트",
+            memo: "템플릿과 거래가 함께 저장되어야 함",
+            transactionType: .variableExpense,
+            subCategory: SubCategoryDTO.mockFoodExpense,
+            paymentMethod: PaymentMethodDTO.mockCreditCard
+        )
+
+        // When
+        try await useCase.execute(transaction, with: .weekly)
+
+        // Then - 템플릿과 거래가 모두 저장되어야 함
+        let storedTransaction = try await mockRepository.fetchTransaction(id: transaction.id)
+        let templates = try await mockTemplateRepository.fetchTemplates()
+
+        XCTAssertNotNil(storedTransaction, "거래가 저장되어야 함")
+        XCTAssertEqual(templates.count, 1, "템플릿이 저장되어야 함")
+        XCTAssertNotNil(storedTransaction?.transactionTemplate, "거래에 템플릿이 연결되어야 함")
+        XCTAssertEqual(storedTransaction?.transactionTemplate?.id, templates.first?.id, "연결된 템플릿 ID가 일치해야 함")
+    }
+
+    func test_execute_templateCreationFailure_propagatesError() async {
+        // Given
+        let transaction = TransactionDTO(
+            amount: 30000,
+            place: "실패 테스트",
+            memo: "템플릿 생성 실패 시 에러가 전파되어야 함",
+            transactionType: .variableExpense,
+            subCategory: SubCategoryDTO.mockFoodExpense,
+            paymentMethod: PaymentMethodDTO.mockCreditCard
+        )
+
+        mockTemplateRepository.shouldFail = true
+
+        // When & Then
+        do {
+            try await useCase.execute(transaction, with: .monthly)
+            XCTFail("템플릿 생성 실패 시 에러가 발생해야 함")
+        } catch {
+            // Then - 템플릿 생성 실패 에러가 전파되어야 함
+            XCTAssertTrue(error is MockError, "MockError가 전파되어야 함")
+        }
     }
 }

@@ -116,7 +116,7 @@ extension TransactionTemplateRepositoryTests {
         // Given
         try await setupBasicTestData()
         let originalTemplate = createTemplate()
-        try await templateWriter.insertTemplate(originalTemplate)
+        try await templateWriter.insertTemplate(originalTemplate, shouldSave: true)
 
         // When
         let template = try await templateReader.fetchTemplate(id: originalTemplate.id)
@@ -147,8 +147,8 @@ extension TransactionTemplateRepositoryTests {
         let template1 = createTemplate(place: "넷플릭스")
         let template2 = createTemplate(place: "스포티파이")
 
-        try await templateWriter.insertTemplate(template1)
-        try await templateWriter.insertTemplate(template2)
+        try await templateWriter.insertTemplate(template1, shouldSave: true)
+        try await templateWriter.insertTemplate(template2, shouldSave: true)
 
         let templates = try await templateReader.fetchAllTemplates()
         XCTAssertEqual(templates.count, 2)
@@ -177,9 +177,9 @@ extension TransactionTemplateRepositoryTests {
             nextDueDate: nil
         )
 
-        try await templateWriter.insertTemplate(dueTemplate)
-        try await templateWriter.insertTemplate(notDueTemplate)
-        try await templateWriter.insertTemplate(noDateTemplate)
+        try await templateWriter.insertTemplate(dueTemplate, shouldSave: true)
+        try await templateWriter.insertTemplate(notDueTemplate, shouldSave: true)
+        try await templateWriter.insertTemplate(noDateTemplate, shouldSave: true)
 
         // When
         let templates = try await templateReader.fetchTemplatesDueForProcessing(before: now)
@@ -203,7 +203,7 @@ extension TransactionTemplateRepositoryTests {
         let newTemplate = createTemplate()
 
         // When
-        try await templateWriter.insertTemplate(newTemplate)
+        try await templateWriter.insertTemplate(newTemplate, shouldSave: true)
 
         // Then
         let fetchedTemplate = try await templateReader.fetchTemplate(id: newTemplate.id)
@@ -232,7 +232,7 @@ extension TransactionTemplateRepositoryTests {
         )
 
         do {
-            try await templateWriter.insertTemplate(template)
+            try await templateWriter.insertTemplate(template, shouldSave: true)
             XCTFail("Should throw subCategoryNotFound error")
         } catch {
             if case RepositoryError.subCategoryNotFound = error {
@@ -249,7 +249,7 @@ extension TransactionTemplateRepositoryTests {
         // Given
         try await setupBasicTestData()
         let originalTemplate = createTemplate(amount: 10000, place: "넷플릭스")
-        try await templateWriter.insertTemplate(originalTemplate)
+        try await templateWriter.insertTemplate(originalTemplate, shouldSave: true)
 
         // When
         let updatedTemplate = TransactionTemplateDTO(
@@ -296,7 +296,7 @@ extension TransactionTemplateRepositoryTests {
         // Given
         try await setupBasicTestData()
         let originalTemplate = createTemplate(processedCount: 0)
-        try await templateWriter.insertTemplate(originalTemplate)
+        try await templateWriter.insertTemplate(originalTemplate, shouldSave: true)
 
         let newLastAddedAt = Date()
         let newNextDueDate = Calendar.current.date(byAdding: .month, value: 1, to: newLastAddedAt)
@@ -338,7 +338,7 @@ extension TransactionTemplateRepositoryTests {
     func testTemplateWriter_deleteTemplate_removesTemplate() async throws {
         try await setupBasicTestData()
         let template = createTemplate()
-        try await templateWriter.insertTemplate(template)
+        try await templateWriter.insertTemplate(template, shouldSave: true)
 
         try await templateWriter.deleteTemplate(id: template.id)
 
@@ -370,7 +370,7 @@ extension TransactionTemplateRepositoryTests {
         try await setupBasicTestData()
 
         let template = createTemplate(amount: 10000, place: "초기")
-        try await templateWriter.insertTemplate(template)
+        try await templateWriter.insertTemplate(template, shouldSave: true)
 
         var fetchedTemplate = try await templateReader.fetchTemplate(id: template.id)
         XCTAssertEqual(fetchedTemplate?.place, "초기")
@@ -400,8 +400,8 @@ extension TransactionTemplateRepositoryTests {
         let template1 = createTemplate(place: "넷플릭스", nextDueDate: yesterday)
         let template2 = createTemplate(place: "유튜브", nextDueDate: yesterday)
 
-        try await templateWriter.insertTemplate(template1)
-        try await templateWriter.insertTemplate(template2)
+        try await templateWriter.insertTemplate(template1, shouldSave: true)
+        try await templateWriter.insertTemplate(template2, shouldSave: true)
 
         let dueTemplates = try await templateReader.fetchTemplatesDueForProcessing(before: now)
         XCTAssertEqual(dueTemplates.count, 2)

@@ -135,10 +135,11 @@ public final class TransactionRepositoryImpl: TransactionRepository {
     
     // MARK: - TransactionWriter Implementation
     
-    public func insertTransaction(_ transaction: TransactionDTO) async throws {
+    public func insertTransaction(_ transaction: TransactionDTO, shouldSave: Bool = true) async throws {
         let subCategoryId = transaction.subCategory.id
         let paymentMethodId = transaction.paymentMethod.id
-        
+        let transactionTemplateId = transaction.transactionTemplate?.id
+
         try await database.withModelContext { context in
             // 서브카테고리 조회 (반드시 필요)
             let subCategoryPredicate = #Predicate<SubCategory> { $0.id == subCategoryId }
@@ -153,19 +154,27 @@ public final class TransactionRepositoryImpl: TransactionRepository {
             guard let paymentMethod = try context.fetch(paymentMethodDescriptor).first else {
                 throw RepositoryError.paymentMethodNotFound
             }
-            
-            // DTO를 SwiftData 모델로 변환
-            // toModel 에서 utcDate로 변환 진행
+
             let newTransaction = transaction.toModel(
                 subCategory: subCategory,
                 paymentMethod: paymentMethod
             )
-            
+
+            // template 조회
+            if let transactionTemplateId {
+                let templatePredicate = #Predicate<TransactionTemplate> { $0.id == transactionTemplateId }
+                let templateDescriptor = FetchDescriptor<TransactionTemplate>(predicate: templatePredicate)
+                let template = try context.fetch(templateDescriptor).first
+                newTransaction.template = template
+            }
+
             context.insert(newTransaction)
-            try context.save()
+            if shouldSave {
+                try context.save()
+            }
         }
     }
-    
+
     public func updateTransaction(_ transaction: TransactionDTO) async throws {
         let id = transaction.id
         let subCategoryId = transaction.subCategory.id

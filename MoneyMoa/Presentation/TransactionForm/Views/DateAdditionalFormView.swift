@@ -15,7 +15,7 @@ struct DateAdditionalFormView: View {
         VStack(alignment: .leading, spacing: 24) {
             dateSection
             memoSection
-            favoriteSection
+            templateSection
         }
     }
     
@@ -98,74 +98,114 @@ struct DateAdditionalFormView: View {
         }
     }
     
-    // MARK: - Favorite Section
-    
+    // MARK: - Template Section
+
     @ViewBuilder
-    private var favoriteSection: some View {
+    private var templateSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("즐겨찾기")
+            Text("템플릿 등록")
                 .font(.headline)
                 .fontWeight(.semibold)
-            
-            HStack(spacing: 16) {
+
+            templateToggleSection
+        }
+    }
+
+    @ViewBuilder
+    private var templateToggleSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("즐겨찾기 등록")
+                    Text("템플릿으로 저장")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                    
-                    Text("자주 하는 거래로 등록하면 다음번에 빠르게 입력할 수 있어요")
+
+                    Text("반복되는 거래를 템플릿으로 저장하면 자동으로 추가됩니다")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                
+
                 Spacer()
-                
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        viewModel.send(.toggleFavorite)
+
+                Toggle("", isOn: Binding(
+                    get: { viewModel.createAsTemplate },
+                    set: { _ in
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            viewModel.send(.toggleTemplate)
+                        }
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: viewModel.isFavorite ? "star.fill" : "star")
-                            .font(.title2)
-                            .foregroundColor(viewModel.isFavorite ? .orange : .gray)
-                        
-                        Text(viewModel.isFavorite ? "등록됨" : "등록")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(viewModel.isFavorite ? .orange : .gray)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        viewModel.isFavorite ? 
-                        Color.orange.opacity(0.1) : Color(.systemGray6)
-                    )
-                    .cornerRadius(20)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(
-                                viewModel.isFavorite ? Color.orange : Color.clear,
-                                lineWidth: 1.5
-                            )
-                    }
+                ))
+                .toggleStyle(SwitchToggleStyle(tint: .blue))
+                .scaleEffect(1.1)
+                .padding(.trailing, 8)
+            }
+
+            if viewModel.createAsTemplate {
+                recurrencePeriodPicker
+            }
+        }
+        .padding(16)
+        .background(
+            viewModel.createAsTemplate ?
+            Color.blue.opacity(0.05) : Color(.systemGray6)
+        )
+        .cornerRadius(12)
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    viewModel.createAsTemplate ? Color.blue.opacity(0.3) : Color.clear,
+                    lineWidth: 1
+                )
+        }
+    }
+
+    @ViewBuilder
+    private var recurrencePeriodPicker: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("반복 주기")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.secondary)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
+                ForEach(RecurrencePeriod.allCases, id: \.self) { period in
+                    periodSelectionButton(for: period)
                 }
-                .scaleEffect(viewModel.isFavorite ? 1.05 : 1.0)
             }
-            .padding(16)
-            .background(
-                viewModel.isFavorite ?
-                Color.orange.opacity(0.05) : Color(.systemGray6)
-            )
-            .cornerRadius(12)
-            .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        viewModel.isFavorite ? Color.orange.opacity(0.3) : Color.clear,
-                        lineWidth: 1
-                    )
+        }
+        .padding(16)
+        .background(Color.blue.opacity(0.03))
+        .cornerRadius(12)
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+        }
+    }
+
+    @ViewBuilder
+    private func periodSelectionButton(for period: RecurrencePeriod) -> some View {
+        let isSelected = viewModel.selectedRecurrencePeriod == period
+
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                viewModel.send(.selectRecurrencePeriod(period))
             }
+        } label: {
+            Text(period.displayName)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(isSelected ? .white : .blue)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(
+                    isSelected ? Color.blue : Color.blue.opacity(0.1)
+                )
+                .cornerRadius(8)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.blue, lineWidth: isSelected ? 0 : 1)
+                }
         }
     }
 }
@@ -177,12 +217,12 @@ struct DateAdditionalFormView: View {
     .padding(.horizontal, 16)
 }
 
-#Preview("With Data") {
+#Preview("With Template") {
     DateAdditionalFormView(
         viewModel: DateAdditionalFormViewModel(
             selectedDate: Date(),
             memo: "점심 식사",
-            isFavorite: true
+            selectedRecurrencePeriod: .monthly
         )
     )
     .padding(.horizontal, 16)
