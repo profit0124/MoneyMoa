@@ -169,8 +169,7 @@ extension TransactionDTO {
             calendarIdentifier: self.timeContext.calendarIdentifier,
             localeIdentifier: self.timeContext.localeIdentifier,
             subCategory: subCategory,
-            paymentMethod: paymentMethod,
-
+            paymentMethod: paymentMethod
         )
     }
 }
