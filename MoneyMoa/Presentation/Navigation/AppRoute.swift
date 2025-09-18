@@ -16,6 +16,7 @@ enum MainRoute: Hashable {
 enum SettingsRoute: Hashable {
     case root
     case budget(YearMonth)
+    case transactionTemplate
     case category
     case categorySelector(CategoryDTO)
     case categoryForm(CategoryListMode, CategoryDTO?, TransactionType?)
@@ -53,6 +54,7 @@ extension AppRoute {
     static let transactionsAdd = AppRoute.transactions(.add)
     static let statisticsOverview = AppRoute.statistics(.overview)
     static let categorySetup = AppRoute.settings(.category)
+    static let settingTransactionTemplate = AppRoute.settings(.transactionTemplate)
 
     static func settingsBudget(_ yearMonth: YearMonth) -> AppRoute {
         return .settings(.budget(yearMonth))

@@ -49,6 +49,9 @@ struct ViewFactory {
         case .budget(let yearMonth):
             BudgetSetupView(viewModel: container.makeBudgetSetupViewModel(yearMonth: yearMonth))
 
+        case .transactionTemplate:
+            TransactionTemplateSettingsView(viewModel: TransactionTemplateSettingsViewModel())
+
         case .category:
             CategorySetupView(viewModel: container.makeCategoryListViewModel(mode: .configuration))
 
