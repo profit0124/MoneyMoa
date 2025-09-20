@@ -132,6 +132,24 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
         }
     }
 
+    public func fetchTemplatesByRecurrencePeriod(_ period: RecurrencePeriod) async throws -> [TransactionTemplateDTO] {
+        try await simulateDelay()
+        try checkFailure()
+
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.templates
+                    .filter { template in
+                        template.recurrencePeriod == period
+                    }
+                    .sorted {
+                        ($0.nextDueDate ?? Date.distantPast) < ($1.nextDueDate ?? Date.distantPast)
+                    }
+                continuation.resume(returning: result)
+            }
+        }
+    }
+
     // MARK: - TransactionTemplateWriter Implementation
 
     public func insertTemplate(_ template: TransactionTemplateDTO, shouldSave: Bool = false) async throws {

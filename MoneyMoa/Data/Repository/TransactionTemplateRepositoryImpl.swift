@@ -75,6 +75,14 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
         return []
     }
 
+    public func fetchTemplatesByRecurrencePeriod(_ period: RecurrencePeriod) async throws -> [TransactionTemplateDTO] {
+        let predicate = #Predicate<TransactionTemplate> { $0.recurrencePeriodRawValue == period.rawValue }
+        return try await fetchTemplateDTOs(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+    }
+
     // MARK: - TransactionTemplateWriter Implementation
 
     public func insertTemplate(_ template: TransactionTemplateDTO, shouldSave: Bool = true) async throws {

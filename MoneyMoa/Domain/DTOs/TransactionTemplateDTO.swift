@@ -74,3 +74,38 @@ extension TransactionTemplateDTO {
         )
     }
 }
+
+extension TransactionTemplateDTO {
+    public var formattedRecurrence: String {
+        let calendar = timeContext.calendar
+
+        switch recurrencePeriod {
+        case .none:
+            return "반복 없음"
+        case .weekly:
+            let createdAt = createdAt
+            let weekday = calendar.component(.weekday, from: createdAt)
+            let weekdaySymbols = calendar.weekdaySymbols
+            return "매주 \(weekdaySymbols[weekday - 1])"
+
+        case .monthly:
+            let createdAt = createdAt
+            let day = calendar.component(.day, from: createdAt)
+            return "매월 \(day)일"
+
+        case .yearly:
+            let createdAt = createdAt
+            let month = calendar.component(.month, from: createdAt)
+            let day = calendar.component(.day, from: createdAt)
+            return "매년 \(month)월 \(day)일"
+        }
+    }
+
+    public var nextDueDateText: String? {
+        guard let nextDate = nextDueDate else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.doesRelativeDateFormatting = true
+        return formatter.string(from: nextDate)
+    }
+}

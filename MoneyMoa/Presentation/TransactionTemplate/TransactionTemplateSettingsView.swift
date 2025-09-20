@@ -48,21 +48,17 @@ struct TransactionTemplateSettingsView: View {
             viewModel.send(.onAppear)
         }
         .sheet(isPresented: $viewModel.showingAddTemplate) {
-            // TODO: Add Template Creation View
             Text("Template 생성 화면")
         }
         .sheet(item: $viewModel.templateToEdit) { template in
-            // TODO: Add Template Edit View
             Text("Template 수정 화면: \(template.id)")
         }
         .alert("템플릿 삭제", isPresented: $viewModel.showDeleteAlert) {
             Button("취소", role: .cancel) {
-                viewModel.templateToDelete = nil
+                viewModel.send(.cancelDelete)
             }
             Button("삭제", role: .destructive) {
-                if let template = viewModel.templateToDelete {
-                    deleteTemplate(template)
-                }
+                deleteTemplate()
             }
         } message: {
             Text("이 템플릿을 삭제하시겠습니까?\n관련된 거래 내역은 유지됩니다.")
@@ -123,188 +119,27 @@ struct TransactionTemplateSettingsView: View {
     private var templatesList: some View {
         LazyVStack(spacing: 12) {
             ForEach(viewModel.templates) { template in
-                TransactionTemplateCard(
-                    template: template,
-                    onTap: {
-                        viewModel.templateToEdit = template
-                    },
-                    onDelete: {
-                        viewModel.templateToDelete = template
-                        viewModel.showDeleteAlert = true
-                    }
-                )
+                transactionTemplateCard(template)
             }
         }
     }
 
-    // MARK: - Actions
-    private func deleteTemplate(_ template: TransactionTemplateDTO) {
-        withAnimation {
-            viewModel.templateToDelete = nil
-        }
-    }
-}
-
-// MARK: - Transaction Template Card
-struct TransactionTemplateCard: View {
-    let template: TransactionTemplateDTO
-    let onTap: () -> Void
-    let onDelete: () -> Void
-
-    private var formattedRecurrence: String {
-        let calendar = template.timeContext.calendar
-
-        switch template.recurrencePeriod {
-        case .none:
-            return "반복 없음"
-        case .weekly:
-            let createdAt = template.createdAt
-            let weekday = calendar.component(.weekday, from: createdAt)
-            let weekdaySymbols = calendar.weekdaySymbols
-            return "매주 \(weekdaySymbols[weekday - 1])"
-
-        case .monthly:
-            let createdAt = template.createdAt
-            let day = calendar.component(.day, from: createdAt)
-            return "매월 \(day)일"
-
-        case .yearly:
-            let createdAt = template.createdAt
-            let month = calendar.component(.month, from: createdAt)
-            let day = calendar.component(.day, from: createdAt)
-            return "매년 \(month)월 \(day)일"
-        }
-    }
-
-    private var nextDueDateText: String? {
-        guard let nextDate = template.nextDueDate else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.doesRelativeDateFormatting = true
-        return formatter.string(from: nextDate)
-    }
-
-    var body: some View {
+    @ViewBuilder
+    private func transactionTemplateCard(_ template: TransactionTemplateDTO) -> some View {
         Button {
-            onTap()
+            print("on tap")
         } label: {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
                 // Header with place and delete button
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        // Place as main title
-                        Text(template.place ?? "사용처 정보 없음")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(template.place != nil ? .primary : .secondary)
-
-                        // Category and payment method as subtitle
-                        HStack(spacing: 8) {
-                            HStack(spacing: 4) {
-                                Image(systemName: template.subCategory.categoryIconName)
-                                    .font(.caption)
-                                    .foregroundColor(template.transactionType.color)
-
-                                Text(template.subCategory.name)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-
-                            Text("•")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            Text(template.paymentMethod.name)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-
-                    Spacer()
-
-                    // Delete button
-                    Button {
-                        onDelete()
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.red.opacity(0.8))
-                            .frame(width: 32, height: 32)
-                            .background(
-                                Circle()
-                                    .fill(Color(.systemBackground))
-                                    .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
-                            )
-                    }
-                }
-                .padding(16)
+                cardHeaderSection(template)
 
                 Divider()
-                    .padding(.horizontal, 16)
 
                 // Content
-                VStack(alignment: .leading, spacing: 12) {
-                    // Amount
-                    HStack {
-                        Text(template.transactionType == .income ? "수입" : "지출")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundColor(template.transactionType == .income ? .green : .red)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .fill((template.transactionType == .income ? Color.green : Color.red).opacity(0.1))
-                            )
+                cardContentSection(template)
 
-                        Spacer()
-
-                        Text("\(template.amount.formatted(.currency(code: "KRW")))")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                    }
-
-                    // Memo
-                    if let memo = template.memo, !memo.isEmpty {
-                        HStack(spacing: 6) {
-                            Image(systemName: "note.text")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(memo)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-
-                    // Recurrence Info
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "repeat")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                            Text(formattedRecurrence)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundColor(.blue)
-                        }
-
-                        if let nextDateText = nextDueDateText {
-                            HStack(spacing: 6) {
-                                Image(systemName: "calendar.badge.clock")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
-                                Text("다음 예정: \(nextDateText)")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
-                            }
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-                .padding(16)
             }
+            .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(.systemBackground))
@@ -313,12 +148,128 @@ struct TransactionTemplateCard: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
+
+    @ViewBuilder
+    private func cardHeaderSection(_ template: TransactionTemplateDTO) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 6) {
+                // Place as main title
+                Text(template.place ?? "사용처 정보 없음")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(template.place != nil ? .primary : .secondary)
+
+                // Category and payment method as subtitle
+                HStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        Image(systemName: template.subCategory.categoryIconName)
+                            .font(.caption)
+                            .foregroundColor(template.transactionType.color)
+
+                        Text(template.subCategory.name)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text("•")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Text(template.paymentMethod.name)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer()
+
+            // Delete button
+            Button {
+                viewModel.send(.deleteTemplate(template))
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.red.opacity(0.8))
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .black.opacity(0.08), radius: 4, x: 0, y: 2)
+                    )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func cardContentSection(_ template: TransactionTemplateDTO) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Amount
+            HStack {
+                Text(template.transactionType == .income ? "수입" : "지출")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundColor(template.transactionType == .income ? .green : .red)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill((template.transactionType == .income ? Color.green : Color.red).opacity(0.1))
+                    )
+
+                Spacer()
+
+                Text("\(template.amount.formatted(.currency(code: "KRW")))")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+            }
+
+            // Memo
+            if let memo = template.memo, !memo.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.caption)
+                    Text(memo)
+                        .font(.subheadline)
+                        .lineLimit(1)
+                }.foregroundColor(.secondary)
+            }
+
+            // Recurrence Info
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "repeat")
+                        .font(.caption)
+                    Text(template.formattedRecurrence)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                .foregroundColor(.blue)
+
+                if let nextDateText = template.nextDueDateText {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.caption)
+
+                        Text("다음 예정: \(nextDateText)")
+                            .font(.caption)
+                    }
+                    .foregroundColor(.orange)
+                }
+            }
+            .padding(.top, 4)
+        }
+    }
+
+    // MARK: - Actions
+    private func deleteTemplate() {
+        withAnimation {
+            viewModel.send(.confirmDelete)
+        }
+    }
 }
 
 // MARK: - Preview
 #Preview {
-    NavigationStack {
-        TransactionTemplateSettingsView(viewModel: TransactionTemplateSettingsViewModel())
-    }
-    .environment(AppRouter())
+    CoordinatorHost(container: MockDIContainer(configuration: .normal), start: .settingTransactionTemplate)
 }

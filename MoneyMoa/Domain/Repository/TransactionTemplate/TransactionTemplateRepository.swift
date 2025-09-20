@@ -27,6 +27,11 @@ public protocol TransactionTemplateReader {
     /// - Parameter date: 기준 날짜
     /// - Returns: nextDueDate가 기준 날짜 이전인 템플릿 목록
     func fetchTemplatesDueForProcessing(before date: Date) async throws -> [TransactionTemplateDTO]
+
+    /// 반복 주기에 따른 템플릿 조회 
+    /// - Parameter period: none, weekly 등 반복주기
+    /// - Returns: nextDueDate가 기준 날짜 이전인 템플릿 목록
+    func fetchTemplatesByRecurrencePeriod(_ period: RecurrencePeriod) async throws -> [TransactionTemplateDTO]
 }
 
 /// 거래 템플릿 변경 전용 프로토콜 (쓰기 작업)

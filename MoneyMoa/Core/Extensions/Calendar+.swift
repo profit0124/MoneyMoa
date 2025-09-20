@@ -42,7 +42,7 @@ extension Calendar.Identifier {
         case .republicOfChina: return "republicOfChina"
         case .islamicTabular: return "islamicTabular"
         case .islamicUmmAlQura: return "islamicUmmAlQura"
-        @unknown default: return "gregorian"
+        default: return "gregorian"
         }
     }
 }

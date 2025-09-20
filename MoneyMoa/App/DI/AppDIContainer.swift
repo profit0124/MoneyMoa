@@ -116,6 +116,16 @@ final class AppDIContainer: DIContainer {
 
     // MARK: - TransactionTemplate UseCase Factory Methods
 
+    func makeFetchTransactionTemplatesUseCase() -> FetchTransactionTemplatesUseCase {
+        let templateReader = makeTransactionTemplateRepository()
+        return FetchTransactionTemplatesUseCaseImpl(templateReader: templateReader)
+    }
+
+    func makeDeleteTransactionTemplateUseCase() -> DeleteTransactionTemplateUseCase {
+        let templateWriter = makeTransactionTemplateRepository()
+        return DeleteTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
+    }
+
     func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase {
         let templateRepository = makeTransactionTemplateRepository()
         let transactionWriter = makeTransactionWriter()

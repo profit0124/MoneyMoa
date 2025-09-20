@@ -50,7 +50,7 @@ struct ViewFactory {
             BudgetSetupView(viewModel: container.makeBudgetSetupViewModel(yearMonth: yearMonth))
 
         case .transactionTemplate:
-            TransactionTemplateSettingsView(viewModel: TransactionTemplateSettingsViewModel())
+            TransactionTemplateSettingsView(viewModel: container.makeTransactionTemplateSettingsViewModel())
 
         case .category:
             CategorySetupView(viewModel: container.makeCategoryListViewModel(mode: .configuration))

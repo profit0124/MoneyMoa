@@ -13,7 +13,7 @@ import Foundation
 /// Presentation Layer 개발 및 테스트 시 사용됩니다
 /// 실제 UseCase 로직과 Mock Repository를 조합하여 현실적인 테스트 환경 제공
 final class MockDIContainer: DIContainer {
-    
+
     // MARK: - Configuration
     
     struct Configuration {
@@ -308,5 +308,13 @@ final class MockDIContainer: DIContainer {
                 txRepo: makeTransactionRepository()
             )
         )
+    }
+
+    func makeFetchTransactionTemplatesUseCase() -> FetchTransactionTemplatesUseCase {
+        FetchTransactionTemplatesUseCaseImpl(templateReader: makeTransactionTemplateRepository())
+    }
+
+    func makeDeleteTransactionTemplateUseCase() -> DeleteTransactionTemplateUseCase {
+        DeleteTransactionTemplateUseCaseImpl(templateWriter: makeTransactionTemplateRepository())
     }
 }

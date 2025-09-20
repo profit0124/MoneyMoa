@@ -63,6 +63,12 @@ protocol DIContainer {
 
     // MARK: - TransactionTemplate UseCase Factory Methods
 
+    /// FetchTransactionTemplatesUseCase를 생성합니다
+    func makeFetchTransactionTemplatesUseCase() -> FetchTransactionTemplatesUseCase
+
+    /// DeleteTransactionTemplateUseCase를 생성합니다
+    func makeDeleteTransactionTemplateUseCase() -> DeleteTransactionTemplateUseCase
+
     /// TransactionTemplateProcessingUseCase를 생성합니다
     func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase
     
@@ -118,6 +124,9 @@ protocol DIContainer {
 
     /// SubCategoryFormViewModel을 생성합니다.
     func makeSubCategoryFormViewModel(category: CategoryDTO, subCategory: SubCategoryDTO?) -> SubCategoryFormViewModel
+
+    /// TransactionTemplateSettingsViewModel을 생성합니다.
+    func makeTransactionTemplateSettingsViewModel() -> TransactionTemplateSettingsViewModel
 
     // MARK: - TransactionForm ViewModel Factory Methods
     
@@ -301,6 +310,13 @@ extension DIContainer {
             subCategoryEventPublisher: DefaultSubCategoryEventPublisher.shared,
             selectedCategory: category,
             selectedSubCategory: subCategory
+        )
+    }
+
+    func makeTransactionTemplateSettingsViewModel() -> TransactionTemplateSettingsViewModel {
+        return TransactionTemplateSettingsViewModel(
+            fetchTemplatesUseCase: makeFetchTransactionTemplatesUseCase(),
+            deleteTemplateUseCase: makeDeleteTransactionTemplateUseCase()
         )
     }
 
