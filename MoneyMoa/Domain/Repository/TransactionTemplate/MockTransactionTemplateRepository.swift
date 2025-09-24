@@ -182,7 +182,7 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
 
     public func updateTemplateProcessing(
         id: UUID,
-        processedCount: Int,
+        executionState: TemplateExecutionState,
         lastAddedAt: Date,
         nextDueDate: Date?
     ) async throws {
@@ -203,12 +203,13 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
                         transactionType: template.transactionType,
                         recurrencePeriod: template.recurrencePeriod,
                         createdAt: template.createdAt,
-                        processedCount: processedCount,
                         lastAddedAt: lastAddedAt,
                         nextDueDate: nextDueDate,
                         timeContext: template.timeContext,
                         subCategory: template.subCategory,
-                        paymentMethod: template.paymentMethod
+                        paymentMethod: template.paymentMethod,
+                        recurrencePattern: template.recurrencePattern,
+                        executionState: executionState
                     )
 
                     self.templates[index] = template

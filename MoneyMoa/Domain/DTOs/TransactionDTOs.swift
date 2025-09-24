@@ -89,7 +89,6 @@ extension TransactionDTO {
             transactionType: self.transactionType,
             recurrencePeriod: recurrencePeriod,
             createdAt: self.date,
-            processedCount: 1, // 첫 거래가 생성되었으므로 1
             lastAddedAt: self.date,
             nextDueDate: calculatedNextDueDate,
             timeContext: self.timeContext,

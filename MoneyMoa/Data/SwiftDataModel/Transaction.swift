@@ -162,7 +162,6 @@ extension TransactionDTO {
             transactionType: self.transactionType,
             recurrencePeriod: recurrencePeriod,
             createdAt: self.date,
-            processedCount: processCount,
             lastAddedAt: self.date,
             nextDueDate: recurrencePeriod.calculateOccurenceDate(from: self.date, processCount: processCount, calendar: calendar),
             timeZoneIdentifier: self.timeContext.timeZoneIdentifier,

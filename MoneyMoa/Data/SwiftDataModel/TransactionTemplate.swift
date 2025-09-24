@@ -29,9 +29,12 @@ final class TransactionTemplate {
         set { recurrencePeriodRawValue = newValue.rawValue }
     }
     var createdAt: Date
-    var processedCount: Int  // 처리된 거래 횟수 (Count 기반)
-    var lastAddedAt: Date  // 마지막 동기화 시점
+    var lastAddedAt: Date?  // 마지막 동기화 시점 (Optional로 변경)
     var nextDueDate: Date?
+
+    // 새로운 RecurrencePattern 저장을 위한 필드들
+    var recurrencePatternData: Data?  // JSON encoded RecurrencePattern
+    var executionStateData: Data?     // JSON encoded TemplateExecutionState
 
     // MARK: - TimeZone Context Fields
     var timeZoneIdentifier: String
@@ -50,7 +53,6 @@ final class TransactionTemplate {
          transactionType: TransactionType,
          recurrencePeriod: RecurrencePeriod = .none,
          createdAt: Date = Date(),
-         processedCount: Int = 0,
          lastAddedAt: Date? = nil,
          nextDueDate: Date? = nil,
          originalDayOfMonth: Int? = nil,
@@ -58,7 +60,9 @@ final class TransactionTemplate {
          calendarIdentifier: String,
          localeIdentifier: String? = nil,
          subCategory: SubCategory,
-         paymentMethod: PaymentMethod
+         paymentMethod: PaymentMethod,
+         recurrencePattern: RecurrencePattern? = nil,
+         executionState: TemplateExecutionState? = nil
     ) {
         self.id = id
         self.amount = amount
@@ -67,14 +71,44 @@ final class TransactionTemplate {
         self.transactionTypeRawValue = transactionType.rawValue
         self.recurrencePeriodRawValue = recurrencePeriod.rawValue
         self.createdAt = createdAt
-        self.processedCount = processedCount
-        self.lastAddedAt = lastAddedAt ?? createdAt
+        self.lastAddedAt = lastAddedAt
         self.nextDueDate = nextDueDate
         self.timeZoneIdentifier = timeZoneIdentifier
         self.calendarIdentifier = calendarIdentifier
         self.localeIdentifier = localeIdentifier
         self.subCategory = subCategory
         self.paymentMethod = paymentMethod
+
+        // 새 필드들 초기화
+        self.recurrencePatternData = try? JSONEncoder().encode(recurrencePattern)
+        self.executionStateData = try? JSONEncoder().encode(executionState)
+    }
+}
+
+// MARK: - RecurrencePattern & ExecutionState Support
+
+extension TransactionTemplate {
+
+    /// RecurrencePattern 접근을 위한 계산 프로퍼티
+    var recurrencePattern: RecurrencePattern? {
+        get {
+            guard let data = recurrencePatternData else { return nil }
+            return try? JSONDecoder().decode(RecurrencePattern.self, from: data)
+        }
+        set {
+            recurrencePatternData = try? JSONEncoder().encode(newValue)
+        }
+    }
+
+    /// TemplateExecutionState 접근을 위한 계산 프로퍼티
+    var executionState: TemplateExecutionState? {
+        get {
+            guard let data = executionStateData else { return nil }
+            return try? JSONDecoder().decode(TemplateExecutionState.self, from: data)
+        }
+        set {
+            executionStateData = try? JSONEncoder().encode(newValue)
+        }
     }
 }
 
@@ -97,12 +131,13 @@ extension TransactionTemplate {
             transactionType: self.transactionType,
             recurrencePeriod: self.recurrencePeriod,
             createdAt: self.createdAt,
-            processedCount: self.processedCount,
             lastAddedAt: self.lastAddedAt,
             nextDueDate: self.nextDueDate,
             timeContext: timeContext,
             subCategory: self.subCategory.toDTO(),
-            paymentMethod: self.paymentMethod.toDTO()
+            paymentMethod: self.paymentMethod.toDTO(),
+            recurrencePattern: self.recurrencePattern,  // 새 필드
+            executionState: self.executionState         // 새 필드
         )
     }
 }
@@ -120,7 +155,6 @@ extension TransactionTemplateDTO {
             transactionType: self.transactionType,
             recurrencePeriod: self.recurrencePeriod,
             createdAt: self.createdAt,
-            processedCount: self.processedCount,
             lastAddedAt: self.lastAddedAt,
             nextDueDate: self.nextDueDate,
             originalDayOfMonth: nil,  // 필요시 계산
@@ -128,7 +162,9 @@ extension TransactionTemplateDTO {
             calendarIdentifier: self.timeContext.calendarIdentifier,
             localeIdentifier: self.timeContext.localeIdentifier,
             subCategory: subCategory,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            recurrencePattern: self.recurrencePattern,  // 새 필드
+            executionState: self.executionState         // 새 필드
         )
         return template
     }

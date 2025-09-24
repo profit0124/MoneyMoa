@@ -138,9 +138,10 @@ struct TestDataFactory {
         transactionType: TransactionType = .fixedExpense,
         recurrencePeriod: RecurrencePeriod = .monthly,
         createdAt: Date = Date(),
-        processedCount: Int = 0,
         lastAddedAt: Date? = nil,
         nextDueDate: Date? = nil,
+        recurrencePattern: RecurrencePattern? = nil,
+        executionState: TemplateExecutionState? = nil,
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO
     ) -> TransactionTemplateDTO {
@@ -152,11 +153,12 @@ struct TestDataFactory {
             transactionType: transactionType,
             recurrencePeriod: recurrencePeriod,
             createdAt: createdAt,
-            processedCount: processedCount,
             lastAddedAt: lastAddedAt,
             nextDueDate: nextDueDate,
             subCategory: subCategory,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            recurrencePattern: recurrencePattern,
+            executionState: executionState
         )
     }
 
