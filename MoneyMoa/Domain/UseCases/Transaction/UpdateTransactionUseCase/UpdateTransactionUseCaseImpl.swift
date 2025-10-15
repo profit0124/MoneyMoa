@@ -60,8 +60,9 @@ final class UpdateTransactionUseCaseImpl: UpdateTransactionUseCase {
         from transaction: TransactionDTO,
         original template: TransactionTemplateDTO
     ) -> TransactionTemplateDTO {
-        let newPattern = RecurrencePattern(from: transaction.date, period: template.recurrencePattern.period, calendar: transaction.timeContext.calendar)
-        let nextDueDate = newPattern.calculateNextOccurrence() ?? template.nextDueDate
+        let calendar = transaction.timeContext.calendar
+        let newPattern = RecurrencePattern(from: transaction.date, period: template.recurrencePattern.period, calendar: calendar)
+        let nextDueDate = newPattern.calculateNextOccurrence(calendar: calendar) ?? template.nextDueDate
 
         return TransactionTemplateDTO(
             id: template.id,
