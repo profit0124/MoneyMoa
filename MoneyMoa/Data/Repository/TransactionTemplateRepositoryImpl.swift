@@ -75,6 +75,14 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
         return []
     }
 
+    public func fetchTemplatesByRecurrencePeriod(_ period: RecurrencePeriod) async throws -> [TransactionTemplateDTO] {
+        let predicate = #Predicate<TransactionTemplate> { $0.recurrencePeriodRawValue == period.rawValue }
+        return try await fetchTemplateDTOs(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+    }
+
     // MARK: - TransactionTemplateWriter Implementation
 
     public func insertTemplate(_ template: TransactionTemplateDTO, shouldSave: Bool = true) async throws {
@@ -151,12 +159,15 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
             existingTemplate.transactionTypeRawValue = template.transactionType.rawValue
             existingTemplate.recurrencePeriodRawValue = template.recurrencePeriod.rawValue
             existingTemplate.createdAt = template.createdAt.toUTC
-            existingTemplate.processedCount = template.processedCount
-            existingTemplate.lastAddedAt = template.lastAddedAt.toUTC
+            existingTemplate.lastAddedAt = template.lastAddedAt?.toUTC
             existingTemplate.nextDueDate = template.nextDueDate?.toUTC
             existingTemplate.timeZoneIdentifier = template.timeContext.timeZoneIdentifier
             existingTemplate.calendarIdentifier = template.timeContext.calendarIdentifier
             existingTemplate.localeIdentifier = template.timeContext.localeIdentifier
+
+            // 새로운 필드들 업데이트
+            existingTemplate.recurrencePattern = template.recurrencePattern
+            existingTemplate.executionState = template.executionState
 
             try context.save()
         }
@@ -164,7 +175,7 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
 
     public func updateTemplateProcessing(
         id: UUID,
-        processedCount: Int,
+        executionState: TemplateExecutionState,
         lastAddedAt: Date,
         nextDueDate: Date?
     ) async throws {
@@ -177,7 +188,7 @@ public final class TransactionTemplateRepositoryImpl: TransactionTemplateReposit
             }
 
             // 처리 상태 업데이트
-            template.processedCount = processedCount
+            template.executionState = executionState
             template.lastAddedAt = lastAddedAt.toUTC
             template.nextDueDate = nextDueDate?.toUTC
 

@@ -23,31 +23,47 @@ struct UpdateTransactionView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(TransactionStep.allCases, id: \.self) {
-                        stepView($0, isCompleted: true)
-                    }
+        ScrollView {
+            VStack(spacing: 16) {
+                ForEach(TransactionStep.allCases, id: \.self) {
+                    stepView($0, isCompleted: true)
                 }
             }
-            .environment(cardCoordinator)
-            .navigationTitle("거래 수정")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("취소") {
-                        viewModel.send(.cancelButtonTapped)
-                    }
+        }
+        .environment(cardCoordinator)
+        .navigationTitle("거래 수정")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("취소") {
+                    viewModel.send(.cancelButtonTapped)
                 }
+            }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("수정") {
-                        viewModel.send(.updateTransaction)
-                    }
-                    .disabled(!viewModel.isValid)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("수정") {
+                    viewModel.send(.updateTransaction)
                 }
+                .disabled(!viewModel.isValid)
             }
+        }
+        .alert(
+            "템플릿도 수정하시겠습니까?",
+            isPresented: $viewModel.showUpdateAlert
+        ) {
+            Button("템플릿도 수정") {
+                viewModel.send(.confirmUpdateWithTemplate)
+            }
+
+            Button("거래만 수정") {
+                viewModel.send(.confirmUpdateTransactionOnly)
+            }
+
+            Button("취소", role: .cancel) {
+                viewModel.send(.cancelUpdate)
+            }
+        } message: {
+            Text("연결된 템플릿도 함께 수정하시겠습니까?")
         }
     }
 
@@ -100,5 +116,5 @@ struct UpdateTransactionView: View {
 }
 
 #Preview {
-    UpdateTransactionView(viewModel: MockDIContainer().makeUpdateTransactionViewModel(transaction: .mockLunch))
+    CoordinatorHost(container: MockDIContainer(), start: .transactionUpdate(.mockLunch))
 }

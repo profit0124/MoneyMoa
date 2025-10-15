@@ -16,6 +16,7 @@ enum MainRoute: Hashable {
 enum SettingsRoute: Hashable {
     case root
     case budget(YearMonth)
+    case transactionTemplate
     case category
     case categorySelector(CategoryDTO)
     case categoryForm(CategoryListMode, CategoryDTO?, TransactionType?)
@@ -36,6 +37,11 @@ enum StatisticsRoute: Hashable {
     case overview
 }
 
+enum TransactionTemplateRoute: Hashable {
+    case add
+    case update(TransactionTemplateDTO)
+}
+
 // MARK: - App Route (Union)
 
 enum AppRoute: Hashable {
@@ -43,6 +49,7 @@ enum AppRoute: Hashable {
     case settings(SettingsRoute)
     case transactions(TransactionsRoute)
     case statistics(StatisticsRoute)
+    case transactionTemplates(TransactionTemplateRoute)
 }
 
 // MARK: - Convenience Extensions
@@ -53,6 +60,7 @@ extension AppRoute {
     static let transactionsAdd = AppRoute.transactions(.add)
     static let statisticsOverview = AppRoute.statistics(.overview)
     static let categorySetup = AppRoute.settings(.category)
+    static let settingTransactionTemplate = AppRoute.settings(.transactionTemplate)
 
     static func settingsBudget(_ yearMonth: YearMonth) -> AppRoute {
         return .settings(.budget(yearMonth))
@@ -79,5 +87,10 @@ extension AppRoute {
         _ subCategory: SubCategoryDTO?
     ) -> AppRoute {
         return .settings(.subCategoryForm(category, subCategory))
+    }
+
+    static let transactionTemplateAdd = AppRoute.transactionTemplates(.add)
+    static func transactionTemplateUpdate(_ template: TransactionTemplateDTO) -> AppRoute {
+        return .transactionTemplates(.update(template))
     }
 }

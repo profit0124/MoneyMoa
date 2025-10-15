@@ -31,11 +31,12 @@ public enum TransactionTemplateFactory {
             transactionType: config.transactionType,
             recurrencePeriod: config.recurrencePeriod,
             createdAt: config.createdAt,
-            processedCount: config.processedCount,
             lastAddedAt: config.lastAddedAt,
             nextDueDate: config.nextDueDate,
             subCategory: subCategory,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            recurrencePattern: config.recurrencePattern,
+            executionState: config.executionState
         )
     }
 
@@ -47,9 +48,10 @@ public enum TransactionTemplateFactory {
         let transactionType: TransactionType
         let recurrencePeriod: RecurrencePeriod
         let createdAt: Date
-        let processedCount: Int
         let lastAddedAt: Date?
         let nextDueDate: Date?
+        let recurrencePattern: RecurrencePattern
+        let executionState: TemplateExecutionState
 
         public init(
             id: UUID = UUID(),
@@ -59,9 +61,10 @@ public enum TransactionTemplateFactory {
             transactionType: TransactionType,
             recurrencePeriod: RecurrencePeriod = .none,
             createdAt: Date = Date(),
-            processedCount: Int = 1,
             lastAddedAt: Date? = nil,
-            nextDueDate: Date? = nil
+            nextDueDate: Date? = nil,
+            recurrencePattern: RecurrencePattern = RecurrencePattern(period: .none),
+            executionState: TemplateExecutionState = TemplateExecutionState()
         ) {
             self.id = id
             self.amount = amount
@@ -70,9 +73,10 @@ public enum TransactionTemplateFactory {
             self.transactionType = transactionType
             self.recurrencePeriod = recurrencePeriod
             self.createdAt = createdAt
-            self.processedCount = processedCount
             self.lastAddedAt = lastAddedAt
             self.nextDueDate = nextDueDate
+            self.recurrencePattern = recurrencePattern
+            self.executionState = executionState
         }
     }
 
@@ -154,13 +158,19 @@ public enum TransactionTemplateFactory {
 
     private static func createNetflixTemplate(dependencies: StandardDependencies) -> TransactionTemplateDTO {
         let now = Date()
-        // 2개월 5일 전에 생성되어, 이미 2번 처리됨
+        // 2개월 5일 전에 생성되어, 이미 처리됨
         let createdAt = Calendar.current.date(byAdding: .day, value: -65, to: now) ?? now
-        let processedCount = 2
-        let lastAddedAt = RecurrencePeriod.monthly.calculateOccurenceDate(from: createdAt, processCount: processedCount - 1)
+        let lastExecutedAt = Calendar.current.date(byAdding: .day, value: -35, to: now) ?? now
 
-        // nextDueDate가 과거가 되도록 조정 (약 5일 전)
+        // nextDueDate가 과거가 되도록 조정 (약 5일 전) - 처리 대상
         let adjustedNextDueDate = Calendar.current.date(byAdding: .day, value: -5, to: now)
+
+        let executionState = TemplateExecutionState(
+            lastExecutedAt: lastExecutedAt,
+            executionCount: 2
+        )
+
+        let recurrencePattern = RecurrencePattern.monthly(on: 1) // 매월 1일
 
         let config = TemplateConfig(
             amount: 17000,
@@ -169,22 +179,29 @@ public enum TransactionTemplateFactory {
             transactionType: .fixedExpense,
             recurrencePeriod: .monthly,
             createdAt: createdAt,
-            processedCount: processedCount,
-            lastAddedAt: lastAddedAt,
-            nextDueDate: adjustedNextDueDate  // 처리 대상 (5일 전)
+            lastAddedAt: lastExecutedAt,
+            nextDueDate: adjustedNextDueDate,  // 처리 대상 (5일 전)
+            recurrencePattern: recurrencePattern,
+            executionState: executionState
         )
         return createTemplate(config: config, subCategory: dependencies.subscriptionCategory, paymentMethod: dependencies.creditCard)
     }
 
     private static func createSpotifyTemplate(dependencies: StandardDependencies) -> TransactionTemplateDTO {
         let now = Date()
-        // 2개월 25일 전에 생성되어, 이미 2번 처리됨
+        // 2개월 25일 전에 생성되어, 이미 처리됨
         let createdAt = Calendar.current.date(byAdding: .day, value: -85, to: now) ?? now
-        let processedCount = 2
-        let lastAddedAt = RecurrencePeriod.monthly.calculateOccurenceDate(from: createdAt, processCount: processedCount - 1)
+        let lastExecutedAt = Calendar.current.date(byAdding: .day, value: -55, to: now) ?? now
 
         // nextDueDate가 며칠 후가 되도록 설정 (아직 처리 안 함)
         let nextDueDate = Calendar.current.date(byAdding: .day, value: 5, to: now)
+
+        let executionState = TemplateExecutionState(
+            lastExecutedAt: lastExecutedAt,
+            executionCount: 2
+        )
+
+        let recurrencePattern = RecurrencePattern.monthly(on: 15) // 매월 15일
 
         let config = TemplateConfig(
             amount: 10900,
@@ -193,20 +210,33 @@ public enum TransactionTemplateFactory {
             transactionType: .fixedExpense,
             recurrencePeriod: .monthly,
             createdAt: createdAt,
-            processedCount: processedCount,
-            lastAddedAt: lastAddedAt,
-            nextDueDate: nextDueDate  // 미처리 (5일 후)
+            lastAddedAt: lastExecutedAt,
+            nextDueDate: nextDueDate,  // 미처리 (5일 후)
+            recurrencePattern: recurrencePattern,
+            executionState: executionState
         )
         return createTemplate(config: config, subCategory: dependencies.subscriptionCategory, paymentMethod: dependencies.creditCard)
     }
 
     private static func createInsuranceTemplate(dependencies: StandardDependencies) -> TransactionTemplateDTO {
         let now = Date()
-        // 1년 전에 생성되어, 이미 1번 처리됨 (생성 시)
+        // 1년 전에 생성되어, 이미 처리됨
         let createdAt = Calendar.current.date(byAdding: .year, value: -1, to: now) ?? now
-        let processedCount = 1
-        let lastAddedAt = createdAt
-        let nextDueDate = RecurrencePeriod.yearly.calculateOccurenceDate(from: createdAt, processCount: processedCount) // 오늘 (처리 대상)
+        let lastExecutedAt = createdAt
+        // 오늘이 처리 대상이 되도록 설정
+        let nextDueDate = now
+
+        let executionState = TemplateExecutionState(
+            lastExecutedAt: lastExecutedAt,
+            executionCount: 1
+        )
+
+        let calendar = Calendar.current
+        let createdComponents = calendar.dateComponents([.month, .day], from: createdAt)
+        let recurrencePattern = RecurrencePattern.yearly(
+            month: createdComponents.month ?? 1,
+            day: createdComponents.day ?? 1
+        )
 
         let config = TemplateConfig(
             amount: 1200000,
@@ -215,9 +245,10 @@ public enum TransactionTemplateFactory {
             transactionType: .fixedExpense,
             recurrencePeriod: .yearly,
             createdAt: createdAt,
-            processedCount: processedCount,
-            lastAddedAt: lastAddedAt,
-            nextDueDate: nextDueDate
+            lastAddedAt: lastExecutedAt,
+            nextDueDate: nextDueDate,
+            recurrencePattern: recurrencePattern,
+            executionState: executionState
         )
         return createTemplate(config: config, subCategory: dependencies.insuranceCategory, paymentMethod: dependencies.creditCard)
     }
@@ -234,7 +265,8 @@ public enum TransactionTemplateFactory {
     public static func dueTemplates(relativeTo date: Date = Date()) -> [TransactionTemplateDTO] {
         return standardSet().filter { template in
             guard template.recurrencePeriod != .none else { return false }
-            guard let nextDueDate = template.nextDueDate else { return false }
+            // calculatedNextDueDate를 사용하여 동적으로 판단
+            guard let nextDueDate = template.calculatedNextDueDate else { return false }
             return nextDueDate <= date
         }
     }
@@ -243,7 +275,8 @@ public enum TransactionTemplateFactory {
     public static func notDueTemplates(relativeTo date: Date = Date()) -> [TransactionTemplateDTO] {
         return standardSet().filter { template in
             if template.recurrencePeriod == .none { return true }
-            guard let nextDueDate = template.nextDueDate else { return true }
+            // calculatedNextDueDate를 사용하여 동적으로 판단
+            guard let nextDueDate = template.calculatedNextDueDate else { return true }
             return nextDueDate > date
         }
     }

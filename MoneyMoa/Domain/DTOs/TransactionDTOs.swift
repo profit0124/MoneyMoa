@@ -79,7 +79,22 @@ extension TransactionDTO {
         recurrencePeriod: RecurrencePeriod,
         nextDueDate: Date? = nil
     ) -> TransactionTemplateDTO {
-        let calculatedNextDueDate = nextDueDate ?? recurrencePeriod.calculateOccurenceDate(from: self.date, processCount: 1, calendar: self.timeContext.calendar)
+        let calendar = timeContext.calendar
+        let pattern = RecurrencePattern(
+            from: self.date,
+            period: recurrencePeriod,
+            calendar: calendar
+        )
+        let calculatedNextDueDate = nextDueDate
+            ?? pattern.calculateNextOccurrence(
+                after: self.date,
+                calendar: calendar
+            )
+
+        let executionState = TemplateExecutionState(
+            lastExecutedAt: self.date,
+            executionCount: 1
+        )
 
         return TransactionTemplateDTO(
             id: UUID(), // 새 템플릿 ID 생성
@@ -89,12 +104,13 @@ extension TransactionDTO {
             transactionType: self.transactionType,
             recurrencePeriod: recurrencePeriod,
             createdAt: self.date,
-            processedCount: 1, // 첫 거래가 생성되었으므로 1
             lastAddedAt: self.date,
             nextDueDate: calculatedNextDueDate,
             timeContext: self.timeContext,
             subCategory: self.subCategory,
-            paymentMethod: self.paymentMethod
+            paymentMethod: self.paymentMethod,
+            recurrencePattern: pattern,
+            executionState: executionState
         )
     }
 }

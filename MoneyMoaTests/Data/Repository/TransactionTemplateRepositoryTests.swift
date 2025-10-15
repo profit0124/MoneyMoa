@@ -87,7 +87,6 @@ final class TransactionTemplateRepositoryTests: XCTestCase {
         memo: String? = "월간 구독",
         transactionType: TransactionType = .fixedExpense,
         recurrencePeriod: RecurrencePeriod = .monthly,
-        processedCount: Int = 0,
         lastAddedAt: Date? = nil,
         nextDueDate: Date? = nil
     ) -> TransactionTemplateDTO {
@@ -97,7 +96,6 @@ final class TransactionTemplateRepositoryTests: XCTestCase {
             memo: memo,
             transactionType: transactionType,
             recurrencePeriod: recurrencePeriod,
-            processedCount: processedCount,
             lastAddedAt: lastAddedAt,
             nextDueDate: nextDueDate,
             subCategory: testSubCategoryDTO,
@@ -211,6 +209,19 @@ extension TransactionTemplateRepositoryTests {
         XCTAssertEqual(fetchedTemplate?.amount, newTemplate.amount)
         XCTAssertEqual(fetchedTemplate?.place, newTemplate.place)
         XCTAssertEqual(fetchedTemplate?.recurrencePeriod, newTemplate.recurrencePeriod)
+        XCTAssertEqual(fetchedTemplate?.recurrencePattern.period, newTemplate.recurrencePattern.period)
+        XCTAssertEqual(
+            fetchedTemplate?.recurrencePattern.hour,
+            newTemplate.recurrencePattern.hour
+        )
+        XCTAssertEqual(
+            fetchedTemplate?.executionState.lastExecutedAt,
+            newTemplate.executionState.lastExecutedAt
+        )
+        XCTAssertEqual(
+            fetchedTemplate?.executionState.executionCount,
+            newTemplate.executionState.executionCount
+        )
     }
 
     func testTemplateWriter_insertTemplate_withInvalidSubCategory_throwsError() async throws {
@@ -227,8 +238,9 @@ extension TransactionTemplateRepositoryTests {
         let template = TransactionTemplateDTO(
             amount: 10000, place: "Test", memo: "Test",
             transactionType: .fixedExpense, recurrencePeriod: .monthly,
-            processedCount: 0, lastAddedAt: nil, nextDueDate: nil,
-            subCategory: invalidSubCategoryDTO, paymentMethod: testPaymentMethodDTO
+            lastAddedAt: nil, nextDueDate: nil,
+            subCategory: invalidSubCategoryDTO, paymentMethod: testPaymentMethodDTO,
+            recurrencePattern: RecurrencePattern.monthly(on: 1)
         )
 
         do {
@@ -259,11 +271,12 @@ extension TransactionTemplateRepositoryTests {
             memo: "업그레이드",
             transactionType: originalTemplate.transactionType,
             recurrencePeriod: originalTemplate.recurrencePeriod,
-            processedCount: originalTemplate.processedCount,
             lastAddedAt: originalTemplate.lastAddedAt,
             nextDueDate: originalTemplate.nextDueDate,
             subCategory: originalTemplate.subCategory,
-            paymentMethod: originalTemplate.paymentMethod
+            paymentMethod: originalTemplate.paymentMethod,
+            recurrencePattern: originalTemplate.recurrencePattern,
+            executionState: originalTemplate.executionState
         )
         try await templateWriter.updateTemplate(updatedTemplate)
 
@@ -295,23 +308,28 @@ extension TransactionTemplateRepositoryTests {
     func testTemplateWriter_updateTemplateProcessing_updatesProcessingFields() async throws {
         // Given
         try await setupBasicTestData()
-        let originalTemplate = createTemplate(processedCount: 0)
+        let originalTemplate = createTemplate()
         try await templateWriter.insertTemplate(originalTemplate, shouldSave: true)
 
         let newLastAddedAt = Date()
         let newNextDueDate = Calendar.current.date(byAdding: .month, value: 1, to: newLastAddedAt)
 
         // When
+        let executionState = TemplateExecutionState(
+            lastExecutedAt: newLastAddedAt,
+            executionCount: 5
+        )
+
         try await templateWriter.updateTemplateProcessing(
             id: originalTemplate.id,
-            processedCount: 5,
+            executionState: executionState,
             lastAddedAt: newLastAddedAt,
             nextDueDate: newNextDueDate
         )
 
         // Then
         let fetchedTemplate = try await templateReader.fetchTemplate(id: originalTemplate.id)
-        XCTAssertEqual(fetchedTemplate?.processedCount, 5)
+        XCTAssertEqual(fetchedTemplate?.executionState.executionCount, 5)
         XCTAssertNotNil(fetchedTemplate?.nextDueDate)
     }
 
@@ -320,8 +338,12 @@ extension TransactionTemplateRepositoryTests {
         let randomId = UUID()
 
         do {
+            let executionState = TemplateExecutionState(
+                lastExecutedAt: Date(),
+                executionCount: 1
+            )
             try await templateWriter.updateTemplateProcessing(
-                id: randomId, processedCount: 1, lastAddedAt: Date(), nextDueDate: nil
+                id: randomId, executionState: executionState, lastAddedAt: Date(), nextDueDate: nil
             )
             XCTFail("Should throw templateNotFound error")
         } catch {
@@ -378,9 +400,11 @@ extension TransactionTemplateRepositoryTests {
         let updatedTemplate = TransactionTemplateDTO(
             id: template.id, amount: 20000, place: "수정됨", memo: template.memo,
             transactionType: template.transactionType, recurrencePeriod: template.recurrencePeriod,
-            processedCount: template.processedCount, lastAddedAt: template.lastAddedAt,
+            lastAddedAt: template.lastAddedAt,
             nextDueDate: template.nextDueDate, subCategory: template.subCategory,
-            paymentMethod: template.paymentMethod
+            paymentMethod: template.paymentMethod,
+            recurrencePattern: template.recurrencePattern,
+            executionState: template.executionState
         )
         try await templateWriter.updateTemplate(updatedTemplate)
 
@@ -408,8 +432,13 @@ extension TransactionTemplateRepositoryTests {
 
         for template in dueTemplates {
             let nextMonth = Calendar.current.date(byAdding: .month, value: 1, to: now)
+            let currentExecutionCount = template.executionState.executionCount
+            let executionState = TemplateExecutionState(
+                lastExecutedAt: now,
+                executionCount: currentExecutionCount + 1
+            )
             try await templateWriter.updateTemplateProcessing(
-                id: template.id, processedCount: template.processedCount + 1,
+                id: template.id, executionState: executionState,
                 lastAddedAt: now, nextDueDate: nextMonth
             )
         }

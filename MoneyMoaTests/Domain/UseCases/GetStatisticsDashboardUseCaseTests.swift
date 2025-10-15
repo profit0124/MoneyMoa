@@ -109,8 +109,11 @@ struct GetStatisticsDashboardUseCaseTests {
     @Test
     func dashboard_customRange_handlesCorrectly() async throws {
         let cal = Calendar.current
-        let start = cal.date(from: .init(year: 2025, month: 6, day: 1))!
-        let end = cal.date(from: .init(year: 2025, month: 8, day: 1))!
+        let date = Date()
+        let year = cal.component(.year, from: date)
+        let month = cal.component(.month, from: date)
+        let start = cal.date(from: .init(year: year, month: month - 2, day: 1))!
+        let end = cal.date(from: .init(year: year, month: month, day: 1))!
         let range = DateRange(start: start, end: end, calendar: cal)
         let uc = UCFactory.make()
         let dto = try await uc.execute(range: range)

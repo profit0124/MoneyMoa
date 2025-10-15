@@ -154,7 +154,20 @@ extension TransactionDTO {
 
     func toTemplate(subCategory: SubCategory, paymentMethod: PaymentMethod, recurrencePeriod: RecurrencePeriod) -> TransactionTemplate {
         let calendar = self.timeContext.calendar
-        let processCount = 1
+        let pattern = RecurrencePattern(
+            from: self.date,
+            period: recurrencePeriod,
+            calendar: calendar
+        )
+        let nextDueDate = pattern.calculateNextOccurrence(
+            after: self.date,
+            calendar: calendar
+        )
+        let executionState = TemplateExecutionState(
+            lastExecutedAt: self.date,
+            executionCount: 1
+        )
+
         return TransactionTemplate(
             amount: self.amount,
             place: self.place,
@@ -162,14 +175,15 @@ extension TransactionDTO {
             transactionType: self.transactionType,
             recurrencePeriod: recurrencePeriod,
             createdAt: self.date,
-            processedCount: processCount,
             lastAddedAt: self.date,
-            nextDueDate: recurrencePeriod.calculateOccurenceDate(from: self.date, processCount: processCount, calendar: calendar),
+            nextDueDate: nextDueDate,
             timeZoneIdentifier: self.timeContext.timeZoneIdentifier,
             calendarIdentifier: self.timeContext.calendarIdentifier,
             localeIdentifier: self.timeContext.localeIdentifier,
             subCategory: subCategory,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            recurrencePattern: pattern,
+            executionState: executionState
         )
     }
 }

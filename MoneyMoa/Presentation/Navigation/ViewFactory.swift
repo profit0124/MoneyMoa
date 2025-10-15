@@ -35,6 +35,9 @@ struct ViewFactory {
 
         case .settings(let settingsRoute):
             handleSetting(settingsRoute: settingsRoute)
+
+        case .transactionTemplates(let transactionTemplateRoute):
+            handleTransactionTemplate(templateRoute: transactionTemplateRoute)
         }
     }
 
@@ -49,6 +52,9 @@ struct ViewFactory {
         case .budget(let yearMonth):
             BudgetSetupView(viewModel: container.makeBudgetSetupViewModel(yearMonth: yearMonth))
 
+        case .transactionTemplate:
+            TransactionTemplateSettingsView(viewModel: container.makeTransactionTemplateSettingsViewModel())
+
         case .category:
             CategorySetupView(viewModel: container.makeCategoryListViewModel(mode: .configuration))
 
@@ -60,6 +66,17 @@ struct ViewFactory {
 
         case .subCategoryForm(let category, let subCategory):
             SubCategoryFormView(viewModel: container.makeSubCategoryFormViewModel(category: category, subCategory: subCategory))
+        }
+    }
+
+    @ViewBuilder
+    private func handleTransactionTemplate(templateRoute: TransactionTemplateRoute) -> some View {
+        switch templateRoute {
+        case .add:
+            AddTransactionTemplateView(viewModel: container.makeAddTransactionTemplateViewModel())
+
+        case .update(let template):
+            UpdateTransactionTemplateView(viewModel: container.makeUpdateTransactionTemplateViewModel(template: template))
         }
     }
 }

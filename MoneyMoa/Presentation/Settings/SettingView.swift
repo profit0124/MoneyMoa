@@ -40,7 +40,7 @@ enum SettingsSection: CaseIterable, Hashable {
     
     var items: [SettingsItem] {
         switch self {
-        case .budget: return [.monthlyBudget]
+        case .budget: return [.monthlyBudget, .transactionTemplate]
         case .category: return [.categoryManagement]
         case .about: return [.versionInfo, .developerInfo]
         }
@@ -49,6 +49,7 @@ enum SettingsSection: CaseIterable, Hashable {
 
 enum SettingsItem: Hashable {
     case monthlyBudget
+    case transactionTemplate
     case categoryManagement
     case versionInfo
     case developerInfo
@@ -56,6 +57,7 @@ enum SettingsItem: Hashable {
     var title: String {
         switch self {
         case .monthlyBudget: return "월별 예산"
+        case .transactionTemplate: return "반복 거래 템플릿"
         case .categoryManagement: return "카테고리 관리"
         case .versionInfo: return "버전 정보"
         case .developerInfo: return "개발자"
@@ -65,6 +67,7 @@ enum SettingsItem: Hashable {
     var subtitle: String {
         switch self {
         case .monthlyBudget: return "월별 예산을 설정하고 관리하세요"
+        case .transactionTemplate: return "정기적으로 발생하는 거래를 관리하세요"
         case .categoryManagement: return "수입과 지출 카테고리를 관리하세요"
         case .versionInfo: return "MoneyMoa v1.0.0"
         case .developerInfo: return "Profit"
@@ -74,6 +77,7 @@ enum SettingsItem: Hashable {
     var icon: String {
         switch self {
         case .monthlyBudget: return "dollarsign.circle.fill"
+        case .transactionTemplate: return "repeat.circle.fill"
         case .categoryManagement: return "tag.fill"
         case .versionInfo: return "app.badge.fill"
         case .developerInfo: return "person.fill"
@@ -83,6 +87,7 @@ enum SettingsItem: Hashable {
     var iconColor: Color {
         switch self {
         case .monthlyBudget: return .green
+        case .transactionTemplate: return .indigo
         case .categoryManagement: return .orange
         case .versionInfo: return .blue
         case .developerInfo: return .purple
@@ -91,7 +96,7 @@ enum SettingsItem: Hashable {
     
     var showArrow: Bool {
         switch self {
-        case .monthlyBudget, .categoryManagement: return true
+        case .monthlyBudget, .transactionTemplate, .categoryManagement: return true
         case .versionInfo, .developerInfo: return false
         }
     }
@@ -101,8 +106,10 @@ enum SettingsItem: Hashable {
         switch self {
         case .monthlyBudget:
             router.push(.settingsBudget(YearMonth.current))
+        case .transactionTemplate:
+            router.push(.settings(.transactionTemplate))
         case .categoryManagement:
-            router.push(.settings(.category))
+            router.push(.settingTransactionTemplate)
         case .versionInfo, .developerInfo:
             break // No action for info items
         }

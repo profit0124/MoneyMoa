@@ -121,11 +121,34 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
             serialQueue.async {
                 let result = self.templates
                     .filter { template in
-                        template.recurrencePeriod != .none
-                        && (template.nextDueDate ?? .distantFuture) <= date
+                        guard template.recurrencePeriod != .none else { return false }
+                        let dueDate = template.nextDueDate ?? template.calculatedNextDueDate ?? .distantFuture
+                        return dueDate <= date
                     }
                     .sorted {
-                        ($0.nextDueDate ?? Date.distantPast) < ($1.nextDueDate ?? Date.distantPast)
+                        let lhs = $0.nextDueDate ?? $0.calculatedNextDueDate ?? Date.distantPast
+                        let rhs = $1.nextDueDate ?? $1.calculatedNextDueDate ?? Date.distantPast
+                        return lhs < rhs
+                    }
+                continuation.resume(returning: result)
+            }
+        }
+    }
+
+    public func fetchTemplatesByRecurrencePeriod(_ period: RecurrencePeriod) async throws -> [TransactionTemplateDTO] {
+        try await simulateDelay()
+        try checkFailure()
+
+        return await withCheckedContinuation { continuation in
+            serialQueue.async {
+                let result = self.templates
+                    .filter { template in
+                        template.recurrencePeriod == period
+                    }
+                    .sorted {
+                        let lhs = $0.nextDueDate ?? $0.calculatedNextDueDate ?? Date.distantPast
+                        let rhs = $1.nextDueDate ?? $1.calculatedNextDueDate ?? Date.distantPast
+                        return lhs < rhs
                     }
                 continuation.resume(returning: result)
             }
@@ -164,7 +187,7 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
 
     public func updateTemplateProcessing(
         id: UUID,
-        processedCount: Int,
+        executionState: TemplateExecutionState,
         lastAddedAt: Date,
         nextDueDate: Date?
     ) async throws {
@@ -185,12 +208,13 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
                         transactionType: template.transactionType,
                         recurrencePeriod: template.recurrencePeriod,
                         createdAt: template.createdAt,
-                        processedCount: processedCount,
                         lastAddedAt: lastAddedAt,
                         nextDueDate: nextDueDate,
                         timeContext: template.timeContext,
                         subCategory: template.subCategory,
-                        paymentMethod: template.paymentMethod
+                        paymentMethod: template.paymentMethod,
+                        recurrencePattern: template.recurrencePattern,
+                        executionState: executionState
                     )
 
                     self.templates[index] = template

@@ -104,8 +104,12 @@ final class AppDIContainer: DIContainer {
     
     /// Production UpdateTransactionUseCase를 생성합니다
     func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
-        let writer = makeTransactionWriter()
-        return UpdateTransactionUseCaseImpl(transactionWriter: writer)
+        let transactionWriter = makeTransactionWriter()
+        let templateWriter = makeTransactionTemplateRepository()
+        return UpdateTransactionUseCaseImpl(
+            transactionWriter: transactionWriter,
+            templateWriter: templateWriter
+        )
     }
     
     /// Production GetTransactionByIdUseCase를 생성합니다
@@ -115,6 +119,26 @@ final class AppDIContainer: DIContainer {
     }
 
     // MARK: - TransactionTemplate UseCase Factory Methods
+
+    func makeFetchTransactionTemplatesUseCase() -> FetchTransactionTemplatesUseCase {
+        let templateReader = makeTransactionTemplateRepository()
+        return FetchTransactionTemplatesUseCaseImpl(templateReader: templateReader)
+    }
+
+    func makeDeleteTransactionTemplateUseCase() -> DeleteTransactionTemplateUseCase {
+        let templateWriter = makeTransactionTemplateRepository()
+        return DeleteTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
+    }
+
+    func makeCreateTransactionTemplateUseCase() -> CreateTransactionTemplateUseCase {
+        let templateWriter = makeTransactionTemplateRepository()
+        return CreateTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
+    }
+
+    func makeUpdateTransactionTemplateUseCase() -> UpdateTransactionTemplateUseCase {
+        let templateWriter = makeTransactionTemplateRepository()
+        return UpdateTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
+    }
 
     func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase {
         let templateRepository = makeTransactionTemplateRepository()

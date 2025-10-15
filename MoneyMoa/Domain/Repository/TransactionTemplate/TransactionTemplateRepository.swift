@@ -27,6 +27,11 @@ public protocol TransactionTemplateReader {
     /// - Parameter date: 기준 날짜
     /// - Returns: nextDueDate가 기준 날짜 이전인 템플릿 목록
     func fetchTemplatesDueForProcessing(before date: Date) async throws -> [TransactionTemplateDTO]
+
+    /// 반복 주기에 따른 템플릿 조회 
+    /// - Parameter period: none, weekly 등 반복주기
+    /// - Returns: nextDueDate가 기준 날짜 이전인 템플릿 목록
+    func fetchTemplatesByRecurrencePeriod(_ period: RecurrencePeriod) async throws -> [TransactionTemplateDTO]
 }
 
 /// 거래 템플릿 변경 전용 프로토콜 (쓰기 작업)
@@ -44,15 +49,15 @@ public protocol TransactionTemplateWriter {
     /// - Throws: 존재하지 않는 템플릿, 유효하지 않은 데이터 등의 에러
     func updateTemplate(_ template: TransactionTemplateDTO) async throws
 
-    /// 템플릿 처리 상태 업데이트 (처리 횟수, 마지막 추가 시점 등)
+    /// 템플릿 처리 상태 업데이트 (실행 상태, 마지막 추가 시점 등)
     /// - Parameters:
     ///   - id: 템플릿 ID
-    ///   - processedCount: 처리된 횟수
+    ///   - executionState: 템플릿 실행 상태
     ///   - lastAddedAt: 마지막 처리 시점
     ///   - nextDueDate: 다음 예정일
     func updateTemplateProcessing(
         id: UUID,
-        processedCount: Int,
+        executionState: TemplateExecutionState,
         lastAddedAt: Date,
         nextDueDate: Date?
     ) async throws
