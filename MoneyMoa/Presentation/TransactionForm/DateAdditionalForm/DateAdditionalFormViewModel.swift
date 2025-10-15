@@ -31,6 +31,9 @@ final class DateAdditionalFormViewModel: Identifiable {
     /// 템플릿 생성을 위한 반복주기 설정 (nil이면 템플릿 생성하지 않음)
     var selectedRecurrencePeriod: RecurrencePeriod?
 
+    /// 읽기 전용 모드 여부 (Update 모드에서 template section 비활성화)
+    let isReadOnlyTemplate: Bool
+
     // MARK: - Computed Properties
 
     /// 템플릿 생성 여부를 나타내는 Bool 값 (UI 바인딩용)
@@ -68,10 +71,12 @@ final class DateAdditionalFormViewModel: Identifiable {
 
     init(selectedDate: Date = Date(),
          memo: String = "",
-         selectedRecurrencePeriod: RecurrencePeriod? = nil) {
+         selectedRecurrencePeriod: RecurrencePeriod? = nil,
+         isReadOnlyTemplate: Bool = false) {
         self.selectedDate = selectedDate
         self.memo = memo
         self.selectedRecurrencePeriod = selectedRecurrencePeriod
+        self.isReadOnlyTemplate = isReadOnlyTemplate
     }
     
     // MARK: - Action Handling

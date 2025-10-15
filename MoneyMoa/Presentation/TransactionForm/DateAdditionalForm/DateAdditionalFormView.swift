@@ -15,7 +15,10 @@ struct DateAdditionalFormView: View {
         VStack(alignment: .leading, spacing: 24) {
             dateSection
             memoSection
-            templateSection
+
+            if !viewModel.isReadOnlyTemplate {
+                templateSection
+            }
         }
     }
     
@@ -222,7 +225,8 @@ struct DateAdditionalFormView: View {
         viewModel: DateAdditionalFormViewModel(
             selectedDate: Date(),
             memo: "점심 식사",
-            selectedRecurrencePeriod: .monthly
+            selectedRecurrencePeriod: .monthly,
+            isReadOnlyTemplate: true
         )
     )
     .padding(.horizontal, 16)

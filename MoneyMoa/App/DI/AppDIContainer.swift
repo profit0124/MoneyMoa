@@ -104,8 +104,12 @@ final class AppDIContainer: DIContainer {
     
     /// Production UpdateTransactionUseCase를 생성합니다
     func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
-        let writer = makeTransactionWriter()
-        return UpdateTransactionUseCaseImpl(transactionWriter: writer)
+        let transactionWriter = makeTransactionWriter()
+        let templateWriter = makeTransactionTemplateRepository()
+        return UpdateTransactionUseCaseImpl(
+            transactionWriter: transactionWriter,
+            templateWriter: templateWriter
+        )
     }
     
     /// Production GetTransactionByIdUseCase를 생성합니다

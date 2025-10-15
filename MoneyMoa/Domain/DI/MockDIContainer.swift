@@ -217,8 +217,13 @@ final class MockDIContainer: DIContainer {
     
     /// UpdateTransactionUseCase를 생성합니다 (Mock Repository 기반)
     func makeUpdateTransactionUseCase() -> UpdateTransactionUseCase {
-        let writer = makeTransactionWriter()
-        return UpdateTransactionUseCaseImpl(transactionWriter: writer)
+        let transactionWriter = makeTransactionWriter()
+        let templateWriter = makeTransactionTemplateRepository()
+
+        return UpdateTransactionUseCaseImpl(
+            transactionWriter: transactionWriter,
+            templateWriter: templateWriter
+        )
     }
     
     /// GetTransactionByIdUseCase를 생성합니다 (Mock Repository 기반)

@@ -47,6 +47,24 @@ struct UpdateTransactionView: View {
                 .disabled(!viewModel.isValid)
             }
         }
+        .alert(
+            "템플릿도 수정하시겠습니까?",
+            isPresented: $viewModel.showUpdateAlert
+        ) {
+            Button("템플릿도 수정") {
+                viewModel.send(.confirmUpdateWithTemplate)
+            }
+
+            Button("거래만 수정") {
+                viewModel.send(.confirmUpdateTransactionOnly)
+            }
+
+            Button("취소", role: .cancel) {
+                viewModel.send(.cancelUpdate)
+            }
+        } message: {
+            Text("연결된 템플릿도 함께 수정하시겠습니까?")
+        }
     }
 
     @ViewBuilder

@@ -365,4 +365,71 @@ final class DateAdditionalFormViewModelTests: XCTestCase {
         XCTAssertTrue(summary.contains("🔄"))
         XCTAssertTrue(summary.contains("매월"))
     }
+
+    // MARK: - Read-Only Template Tests
+
+    func test_isReadOnlyTemplate_defaultValue_isFalse() {
+        // Given & When
+        let viewModel = DateAdditionalFormViewModel()
+
+        // Then
+        XCTAssertFalse(viewModel.isReadOnlyTemplate, "기본값은 false여야 함")
+    }
+
+    func test_isReadOnlyTemplate_setToTrue_remainsTrue() {
+        // Given & When
+        let viewModel = DateAdditionalFormViewModel(isReadOnlyTemplate: true)
+
+        // Then
+        XCTAssertTrue(viewModel.isReadOnlyTemplate, "읽기 전용 모드로 설정되어야 함")
+    }
+
+    func test_isReadOnlyTemplate_withUpdateMode_preventsTemplateModification() {
+        // Given: Update 모드 (읽기 전용)
+        let readOnlyViewModel = DateAdditionalFormViewModel(
+            selectedDate: Date(),
+            memo: "Test",
+            selectedRecurrencePeriod: .monthly,
+            isReadOnlyTemplate: true
+        )
+
+        // Then: isReadOnlyTemplate이 true면 UI에서 template section을 숨김
+        XCTAssertTrue(readOnlyViewModel.isReadOnlyTemplate, "Update 모드에서는 읽기 전용이어야 함")
+        XCTAssertEqual(readOnlyViewModel.selectedRecurrencePeriod, .monthly, "기존 템플릿 정보는 유지되어야 함")
+    }
+
+    func test_isReadOnlyTemplate_withCreateMode_allowsTemplateModification() {
+        // Given: Create 모드 (편집 가능)
+        let editableViewModel = DateAdditionalFormViewModel(
+            selectedDate: Date(),
+            memo: "Test",
+            isReadOnlyTemplate: false
+        )
+
+        // When: 템플릿 토글 가능
+        editableViewModel.send(.toggleTemplate)
+
+        // Then
+        XCTAssertFalse(editableViewModel.isReadOnlyTemplate, "Create 모드에서는 편집 가능해야 함")
+        XCTAssertTrue(editableViewModel.createAsTemplate, "템플릿 생성 가능해야 함")
+    }
+
+    func test_summary_withReadOnlyTemplateMode_includesTemplateInfo() {
+        // Given: 템플릿이 있는 읽기 전용 모드
+        let viewModel = DateAdditionalFormViewModel(
+            selectedDate: Date(),
+            memo: "Test Memo",
+            selectedRecurrencePeriod: .monthly,
+            isReadOnlyTemplate: true
+        )
+
+        // When
+        let summary = viewModel.summary
+
+        // Then: 템플릿 정보가 포함되어야 함
+        XCTAssertTrue(summary.contains("📅"))
+        XCTAssertTrue(summary.contains("📝"))
+        XCTAssertTrue(summary.contains("🔄"))
+        XCTAssertTrue(summary.contains("매월"))
+    }
 }
