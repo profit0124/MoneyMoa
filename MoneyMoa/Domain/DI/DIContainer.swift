@@ -69,6 +69,12 @@ protocol DIContainer {
     /// DeleteTransactionTemplateUseCase를 생성합니다
     func makeDeleteTransactionTemplateUseCase() -> DeleteTransactionTemplateUseCase
 
+    /// CreateTransactionTemplateUseCase를 생성합니다
+    func makeCreateTransactionTemplateUseCase() -> CreateTransactionTemplateUseCase
+
+    /// UpdateTransactionTemplateUseCase를 생성합니다
+    func makeUpdateTransactionTemplateUseCase() -> UpdateTransactionTemplateUseCase
+
     /// TransactionTemplateProcessingUseCase를 생성합니다
     func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase
     
@@ -128,6 +134,9 @@ protocol DIContainer {
     /// TransactionTemplateSettingsViewModel을 생성합니다.
     func makeTransactionTemplateSettingsViewModel() -> TransactionTemplateSettingsViewModel
 
+    /// UpdateTransactionTemplateViewModel을 생성합니다.
+    func makeUpdateTransactionTemplateViewModel(template: TransactionTemplateDTO) -> UpdateTransactionTemplateViewModel
+
     // MARK: - TransactionForm ViewModel Factory Methods
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다
@@ -179,6 +188,15 @@ extension DIContainer {
             amountPlacePaymentViewModel: makeAmountPlacePaymentMethodFormViewModel(),
             transactionTypeSelectionViewModel: makeTransactionTypeCategoryFormViewModel(),
             dateAdditionalFormViewModel: makeDateAdditionalFormViewModel()
+        )
+    }
+
+    func makeAddTransactionTemplateViewModel() -> AddTransactionTemplateViewModel {
+        return AddTransactionTemplateViewModel(
+            createTransactionTemplateUseCase: makeCreateTransactionTemplateUseCase(),
+            amountPlacePaymentViewModel: makeAmountPlacePaymentMethodFormViewModel(),
+            transactionTypeSelectionViewModel: makeTransactionTypeCategoryFormViewModel(),
+            templatePatternFormViewModel: makeTemplatePatternFormViewModel()
         )
     }
 
@@ -273,6 +291,17 @@ extension DIContainer {
         )
     }
 
+    /// TemplatePatternFormViewModel을 생성합니다 (기본 구현)
+    func makeTemplatePatternFormViewModel(
+        memo: String = "",
+        recurrencePattern: RecurrencePattern = RecurrencePattern(period: .none)
+    ) -> TemplatePatternFormViewModel {
+        return TemplatePatternFormViewModel(
+            memo: memo,
+            recurrencePattern: recurrencePattern
+        )
+    }
+
     // MARK: CategorySetting
 
     func makeCategoryListViewModel(mode: CategoryListMode) -> CategoryListViewModel {
@@ -317,6 +346,30 @@ extension DIContainer {
         return TransactionTemplateSettingsViewModel(
             fetchTemplatesUseCase: makeFetchTransactionTemplatesUseCase(),
             deleteTemplateUseCase: makeDeleteTransactionTemplateUseCase()
+        )
+    }
+
+    func makeUpdateTransactionTemplateViewModel(template: TransactionTemplateDTO) -> UpdateTransactionTemplateViewModel {
+        let amountPlacePaymentViewModel = makeAmountPlacePaymentMethodFormViewModel(
+            amount: template.amount,
+            place: template.place ?? "",
+            paymentMethod: template.paymentMethod
+        )
+        let transactionTypeCategoryViewModel = makeTransactionTypeCategoryFormViewModel(
+            transactionType: template.transactionType,
+            subCategory: template.subCategory
+        )
+        let templatePatternFormViewModel = makeTemplatePatternFormViewModel(
+            memo: template.memo ?? "",
+            recurrencePattern: template.recurrencePattern
+        )
+
+        return UpdateTransactionTemplateViewModel(
+            template: template,
+            updateTransactionTemplateUseCase: makeUpdateTransactionTemplateUseCase(),
+            amountPlacePaymentViewModel: amountPlacePaymentViewModel,
+            transactionTypeSelectionViewModel: transactionTypeCategoryViewModel,
+            templatePatternFormViewModel: templatePatternFormViewModel
         )
     }
 

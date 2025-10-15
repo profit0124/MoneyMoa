@@ -145,7 +145,20 @@ struct TestDataFactory {
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO
     ) -> TransactionTemplateDTO {
-        TransactionTemplateDTO(
+        let timeContext = TransactionTimeContext.current
+        let resolvedPattern = recurrencePattern
+            ?? RecurrencePattern(
+                from: createdAt,
+                period: recurrencePeriod,
+                calendar: timeContext.calendar
+            )
+        let resolvedExecutionState = executionState
+            ?? TemplateExecutionState(
+                lastExecutedAt: lastAddedAt,
+                executionCount: (lastAddedAt == nil) ? 0 : 1
+            )
+
+        return TransactionTemplateDTO(
             id: id,
             amount: amount,
             place: place,
@@ -155,10 +168,11 @@ struct TestDataFactory {
             createdAt: createdAt,
             lastAddedAt: lastAddedAt,
             nextDueDate: nextDueDate,
+            timeContext: timeContext,
             subCategory: subCategory,
             paymentMethod: paymentMethod,
-            recurrencePattern: recurrencePattern,
-            executionState: executionState
+            recurrencePattern: resolvedPattern,
+            executionState: resolvedExecutionState
         )
     }
 

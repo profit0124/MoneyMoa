@@ -24,8 +24,8 @@ public struct TransactionTemplateDTO: Sendable, Hashable, Identifiable {
     public let paymentMethod: PaymentMethodDTO
 
     // 새로운 필드들
-    public let recurrencePattern: RecurrencePattern?
-    public let executionState: TemplateExecutionState?
+    public let recurrencePattern: RecurrencePattern
+    public let executionState: TemplateExecutionState
 
     public init(
         id: UUID = UUID(),
@@ -40,8 +40,8 @@ public struct TransactionTemplateDTO: Sendable, Hashable, Identifiable {
         timeContext: TransactionTimeContext = .current,
         subCategory: SubCategoryDTO,
         paymentMethod: PaymentMethodDTO,
-        recurrencePattern: RecurrencePattern? = nil,
-        executionState: TemplateExecutionState? = nil
+        recurrencePattern: RecurrencePattern,
+        executionState: TemplateExecutionState = TemplateExecutionState()
     ) {
         self.id = id
         self.amount = amount
@@ -84,75 +84,51 @@ extension TransactionTemplateDTO {
 
     // MARK: - Computed Properties for New Structure
 
-    /// 유효한 반복 패턴 (새 구조 우선, 없으면 기존 구조로 생성)
-    public var effectiveRecurrencePattern: RecurrencePattern {
-        if let pattern = recurrencePattern {
-            return pattern
-        }
-
-        // 기존 구조로부터 패턴 생성
-        let calendar = timeContext.calendar
-        let components = calendar.dateComponents([.weekday, .day, .month], from: createdAt)
-
-        switch recurrencePeriod {
-        case .none:
-            return RecurrencePattern(period: .none)
-        case .weekly:
-            return RecurrencePattern.weekly(on: components.weekday ?? 1)
-        case .monthly:
-            return RecurrencePattern.monthly(on: components.day ?? 1)
-        case .yearly:
-            return RecurrencePattern.yearly(
-                month: components.month ?? 1,
-                day: components.day ?? 1
-            )
-        }
-    }
-
-    /// 유효한 실행 상태 (새 구조 우선, 없으면 기존 구조로 생성)
-    public var effectiveExecutionState: TemplateExecutionState {
-        if let state = executionState {
-            return state
-        }
-
-        // 기존 구조로부터 상태 생성 (processedCount 제거됨, 기본값 사용)
-        return TemplateExecutionState(
-            lastExecutedAt: lastAddedAt,
-            executionCount: 0
-        )
-    }
-
     /// 다음 예정일 계산 (새 구조 사용)
     public var calculatedNextDueDate: Date? {
-        let pattern = effectiveRecurrencePattern
-        let state = effectiveExecutionState
+        guard recurrencePattern.period != .none else { return nil }
+        let calendar = timeContext.calendar
 
-        guard pattern.period != .none else { return nil }
+        if let lastExecuted = executionState.lastExecutedAt {
+            return recurrencePattern.calculateNextOccurrence(
+                after: lastExecuted,
+                calendar: calendar
+            )
+        }
 
-        return RecurrenceCalculator.calculateNextOccurrence(
-            pattern: pattern,
-            after: state.lastExecutedAt ?? createdAt,
+        let anchor = calendar.date(byAdding: .second, value: -1, to: createdAt) ?? createdAt.addingTimeInterval(-1)
+
+        return recurrencePattern.calculateNextOccurrence(
+            after: anchor,
             calendar: timeContext.calendar
         )
     }
 
     /// 현재까지 밀린 발생일들 계산
     public func getDueOccurrences(upToDate: Date = Date()) -> [Date] {
-        let pattern = effectiveRecurrencePattern
-        let state = effectiveExecutionState
+        let calendar = timeContext.calendar
 
-        return RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: state.lastExecutedAt,
-            baseDate: createdAt,
-            upToDate: upToDate,
-            calendar: timeContext.calendar
+        let anchor: Date
+        if let lastExecuted = executionState.lastExecutedAt {
+            anchor = lastExecuted
+        } else {
+            anchor = calendar.date(byAdding: .second, value: -1, to: createdAt) ?? createdAt.addingTimeInterval(-1)
+        }
+
+        return recurrencePattern.calculateOccurrences(
+            after: anchor,
+            upTo: upToDate,
+            calendar: calendar
         )
     }
 
     /// 실행 후 Template 상태 업데이트
     public func recordExecution(at date: Date) -> TransactionTemplateDTO {
-        let newState = effectiveExecutionState.recordExecution(at: date)
+        let newState = executionState.recordExecution(at: date)
+        let nextDueDateAfterExecution = recurrencePattern.calculateNextOccurrence(
+            after: date,
+            calendar: timeContext.calendar
+        )
 
         return TransactionTemplateDTO(
             id: self.id,
@@ -163,11 +139,11 @@ extension TransactionTemplateDTO {
             recurrencePeriod: self.recurrencePeriod,
             createdAt: self.createdAt,
             lastAddedAt: newState.lastExecutedAt,     // 기존 필드 업데이트
-            nextDueDate: calculatedNextDueDate,       // 재계산
+            nextDueDate: nextDueDateAfterExecution,   // 실행 시점 기준 재계산
             timeContext: self.timeContext,
             subCategory: self.subCategory,
             paymentMethod: self.paymentMethod,
-            recurrencePattern: self.effectiveRecurrencePattern,
+            recurrencePattern: self.recurrencePattern,
             executionState: newState
         )
     }
@@ -175,7 +151,7 @@ extension TransactionTemplateDTO {
     // MARK: - Legacy Support
 
     public var formattedRecurrence: String {
-        return effectiveRecurrencePattern.formattedDescription
+        return recurrencePattern.formattedDescription
     }
 
     public var nextDueDateText: String? {

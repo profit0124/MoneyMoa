@@ -85,8 +85,8 @@ final class ProcessDueTemplatesUseCaseTests: XCTestCase {
         let updatedTemplate = updatedTemplates.first!
 
         // UseCase가 처리 후 템플릿의 실행 상태가 제대로 업데이트되었는지 확인
-        XCTAssertGreaterThan(updatedTemplate.effectiveExecutionState.executionCount, 1) // 초기값보다 증가
-        XCTAssertNotNil(updatedTemplate.effectiveExecutionState.lastExecutedAt) // 마지막 실행일 업데이트
+        XCTAssertGreaterThan(updatedTemplate.executionState.executionCount, 1) // 초기값보다 증가
+        XCTAssertNotNil(updatedTemplate.executionState.lastExecutedAt) // 마지막 실행일 업데이트
         XCTAssertNotNil(updatedTemplate.nextDueDate)
         if let nextDue = updatedTemplate.nextDueDate {
             XCTAssertGreaterThan(nextDue, now) // 다음 스케줄은 미래
@@ -123,8 +123,8 @@ final class ProcessDueTemplatesUseCaseTests: XCTestCase {
         let updatedTemplate = updatedTemplates.first!
 
         // UseCase가 처리 후 템플릿의 실행 상태가 제대로 업데이트되었는지 확인
-        XCTAssertGreaterThan(updatedTemplate.effectiveExecutionState.executionCount, 1) // 초기값보다 증가
-        XCTAssertNotNil(updatedTemplate.effectiveExecutionState.lastExecutedAt) // 마지막 실행일 업데이트
+        XCTAssertGreaterThan(updatedTemplate.executionState.executionCount, 1) // 초기값보다 증가
+        XCTAssertNotNil(updatedTemplate.executionState.lastExecutedAt) // 마지막 실행일 업데이트
     }
 
     // MARK: - Multiple Templates Tests
@@ -317,6 +317,8 @@ private extension ProcessDueTemplatesUseCaseTests {
             executionCount: executionCount
         )
 
+        let recurrencePattern = RecurrencePattern(from: createdAt, period: recurrencePeriod, calendar: Calendar.current)
+
         return TransactionTemplateDTO(
             amount: 10000,
             place: "테스트",
@@ -335,6 +337,7 @@ private extension ProcessDueTemplatesUseCaseTests {
                 orderIndex: 0
             ),
             paymentMethod: PaymentMethodFactory.create(name: "테스트카드", kind: .credit),
+            recurrencePattern: recurrencePattern,
             executionState: executionState
         )
     }

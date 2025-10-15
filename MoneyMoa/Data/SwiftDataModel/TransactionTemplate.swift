@@ -61,8 +61,8 @@ final class TransactionTemplate {
          localeIdentifier: String? = nil,
          subCategory: SubCategory,
          paymentMethod: PaymentMethod,
-         recurrencePattern: RecurrencePattern? = nil,
-         executionState: TemplateExecutionState? = nil
+         recurrencePattern: RecurrencePattern = RecurrencePattern(period: .none),
+         executionState: TemplateExecutionState = TemplateExecutionState()
     ) {
         self.id = id
         self.amount = amount
@@ -90,10 +90,22 @@ final class TransactionTemplate {
 extension TransactionTemplate {
 
     /// RecurrencePattern 접근을 위한 계산 프로퍼티
-    var recurrencePattern: RecurrencePattern? {
+    var recurrencePattern: RecurrencePattern {
         get {
-            guard let data = recurrencePatternData else { return nil }
-            return try? JSONDecoder().decode(RecurrencePattern.self, from: data)
+            if let data = recurrencePatternData,
+               let decoded = try? JSONDecoder().decode(RecurrencePattern.self, from: data) {
+                return decoded
+            }
+            let timeContext = TransactionTimeContext(
+                timeZoneIdentifier: timeZoneIdentifier,
+                calendarIdentifier: calendarIdentifier,
+                localeIdentifier: localeIdentifier
+            )
+            return RecurrencePattern(
+                from: createdAt,
+                period: recurrencePeriod,
+                calendar: timeContext.calendar
+            )
         }
         set {
             recurrencePatternData = try? JSONEncoder().encode(newValue)
@@ -101,10 +113,16 @@ extension TransactionTemplate {
     }
 
     /// TemplateExecutionState 접근을 위한 계산 프로퍼티
-    var executionState: TemplateExecutionState? {
+    var executionState: TemplateExecutionState {
         get {
-            guard let data = executionStateData else { return nil }
-            return try? JSONDecoder().decode(TemplateExecutionState.self, from: data)
+            guard let data = executionStateData,
+                  let decoded = try? JSONDecoder().decode(TemplateExecutionState.self, from: data) else {
+                return TemplateExecutionState(
+                    lastExecutedAt: lastAddedAt,
+                    executionCount: 0
+                )
+            }
+            return decoded
         }
         set {
             executionStateData = try? JSONEncoder().encode(newValue)
@@ -123,6 +141,10 @@ extension TransactionTemplate {
             localeIdentifier: localeIdentifier
         )
 
+        let decodedPattern = self.recurrencePattern
+
+        let decodedExecutionState = self.executionState
+
         return TransactionTemplateDTO(
             id: self.id,
             amount: self.amount,
@@ -136,8 +158,8 @@ extension TransactionTemplate {
             timeContext: timeContext,
             subCategory: self.subCategory.toDTO(),
             paymentMethod: self.paymentMethod.toDTO(),
-            recurrencePattern: self.recurrencePattern,  // 새 필드
-            executionState: self.executionState         // 새 필드
+            recurrencePattern: decodedPattern,
+            executionState: decodedExecutionState
         )
     }
 }

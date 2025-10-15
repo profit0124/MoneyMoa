@@ -121,11 +121,14 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
             serialQueue.async {
                 let result = self.templates
                     .filter { template in
-                        template.recurrencePeriod != .none
-                        && (template.nextDueDate ?? .distantFuture) <= date
+                        guard template.recurrencePeriod != .none else { return false }
+                        let dueDate = template.nextDueDate ?? template.calculatedNextDueDate ?? .distantFuture
+                        return dueDate <= date
                     }
                     .sorted {
-                        ($0.nextDueDate ?? Date.distantPast) < ($1.nextDueDate ?? Date.distantPast)
+                        let lhs = $0.nextDueDate ?? $0.calculatedNextDueDate ?? Date.distantPast
+                        let rhs = $1.nextDueDate ?? $1.calculatedNextDueDate ?? Date.distantPast
+                        return lhs < rhs
                     }
                 continuation.resume(returning: result)
             }
@@ -143,7 +146,9 @@ public final class MockTransactionTemplateRepository: @unchecked Sendable, Trans
                         template.recurrencePeriod == period
                     }
                     .sorted {
-                        ($0.nextDueDate ?? Date.distantPast) < ($1.nextDueDate ?? Date.distantPast)
+                        let lhs = $0.nextDueDate ?? $0.calculatedNextDueDate ?? Date.distantPast
+                        let rhs = $1.nextDueDate ?? $1.calculatedNextDueDate ?? Date.distantPast
+                        return lhs < rhs
                     }
                 continuation.resume(returning: result)
             }

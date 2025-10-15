@@ -50,8 +50,8 @@ public enum TransactionTemplateFactory {
         let createdAt: Date
         let lastAddedAt: Date?
         let nextDueDate: Date?
-        let recurrencePattern: RecurrencePattern?
-        let executionState: TemplateExecutionState?
+        let recurrencePattern: RecurrencePattern
+        let executionState: TemplateExecutionState
 
         public init(
             id: UUID = UUID(),
@@ -63,8 +63,8 @@ public enum TransactionTemplateFactory {
             createdAt: Date = Date(),
             lastAddedAt: Date? = nil,
             nextDueDate: Date? = nil,
-            recurrencePattern: RecurrencePattern? = nil,
-            executionState: TemplateExecutionState? = nil
+            recurrencePattern: RecurrencePattern = RecurrencePattern(period: .none),
+            executionState: TemplateExecutionState = TemplateExecutionState()
         ) {
             self.id = id
             self.amount = amount
@@ -265,7 +265,8 @@ public enum TransactionTemplateFactory {
     public static func dueTemplates(relativeTo date: Date = Date()) -> [TransactionTemplateDTO] {
         return standardSet().filter { template in
             guard template.recurrencePeriod != .none else { return false }
-            guard let nextDueDate = template.nextDueDate else { return false }
+            // calculatedNextDueDate를 사용하여 동적으로 판단
+            guard let nextDueDate = template.calculatedNextDueDate else { return false }
             return nextDueDate <= date
         }
     }
@@ -274,7 +275,8 @@ public enum TransactionTemplateFactory {
     public static func notDueTemplates(relativeTo date: Date = Date()) -> [TransactionTemplateDTO] {
         return standardSet().filter { template in
             if template.recurrencePeriod == .none { return true }
-            guard let nextDueDate = template.nextDueDate else { return true }
+            // calculatedNextDueDate를 사용하여 동적으로 판단
+            guard let nextDueDate = template.calculatedNextDueDate else { return true }
             return nextDueDate > date
         }
     }

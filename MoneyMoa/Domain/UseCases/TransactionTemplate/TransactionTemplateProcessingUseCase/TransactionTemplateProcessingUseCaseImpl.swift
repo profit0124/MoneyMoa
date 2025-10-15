@@ -50,7 +50,7 @@ public final class TransactionTemplateProcessingUseCaseImpl: TransactionTemplate
 
                 try await templateRepository.updateTemplateProcessing(
                     id: template.id,
-                    executionState: updatedTemplate.effectiveExecutionState,
+                    executionState: updatedTemplate.executionState,
                     lastAddedAt: lastExecutionDate,
                     nextDueDate: updatedTemplate.calculatedNextDueDate
                 )

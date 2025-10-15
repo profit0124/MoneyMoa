@@ -209,6 +209,19 @@ extension TransactionTemplateRepositoryTests {
         XCTAssertEqual(fetchedTemplate?.amount, newTemplate.amount)
         XCTAssertEqual(fetchedTemplate?.place, newTemplate.place)
         XCTAssertEqual(fetchedTemplate?.recurrencePeriod, newTemplate.recurrencePeriod)
+        XCTAssertEqual(fetchedTemplate?.recurrencePattern.period, newTemplate.recurrencePattern.period)
+        XCTAssertEqual(
+            fetchedTemplate?.recurrencePattern.hour,
+            newTemplate.recurrencePattern.hour
+        )
+        XCTAssertEqual(
+            fetchedTemplate?.executionState.lastExecutedAt,
+            newTemplate.executionState.lastExecutedAt
+        )
+        XCTAssertEqual(
+            fetchedTemplate?.executionState.executionCount,
+            newTemplate.executionState.executionCount
+        )
     }
 
     func testTemplateWriter_insertTemplate_withInvalidSubCategory_throwsError() async throws {
@@ -226,7 +239,8 @@ extension TransactionTemplateRepositoryTests {
             amount: 10000, place: "Test", memo: "Test",
             transactionType: .fixedExpense, recurrencePeriod: .monthly,
             lastAddedAt: nil, nextDueDate: nil,
-            subCategory: invalidSubCategoryDTO, paymentMethod: testPaymentMethodDTO
+            subCategory: invalidSubCategoryDTO, paymentMethod: testPaymentMethodDTO,
+            recurrencePattern: RecurrencePattern.monthly(on: 1)
         )
 
         do {
@@ -315,7 +329,7 @@ extension TransactionTemplateRepositoryTests {
 
         // Then
         let fetchedTemplate = try await templateReader.fetchTemplate(id: originalTemplate.id)
-        XCTAssertEqual(fetchedTemplate?.effectiveExecutionState.executionCount, 5)
+        XCTAssertEqual(fetchedTemplate?.executionState.executionCount, 5)
         XCTAssertNotNil(fetchedTemplate?.nextDueDate)
     }
 
@@ -418,7 +432,7 @@ extension TransactionTemplateRepositoryTests {
 
         for template in dueTemplates {
             let nextMonth = Calendar.current.date(byAdding: .month, value: 1, to: now)
-            let currentExecutionCount = template.effectiveExecutionState.executionCount
+            let currentExecutionCount = template.executionState.executionCount
             let executionState = TemplateExecutionState(
                 lastExecutedAt: now,
                 executionCount: currentExecutionCount + 1

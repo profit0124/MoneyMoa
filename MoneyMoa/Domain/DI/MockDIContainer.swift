@@ -317,4 +317,12 @@ final class MockDIContainer: DIContainer {
     func makeDeleteTransactionTemplateUseCase() -> DeleteTransactionTemplateUseCase {
         DeleteTransactionTemplateUseCaseImpl(templateWriter: makeTransactionTemplateRepository())
     }
+
+    func makeCreateTransactionTemplateUseCase() -> CreateTransactionTemplateUseCase {
+        CreateTransactionTemplateUseCaseImpl(templateWriter: makeTransactionTemplateRepository())
+    }
+
+    func makeUpdateTransactionTemplateUseCase() -> UpdateTransactionTemplateUseCase {
+        UpdateTransactionTemplateUseCaseImpl(templateWriter: makeTransactionTemplateRepository())
+    }
 }

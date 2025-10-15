@@ -1,5 +1,5 @@
 //
-//  RecurrenceCalculatorTests.swift
+//  RecurrencePatternTests.swift
 //  MoneyMoaTests
 //
 //  Created by Sooik Kim on 9/24/25.
@@ -9,16 +9,16 @@ import Testing
 @testable import MoneyMoa
 import Foundation
 
-/// RecurrenceCalculator 핵심 기능 테스트
+/// RecurrencePattern 핵심 기능 테스트
 ///
-/// 목적: TransactionTemplate 반복 실행에서 정확한 발생일 계산
-/// 방지하려는 문제들:
-/// 1. 매월 31일 → 2월 31일 같은 존재하지 않는 날짜 처리 (EndOfMonth 클램프)
-/// 2. lastAddedAt이 Optional일 때 첫 실행 처리
-/// 3. 밀린 발생일들을 모두 찾아서 한 번에 처리
-/// 4. 환경(시간대, 로케일)에 의존하지 않는 일관된 계산
-@Suite("RecurrenceCalculator Core Logic Tests")
-struct RecurrenceCalculatorTests {
+/// 목적: 반복 패턴 계산 및 날짜 기반 초기화가 일관적으로 동작하는지 검증
+/// 시나리오:
+/// 1. 월말 / 윤년 클램프 처리
+/// 2. 첫 실행 포함 여부
+/// 3. 밀린 발생일 일괄 계산
+/// 4. 날짜 기반 이니셜라이저가 올바른 요일/일/시간을 채우는지 확인
+@Suite("RecurrencePattern Core Logic Tests")
+struct RecurrencePatternTests {
 
     // MARK: - Test Calendar (환경 독립적)
 
@@ -30,15 +30,86 @@ struct RecurrenceCalculatorTests {
         return calendar
     }
 
-    /// 테스트용 날짜 생성 헬퍼
-    private func createDate(year: Int, month: Int, day: Int, calendar: Calendar = Calendar(identifier: .gregorian)) -> Date {
+    /// 테스트용 날짜 생성 헬퍼 (기본 12:00)
+    private func createDate(year: Int, month: Int, day: Int, hour: Int = 12, minute: Int = 0, calendar: Calendar = Calendar(identifier: .gregorian)) -> Date {
         var components = DateComponents()
         components.year = year
         components.month = month
         components.day = day
-        components.hour = 12  // 정오로 설정하여 DST 문제 방지
+        components.hour = hour
+        components.minute = minute
         components.timeZone = TimeZone(identifier: "Asia/Seoul")!
         return calendar.date(from: components)!
+    }
+
+    // MARK: - RecurrencePattern Date-based Init Tests
+
+    @Test("날짜 기반 초기화 - 주간 패턴")
+    func testInitFromDateWeekly() {
+        let calendar = testCalendar
+        let date = createDate(year: 2025, month: 1, day: 20, hour: 15, minute: 30, calendar: calendar) // 2025-01-20 (월요일)
+
+        let pattern = RecurrencePattern(
+            from: date,
+            period: .weekly,
+            calendar: calendar
+        )
+
+        #expect(pattern.period == .weekly)
+        #expect(pattern.weekday == calendar.component(.weekday, from: date))
+        #expect(pattern.hour == 15)
+        #expect(pattern.minute == 30)
+    }
+
+    @Test("날짜 기반 초기화 - 월간 패턴")
+    func testInitFromDateMonthly() {
+        let calendar = testCalendar
+        let date = createDate(year: 2025, month: 3, day: 5, hour: 8, minute: 10, calendar: calendar)
+
+        let pattern = RecurrencePattern(
+            from: date,
+            period: .monthly,
+            calendar: calendar
+        )
+
+        #expect(pattern.period == .monthly)
+        #expect(pattern.dayOfMonth == 5)
+        #expect(pattern.hour == 8)
+        #expect(pattern.minute == 10)
+    }
+
+    @Test("날짜 기반 초기화 - 연간 패턴")
+    func testInitFromDateYearly() {
+        let calendar = testCalendar
+        let date = createDate(year: 2025, month: 11, day: 12, hour: 6, minute: 45, calendar: calendar)
+
+        let pattern = RecurrencePattern(
+            from: date,
+            period: .yearly,
+            calendar: calendar
+        )
+
+        #expect(pattern.period == .yearly)
+        #expect(pattern.yearlyMonth == 11)
+        #expect(pattern.yearlyDay == 12)
+        #expect(pattern.hour == 6)
+        #expect(pattern.minute == 45)
+    }
+
+    @Test("날짜 기반 초기화 - 반복 없음")
+    func testInitFromDateNone() {
+        let calendar = testCalendar
+        let date = createDate(year: 2025, month: 7, day: 1, hour: 22, minute: 5, calendar: calendar)
+
+        let pattern = RecurrencePattern(
+            from: date,
+            period: .none,
+            calendar: calendar
+        )
+
+        #expect(pattern.period == .none)
+        #expect(pattern.hour == 22)
+        #expect(pattern.minute == 5)
     }
 
     // MARK: - 1. 월말 클램프 테스트 (핵심 기능)
@@ -49,8 +120,7 @@ struct RecurrenceCalculatorTests {
         let pattern = RecurrencePattern.monthly(on: 31, endOfMonthRule: .clampToEndOfMonth)
         let afterDate = createDate(year: 2025, month: 1, day: 31, calendar: calendar) // 2025년은 평년
 
-        let nextDate = RecurrenceCalculator.calculateNextOccurrence(
-            pattern: pattern,
+        let nextDate = pattern.calculateNextOccurrence(
             after: afterDate,
             calendar: calendar
         )
@@ -69,8 +139,7 @@ struct RecurrenceCalculatorTests {
         let pattern = RecurrencePattern.monthly(on: 31, endOfMonthRule: .clampToEndOfMonth)
         let afterDate = createDate(year: 2024, month: 1, day: 31, calendar: calendar) // 2024년은 윤년
 
-        let nextDate = RecurrenceCalculator.calculateNextOccurrence(
-            pattern: pattern,
+        let nextDate = pattern.calculateNextOccurrence(
             after: afterDate,
             calendar: calendar
         )
@@ -89,8 +158,7 @@ struct RecurrenceCalculatorTests {
         let pattern = RecurrencePattern.yearly(month: 2, day: 29, endOfMonthRule: .clampToEndOfMonth)
         let afterDate = createDate(year: 2024, month: 2, day: 29, calendar: calendar) // 윤년 2월 29일
 
-        let nextDate = RecurrenceCalculator.calculateNextOccurrence(
-            pattern: pattern,
+        let nextDate = pattern.calculateNextOccurrence(
             after: afterDate,
             calendar: calendar
         )
@@ -112,11 +180,9 @@ struct RecurrenceCalculatorTests {
         let baseDate = createDate(year: 2025, month: 1, day: 20, calendar: calendar) // 2025-01-20 (월요일)
         let upToDate = createDate(year: 2025, month: 1, day: 25, calendar: calendar) // 토요일
 
-        let dueOccurrences = RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: nil, // 첫 실행
-            baseDate: baseDate,
-            upToDate: upToDate,
+        let dueOccurrences = pattern.calculateOccurrences(
+            after: baseDate,
+            upTo: upToDate,
             calendar: calendar
         )
 
@@ -137,11 +203,9 @@ struct RecurrenceCalculatorTests {
         let baseDate = createDate(year: 2025, month: 1, day: 10, calendar: calendar)
         let upToDate = createDate(year: 2025, month: 2, day: 20, calendar: calendar)
 
-        let dueOccurrences = RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: nil, // 첫 실행
-            baseDate: baseDate,
-            upToDate: upToDate,
+        let dueOccurrences = pattern.calculateOccurrences(
+            after: baseDate,
+            upTo: upToDate,
             calendar: calendar
         )
 
@@ -162,15 +226,12 @@ struct RecurrenceCalculatorTests {
     func testDueOccurrences_Weekly() {
         let calendar = testCalendar
         let pattern = RecurrencePattern.weekly(on: 6) // 금요일
-        let baseDate = createDate(year: 2025, month: 1, day: 3, calendar: calendar) // 금요일
         let lastExecutedAt = createDate(year: 2025, month: 1, day: 3, calendar: calendar)
         let upToDate = createDate(year: 2025, month: 1, day: 20, calendar: calendar) // 월요일
 
-        let dueOccurrences = RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: lastExecutedAt,
-            baseDate: baseDate,
-            upToDate: upToDate,
+        let dueOccurrences = pattern.calculateOccurrences(
+            after: lastExecutedAt,
+            upTo: upToDate,
             calendar: calendar
         )
 
@@ -189,15 +250,12 @@ struct RecurrenceCalculatorTests {
     func testDueOccurrences_MonthlyWithEndOfMonth() {
         let calendar = testCalendar
         let pattern = RecurrencePattern.monthly(on: 30, endOfMonthRule: .clampToEndOfMonth)
-        let baseDate = createDate(year: 2025, month: 1, day: 30, calendar: calendar)
         let lastExecutedAt = createDate(year: 2025, month: 1, day: 30, calendar: calendar)
         let upToDate = createDate(year: 2025, month: 4, day: 15, calendar: calendar)
 
-        let dueOccurrences = RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: lastExecutedAt,
-            baseDate: baseDate,
-            upToDate: upToDate,
+        let dueOccurrences = pattern.calculateOccurrences(
+            after: lastExecutedAt,
+            upTo: upToDate,
             calendar: calendar
         )
 
@@ -220,16 +278,14 @@ struct RecurrenceCalculatorTests {
         let pattern = RecurrencePattern(period: .none)
         let baseDate = createDate(year: 2025, month: 1, day: 15, calendar: calendar)
 
-        let nextDate = RecurrenceCalculator.calculateNextOccurrence(
-            pattern: pattern,
+        let nextDate = pattern.calculateNextOccurrence(
             after: baseDate,
             calendar: calendar
         )
 
-        let dueOccurrences = RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: nil,
-            baseDate: baseDate,
+        let dueOccurrences = pattern.calculateOccurrences(
+            after: baseDate,
+            upTo: Date(),
             calendar: calendar
         )
 
@@ -244,11 +300,9 @@ struct RecurrenceCalculatorTests {
         let baseDate = createDate(year: 2020, month: 1, day: 5, calendar: calendar) // 일요일
         let upToDate = createDate(year: 2025, month: 1, day: 1, calendar: calendar) // 5년 후
 
-        let dueOccurrences = RecurrenceCalculator.calculateDueOccurrences(
-            pattern: pattern,
-            lastExecutedAt: nil,
-            baseDate: baseDate,
-            upToDate: upToDate,
+        let dueOccurrences = pattern.calculateOccurrences(
+            after: baseDate,
+            upTo: upToDate,
             calendar: calendar,
             maxCount: 10 // 최대 10개로 제한
         )
@@ -283,9 +337,9 @@ struct RecurrenceCalculatorTests {
     @Test("FormattedDescription 출력")
     func testFormattedDescription() {
         #expect(RecurrencePattern(period: .none).formattedDescription == "반복 없음")
-        #expect(RecurrencePattern.weekly(on: 1).formattedDescription == "매주 일요일")
-        #expect(RecurrencePattern.weekly(on: 2).formattedDescription == "매주 월요일")
-        #expect(RecurrencePattern.monthly(on: 15).formattedDescription == "매월 15일")
-        #expect(RecurrencePattern.yearly(month: 3, day: 15).formattedDescription == "매년 3월 15일")
+        #expect(RecurrencePattern.weekly(on: 1).formattedDescription == "매주 일요일 09:00")
+        #expect(RecurrencePattern.weekly(on: 2).formattedDescription == "매주 월요일 09:00")
+        #expect(RecurrencePattern.monthly(on: 15).formattedDescription == "매월 15일 09:00")
+        #expect(RecurrencePattern.yearly(month: 3, day: 15).formattedDescription == "매년 3월 15일 09:00")
     }
 }
