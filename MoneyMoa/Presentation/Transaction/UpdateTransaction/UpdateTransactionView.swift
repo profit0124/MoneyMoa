@@ -23,30 +23,28 @@ struct UpdateTransactionView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(TransactionStep.allCases, id: \.self) {
-                        stepView($0, isCompleted: true)
-                    }
+        ScrollView {
+            VStack(spacing: 16) {
+                ForEach(TransactionStep.allCases, id: \.self) {
+                    stepView($0, isCompleted: true)
                 }
             }
-            .environment(cardCoordinator)
-            .navigationTitle("거래 수정")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("취소") {
-                        viewModel.send(.cancelButtonTapped)
-                    }
+        }
+        .environment(cardCoordinator)
+        .navigationTitle("거래 수정")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("취소") {
+                    viewModel.send(.cancelButtonTapped)
                 }
+            }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("수정") {
-                        viewModel.send(.updateTransaction)
-                    }
-                    .disabled(!viewModel.isValid)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("수정") {
+                    viewModel.send(.updateTransaction)
                 }
+                .disabled(!viewModel.isValid)
             }
         }
     }
@@ -100,5 +98,5 @@ struct UpdateTransactionView: View {
 }
 
 #Preview {
-    UpdateTransactionView(viewModel: MockDIContainer().makeUpdateTransactionViewModel(transaction: .mockLunch))
+    CoordinatorHost(container: MockDIContainer(), start: .transactionUpdate(.mockLunch))
 }

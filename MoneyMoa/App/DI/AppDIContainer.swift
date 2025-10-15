@@ -126,6 +126,16 @@ final class AppDIContainer: DIContainer {
         return DeleteTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
     }
 
+    func makeCreateTransactionTemplateUseCase() -> CreateTransactionTemplateUseCase {
+        let templateWriter = makeTransactionTemplateRepository()
+        return CreateTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
+    }
+
+    func makeUpdateTransactionTemplateUseCase() -> UpdateTransactionTemplateUseCase {
+        let templateWriter = makeTransactionTemplateRepository()
+        return UpdateTransactionTemplateUseCaseImpl(templateWriter: templateWriter)
+    }
+
     func makeTransactionTemplateProcessingUseCase() -> TransactionTemplateProcessingUseCase {
         let templateRepository = makeTransactionTemplateRepository()
         let transactionWriter = makeTransactionWriter()

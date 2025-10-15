@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import Combine
 
 @Observable
 final class TransactionTemplateSettingsViewModel {
+
+    private let transactionTemplateEventPublisher: TransactionTemplateEventPublisher
+
     private(set) var templates: [TransactionTemplateDTO] = []
-    var showingAddTemplate = false
-    var templateToEdit: TransactionTemplateDTO?
     private(set) var templateToDelete: TransactionTemplateDTO?
     var showDeleteAlert = false
     private(set) var isLoading = false
@@ -20,12 +22,26 @@ final class TransactionTemplateSettingsViewModel {
     private let fetchTemplatesUseCase: FetchTransactionTemplatesUseCase
     private let deleteTemplateUseCase: DeleteTransactionTemplateUseCase
 
+    private var cancellables: Set<AnyCancellable> = []
+
     init(
+        transactionTemplateEventPublisher: TransactionTemplateEventPublisher,
         fetchTemplatesUseCase: FetchTransactionTemplatesUseCase,
         deleteTemplateUseCase: DeleteTransactionTemplateUseCase
     ) {
+        self.transactionTemplateEventPublisher = transactionTemplateEventPublisher
         self.fetchTemplatesUseCase = fetchTemplatesUseCase
         self.deleteTemplateUseCase = deleteTemplateUseCase
+
+        self.setupTransactionTemplateEventObservers()
+    }
+
+    private func setupTransactionTemplateEventObservers() {
+        transactionTemplateEventPublisher.transactionTemplateEvents
+            .sink(receiveValue: { [weak self] _ in
+                self?.send(.onAppear)
+            })
+            .store(in: &cancellables)
     }
 
     enum Action {
@@ -72,7 +88,7 @@ final class TransactionTemplateSettingsViewModel {
             if let templateToDelete {
                 do {
                     try await deleteTemplateUseCase.execute(templateId: templateToDelete.id)
-                    self.loadTemplates()
+                    self.transactionTemplateEventPublisher.publish(.init(type: .deleted, template: templateToDelete))
                     self.templateToDelete = nil
                     showDeleteAlert = false
                 } catch {

@@ -36,7 +36,7 @@ struct TransactionTemplateSettingsView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
-                    viewModel.showingAddTemplate = true
+                    router.present(.transactionTemplateAdd, as: .sheet)
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 22))
@@ -46,12 +46,6 @@ struct TransactionTemplateSettingsView: View {
         }
         .onAppear {
             viewModel.send(.onAppear)
-        }
-        .sheet(isPresented: $viewModel.showingAddTemplate) {
-            Text("Template 생성 화면")
-        }
-        .sheet(item: $viewModel.templateToEdit) { template in
-            Text("Template 수정 화면: \(template.id)")
         }
         .alert("템플릿 삭제", isPresented: $viewModel.showDeleteAlert) {
             Button("취소", role: .cancel) {
@@ -127,7 +121,7 @@ struct TransactionTemplateSettingsView: View {
     @ViewBuilder
     private func transactionTemplateCard(_ template: TransactionTemplateDTO) -> some View {
         Button {
-            print("on tap")
+            router.present(.transactionTemplateUpdate(template), as: .sheet)
         } label: {
             VStack(alignment: .leading, spacing: 16) {
                 // Header with place and delete button

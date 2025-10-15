@@ -37,6 +37,11 @@ enum StatisticsRoute: Hashable {
     case overview
 }
 
+enum TransactionTemplateRoute: Hashable {
+    case add
+    case update(TransactionTemplateDTO)
+}
+
 // MARK: - App Route (Union)
 
 enum AppRoute: Hashable {
@@ -44,6 +49,7 @@ enum AppRoute: Hashable {
     case settings(SettingsRoute)
     case transactions(TransactionsRoute)
     case statistics(StatisticsRoute)
+    case transactionTemplates(TransactionTemplateRoute)
 }
 
 // MARK: - Convenience Extensions
@@ -81,5 +87,10 @@ extension AppRoute {
         _ subCategory: SubCategoryDTO?
     ) -> AppRoute {
         return .settings(.subCategoryForm(category, subCategory))
+    }
+
+    static let transactionTemplateAdd = AppRoute.transactionTemplates(.add)
+    static func transactionTemplateUpdate(_ template: TransactionTemplateDTO) -> AppRoute {
+        return .transactionTemplates(.update(template))
     }
 }

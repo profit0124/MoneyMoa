@@ -193,6 +193,7 @@ extension DIContainer {
 
     func makeAddTransactionTemplateViewModel() -> AddTransactionTemplateViewModel {
         return AddTransactionTemplateViewModel(
+            transactionTemplateEventPublisher: DefaultTransactionTemplateEventPublisher.shared,
             createTransactionTemplateUseCase: makeCreateTransactionTemplateUseCase(),
             amountPlacePaymentViewModel: makeAmountPlacePaymentMethodFormViewModel(),
             transactionTypeSelectionViewModel: makeTransactionTypeCategoryFormViewModel(),
@@ -344,6 +345,7 @@ extension DIContainer {
 
     func makeTransactionTemplateSettingsViewModel() -> TransactionTemplateSettingsViewModel {
         return TransactionTemplateSettingsViewModel(
+            transactionTemplateEventPublisher: DefaultTransactionTemplateEventPublisher.shared,
             fetchTemplatesUseCase: makeFetchTransactionTemplatesUseCase(),
             deleteTemplateUseCase: makeDeleteTransactionTemplateUseCase()
         )
@@ -366,6 +368,7 @@ extension DIContainer {
 
         return UpdateTransactionTemplateViewModel(
             template: template,
+            transactionTemplateEventPublisher: DefaultTransactionTemplateEventPublisher.shared,
             updateTransactionTemplateUseCase: makeUpdateTransactionTemplateUseCase(),
             amountPlacePaymentViewModel: amountPlacePaymentViewModel,
             transactionTypeSelectionViewModel: transactionTypeCategoryViewModel,
