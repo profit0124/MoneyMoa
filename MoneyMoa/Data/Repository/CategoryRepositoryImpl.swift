@@ -78,7 +78,8 @@ public class CategoryRepositoryImpl: CategoryRepository {
     public func fetchCategoriesByType(_ type: TransactionType) async throws -> [CategoryDTO] {
         try await database.withModelContext { context in
             let predicate = #Predicate<Category> { category in
-                category.transactionTypeRawValue == type.rawValue
+                category.transactionTypeRawValue == type.rawValue &&
+                category.isActive
             }
             let descriptor = self.createCategoryDescriptor(predicate: predicate)
             let categories = try context.fetch(descriptor)

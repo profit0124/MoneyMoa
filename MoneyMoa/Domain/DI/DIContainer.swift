@@ -95,6 +95,12 @@ protocol DIContainer {
     /// UpdateSubCategoryUseCase를 생성합니다
     func makeUpdateSubCategoryUseCase() -> UpdateSubCategoryUseCase
 
+    /// DeleteCategoryUseCase를 생성합니다
+    func makeDeleteCategoryUseCase() -> DeleteCategoryUseCase
+
+    /// DeleteSubCategoryUseCase를 생성합니다
+    func makeDeleteSubCategoryUseCase() -> DeleteSubCategoryUseCase
+
     /// ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase
     
@@ -329,6 +335,7 @@ extension DIContainer {
             createCategoryUseCase: makeCreateCategoryUseCase(),
             createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
             updateCategoryUseCase: makeUpdateCategoryUseCase(),
+            deleteCategoryUseCase: makeDeleteCategoryUseCase(),
             categoryEventPublisher: makeCategoryEventPublisher(),
             mode: mode,
             selectedTransactionType: transactionType ?? .income,
@@ -340,6 +347,7 @@ extension DIContainer {
         return SubCategoryFormViewModel(
             createSubCategoryUseCase: makeCreateSubCategoryUseCase(),
             updateSubCategoryUseCase: makeUpdateSubCategoryUseCase(),
+            deleteSubCategoryUseCase: makeDeleteSubCategoryUseCase(),
             subCategoryEventPublisher: DefaultSubCategoryEventPublisher.shared,
             selectedCategory: category,
             selectedSubCategory: subCategory

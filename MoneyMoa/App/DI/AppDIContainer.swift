@@ -181,6 +181,18 @@ final class AppDIContainer: DIContainer {
         return UpdateSubCategoryUseCaseImpl(categoryRepository: repository)
     }
 
+    /// Production DeleteCategoryUseCase를 생성합니다
+    func makeDeleteCategoryUseCase() -> DeleteCategoryUseCase {
+        let repository = makeCategoryRepository()
+        return DeleteCategoryUseCaseImpl(categoryRepository: repository)
+    }
+
+    /// Production DeleteSubCategoryUseCase를 생성합니다
+    func makeDeleteSubCategoryUseCase() -> DeleteSubCategoryUseCase {
+        let repository = makeCategoryRepository()
+        return DeleteSubCategoryUseCaseImpl(categoryRepository: repository)
+    }
+
     /// Production ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {
         let categoryRepository = makeCategoryRepository()

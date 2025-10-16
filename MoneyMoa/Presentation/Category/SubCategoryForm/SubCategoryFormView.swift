@@ -22,11 +22,22 @@ struct SubCategoryFormView: View {
         .navigationTitle(viewModel.selectedSubCategoryDTO == nil ? "새 서브카테고리" : "서브카테고리 편집")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("취소") {
-                    router.dismissModal()
+            if viewModel.selectedSubCategoryDTO != nil {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(role: .destructive) {
+                        viewModel.send(.showDeleteConfirmation)
+                    } label: {
+                        Text("삭제")
+                    }
+                }
+            } else {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("취소") {
+                        router.dismissModal()
+                    }
                 }
             }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("저장") {
                      viewModel.send(.submit(router))
@@ -40,6 +51,14 @@ struct SubCategoryFormView: View {
                 viewModel.send(.unsubscribe)
             }
         })
+        .alert("서브카테고리 삭제", isPresented: $viewModel.showingDeleteConfirmation) {
+            Button("삭제", role: .destructive) {
+                viewModel.send(.deleteSubCategory(router))
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("이 서브카테고리를 삭제하시겠습니까?")
+        }
     }
     
     @ViewBuilder

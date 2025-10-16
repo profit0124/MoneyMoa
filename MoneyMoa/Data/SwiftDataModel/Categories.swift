@@ -133,7 +133,7 @@ extension Collection where Element == Category {
 extension Collection where Element == SubCategory {
     /// SubCategory 배열을 SubCategoryDTO 배열로 변환
     func toDTOs() -> [SubCategoryDTO] {
-        return self.map { $0.toDTO() }.sorted(by: { $0.orderIndex < $1.orderIndex })
+        return self.compactMap { $0.isActive ? $0.toDTO() : nil }.sorted(by: { $0.orderIndex < $1.orderIndex })
     }
 }
 

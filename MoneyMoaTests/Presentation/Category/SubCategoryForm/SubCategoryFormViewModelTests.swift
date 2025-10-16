@@ -19,6 +19,7 @@ final class SubCategoryFormViewModelTests: XCTestCase {
     private var viewModel: SubCategoryFormViewModel!
     private var mockCreateSubCategoryUseCase: MockCreateSubCategoryUseCase!
     private var mockUpdateSubCategoryUseCase: MockUpdateSubCategoryUseCase!
+    private var mockDeleteSubCategoryUseCase: MockDeleteSubCategoryUseCase!
     private var mockSubCategoryEventPublisher: MockSubCategoryEventPublisher!
     private var mockRouter: AppRouter!
     private var cancellables: Set<AnyCancellable>!
@@ -27,9 +28,10 @@ final class SubCategoryFormViewModelTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
-        
+
         mockCreateSubCategoryUseCase = MockCreateSubCategoryUseCase()
         mockUpdateSubCategoryUseCase = MockUpdateSubCategoryUseCase()
+        mockDeleteSubCategoryUseCase = MockDeleteSubCategoryUseCase()
         mockSubCategoryEventPublisher = MockSubCategoryEventPublisher()
         mockRouter = AppRouter()
         cancellables = Set<AnyCancellable>()
@@ -40,6 +42,7 @@ final class SubCategoryFormViewModelTests: XCTestCase {
         viewModel = nil
         mockCreateSubCategoryUseCase = nil
         mockUpdateSubCategoryUseCase = nil
+        mockDeleteSubCategoryUseCase = nil
         mockSubCategoryEventPublisher = nil
         mockRouter = nil
         cancellables?.removeAll()
@@ -56,6 +59,7 @@ final class SubCategoryFormViewModelTests: XCTestCase {
         return SubCategoryFormViewModel(
             createSubCategoryUseCase: mockCreateSubCategoryUseCase,
             updateSubCategoryUseCase: mockUpdateSubCategoryUseCase,
+            deleteSubCategoryUseCase: mockDeleteSubCategoryUseCase,
             subCategoryEventPublisher: mockSubCategoryEventPublisher,
             selectedCategory: selectedCategory,
             selectedSubCategory: selectedSubCategory
@@ -429,6 +433,48 @@ final class SubCategoryFormViewModelTests: XCTestCase {
         XCTAssertEqual(updatedSubCategory?.categoryName, newCategory.name)
         XCTAssertEqual(updatedSubCategory?.categoryIconName, newCategory.iconName)
         XCTAssertEqual(updatedSubCategory?.transactionType, newCategory.transactionType)
+    }
+
+    // MARK: - Test Methods - Delete SubCategory
+
+    func test_deleteSubCategory_callsDeleteUseCaseWithCorrectId() async {
+        // Given: 수정 모드로 설정된 ViewModel
+        let subCategory = SubCategoryDTO.mockFoodExpense
+        viewModel = createViewModel(selectedSubCategory: subCategory)
+
+        // When: 서브카테고리 삭제
+        viewModel.send(.deleteSubCategory(mockRouter))
+
+        // Then: DeleteSubCategoryUseCase가 올바른 ID로 호출됨
+        try? await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(mockDeleteSubCategoryUseCase.executeCallCount, 1)
+        XCTAssertEqual(mockDeleteSubCategoryUseCase.lastDeletedSubCategoryId, subCategory.id)
+    }
+
+    func test_deleteSubCategory_publishesDeleteEvent() async {
+        // Given: 수정 모드로 설정된 ViewModel
+        let subCategory = SubCategoryDTO.mockFoodExpense
+        viewModel = createViewModel(selectedSubCategory: subCategory)
+
+        // When: 서브카테고리 삭제
+        viewModel.send(.deleteSubCategory(mockRouter))
+
+        // Then: 삭제 이벤트가 발행됨
+        try? await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(mockSubCategoryEventPublisher.publishCallCount, 1)
+        XCTAssertEqual(mockSubCategoryEventPublisher.lastPublishedSubCategoryEvent?.type, .deleted)
+        XCTAssertEqual(mockSubCategoryEventPublisher.lastPublishedSubCategoryEvent?.subCategory.id, subCategory.id)
+    }
+
+    func test_showDeleteConfirmation_setsShowingDeleteConfirmationToTrue() {
+        // Given: ViewModel 생성
+        viewModel = createViewModel()
+
+        // When: 삭제 확인 표시
+        viewModel.send(.showDeleteConfirmation)
+
+        // Then: showingDeleteConfirmation이 true로 설정됨
+        XCTAssertTrue(viewModel.showingDeleteConfirmation)
     }
 }
 

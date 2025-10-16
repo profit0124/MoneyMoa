@@ -281,10 +281,12 @@ final class CategoryRepositoryTests: XCTestCase {
 
         let subCategories = try await database.withModelContext { context in
             let descriptor = FetchDescriptor<SubCategory>()
-            return try context.fetch(descriptor).toDTOs()
+            let subCategories = try context.fetch(descriptor)
+            XCTAssertEqual(subCategories.count, 1)
+            XCTAssertFalse(subCategories[0].isActive)
+            return subCategories.toDTOs()
         }
-        XCTAssertEqual(subCategories.count, 1)
-        XCTAssertFalse(subCategories[0].isActive)
+        XCTAssertTrue(subCategories.isEmpty)
     }
 
     func testDeleteCategory_NotFound_ShouldThrowError() async throws {
@@ -349,10 +351,14 @@ final class CategoryRepositoryTests: XCTestCase {
         // Then: SubCategory의 isActive가 false로 변경됨
         let subCategories = try await database.withModelContext { context in
             let descriptor = FetchDescriptor<SubCategory>()
-            return try context.fetch(descriptor).toDTOs()
+            let subCategories = try context.fetch(descriptor)
+            XCTAssertEqual(subCategories.count, 1)
+            XCTAssertFalse(subCategories[0].isActive)
+
+            return subCategories.toDTOs()
         }
-        XCTAssertEqual(subCategories.count, 1)
-        XCTAssertFalse(subCategories[0].isActive)
+
+        XCTAssertTrue(subCategories.isEmpty)
     }
 
     func testDeleteSubCategory_NotFound_ShouldThrowError() async throws {
