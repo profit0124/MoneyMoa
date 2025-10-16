@@ -61,7 +61,7 @@ final class DTOExtensionTests: XCTestCase {
         XCTAssertEqual(subCategoryModel.transactionType, subCategoryDTO.transactionType)
         XCTAssertEqual(subCategoryModel.isActive, subCategoryDTO.isActive)
         XCTAssertEqual(subCategoryModel.orderIndex, subCategoryDTO.orderIndex)
-        XCTAssertEqual(subCategoryModel.category.id, parentCategory.id)
+        XCTAssertEqual(subCategoryModel.category?.id, parentCategory.id)
     }
     
     // MARK: - PaymentMethodDTO Tests

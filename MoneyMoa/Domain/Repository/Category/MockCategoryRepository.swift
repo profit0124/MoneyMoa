@@ -228,7 +228,7 @@ public final class MockCategoryRepository: @unchecked Sendable, CategoryReposito
     public func updateSubCategory(_ subCategory: SubCategoryDTO) async throws {
         try await simulateDelay()
         try checkFailure()
-        
+
         return try await withCheckedThrowingContinuation { continuation in
             serialQueue.async {
                 if let index = self.subCategories.firstIndex(where: { $0.id == subCategory.id }) {
@@ -245,5 +245,44 @@ public final class MockCategoryRepository: @unchecked Sendable, CategoryReposito
             }
         }
     }
-    
+
+    // MARK: - Delete Implementation
+
+    public func deleteCategory(_ id: UUID) async throws {
+        try await simulateDelay()
+        try checkFailure()
+
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                guard self.categories.contains(where: { $0.id == id }) else {
+                    continuation.resume(throwing: MockError.categoryNotFound)
+                    return
+                }
+
+                // Mock은 Transaction이 없다고 가정하고 hard delete 수행
+                self.categories.removeAll { $0.id == id }
+                self.subCategories.removeAll { $0.categoryId == id }
+                continuation.resume()
+            }
+        }
+    }
+
+    public func deleteSubCategory(_ id: UUID) async throws {
+        try await simulateDelay()
+        try checkFailure()
+
+        return try await withCheckedThrowingContinuation { continuation in
+            serialQueue.async {
+                guard self.subCategories.contains(where: { $0.id == id }) else {
+                    continuation.resume(throwing: MockError.subCategoryNotFound)
+                    return
+                }
+
+                // Mock은 Transaction이 없다고 가정하고 hard delete 수행
+                self.subCategories.removeAll { $0.id == id }
+                continuation.resume()
+            }
+        }
+    }
+
 }

@@ -75,7 +75,21 @@ public protocol CategoryWriter {
     /// - Parameter subCategory: 수정할 서브카테고리 정보
     /// - Throws: 존재하지 않는 서브카테고리, 중복 이름 등의 에러
     func updateSubCategory(_ subCategory: SubCategoryDTO) async throws
-    
+
+    // MARK: - Category/SubCategory 삭제 (Delete Operations)
+
+    /// 카테고리 삭제
+    /// - Parameter id: 삭제할 카테고리 ID
+    /// - Note: SubCategory에 Transaction이 있으면 isActive=false, 없으면 물리 삭제
+    /// - Throws: 존재하지 않는 카테고리 등의 에러
+    func deleteCategory(_ id: UUID) async throws
+
+    /// 서브카테고리 삭제
+    /// - Parameter id: 삭제할 서브카테고리 ID
+    /// - Note: Transaction이 있으면 isActive=false, 없으면 물리 삭제
+    /// - Throws: 존재하지 않는 서브카테고리 등의 에러
+    func deleteSubCategory(_ id: UUID) async throws
+
 }
 
 /// 통합 카테고리 저장소 프로토콜 (읽기 + 쓰기)

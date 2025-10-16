@@ -335,4 +335,8 @@ private class MockCategoryRepository: CategoryRepository {
     func insertSubCategory(_ subCategory: SubCategoryDTO) async throws { }
     func updateSubCategory(_ subCategory: SubCategoryDTO) async throws { }
     func validateSubCategoryName(_ name: String, categoryId: UUID, excludingId: UUID?) async throws -> Bool { true }
+
+    // MARK: - Delete methods
+    func deleteCategory(_ id: UUID) async throws { }
+    func deleteSubCategory(_ id: UUID) async throws { }
 }

@@ -140,7 +140,7 @@ public class CategoryRepositoryImpl: CategoryRepository {
     public func fetchSubCategories(categoryId: UUID) async throws -> [SubCategoryDTO] {
         try await database.withModelContext { context in
             let predicate = #Predicate<SubCategory> { subCategory in
-                subCategory.category.id == categoryId && subCategory.isActive == true
+                subCategory.category?.id == categoryId && subCategory.isActive == true
             }
             let descriptor = self.createSubCategoryDescriptor(predicate: predicate)
             let subCategories = try context.fetch(descriptor)
@@ -166,43 +166,93 @@ public class CategoryRepositoryImpl: CategoryRepository {
             guard let existingSubCategory = try self.fetchSubCategoryModel(id: subCategory.id, context: context) else {
                 throw RepositoryError.subCategoryNotFound
             }
-            
-            if existingSubCategory.category.id != subCategory.categoryId {
+
+            if existingSubCategory.category?.id != subCategory.categoryId {
                 guard let newParentCategory = try self.fetchCategoryModel(id: subCategory.categoryId, context: context) else {
                     throw RepositoryError.categoryNotFound
                 }
                 existingSubCategory.category = newParentCategory
             }
-            
+
             existingSubCategory.name = subCategory.name
             existingSubCategory.transactionType = subCategory.transactionType
             existingSubCategory.isActive = subCategory.isActive
             existingSubCategory.orderIndex = subCategory.orderIndex
-            
+
             try context.save()
         }
     }
     
     // MARK: - SubCategory 검증 (Validation)
-    
+
     public func validateSubCategoryName(_ name: String, categoryId: UUID, excludingId: UUID?) async throws -> Bool {
         try await database.withModelContext { context in
             let predicate: Predicate<SubCategory>
             if let excludingId = excludingId {
                 predicate = #Predicate<SubCategory> { subCategory in
-                    subCategory.name == name && 
-                    subCategory.category.id == categoryId &&
+                    subCategory.name == name &&
+                    subCategory.category?.id == categoryId &&
                     subCategory.id != excludingId
                 }
             } else {
                 predicate = #Predicate<SubCategory> { subCategory in
-                    subCategory.name == name && subCategory.category.id == categoryId
+                    subCategory.name == name && subCategory.category?.id == categoryId
                 }
             }
-            
+
             let descriptor = FetchDescriptor<SubCategory>(predicate: predicate)
             return try context.fetch(descriptor).isEmpty
         }
     }
-    
+
+    // MARK: - 삭제 (Delete Operations)
+
+    public func deleteCategory(_ id: UUID) async throws {
+        try await database.withModelContext { context in
+            guard let category = try self.fetchCategoryModel(id: id, context: context) else {
+                throw RepositoryError.categoryNotFound
+            }
+
+            // 모든 SubCategory의 Transaction 확인
+            let hasTransactions = category.subCategories.contains { subCategory in
+                !subCategory.transactions.isEmpty
+            }
+
+            if hasTransactions {
+                // Transaction이 있으면 soft delete: Category와 모든 SubCategory를 비활성화
+                category.isActive = false
+                for subCategory in category.subCategories {
+                    subCategory.isActive = false
+                }
+            } else {
+                // Transaction이 없으면 hard delete: SubCategory들 먼저 삭제 후 Category 삭제
+//                let subCategoriesToDelete = category.subCategories
+//                for subCategory in subCategoriesToDelete {
+//                    context.delete(subCategory)
+//                }
+                context.delete(category)
+            }
+
+            try context.save()
+        }
+    }
+
+    public func deleteSubCategory(_ id: UUID) async throws {
+        try await database.withModelContext { context in
+            guard let subCategory = try self.fetchSubCategoryModel(id: id, context: context) else {
+                throw RepositoryError.subCategoryNotFound
+            }
+
+            if subCategory.transactions.isEmpty {
+                // Transaction이 없으면 hard delete
+                context.delete(subCategory)
+            } else {
+                // Transaction이 있으면 soft delete
+                subCategory.isActive = false
+            }
+
+            try context.save()
+        }
+    }
+
 }

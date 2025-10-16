@@ -222,14 +222,195 @@ final class CategoryRepositoryTests: XCTestCase {
         // Given: 카테고리와 서브카테고리 생성
         let category = TestDataFactory.createCategory()
         try await repository.insertCategory(category)
-        
+
         let existingSubCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
         try await repository.insertSubCategory(existingSubCategory)
-        
+
         // When: 같은 이름으로 검증
         let isValid = try await repository.validateSubCategoryName("외식비", categoryId: category.id, excludingId: nil)
-        
+
         // Then: 중복된 이름으로 판단
         XCTAssertFalse(isValid)
+    }
+
+    // MARK: - 삭제 테스트 (Delete Operations)
+
+    func testDeleteCategory_WithoutTransactions_ShouldHardDelete() async throws {
+        // Given: Transaction이 없는 Category와 SubCategory
+        let category = TestDataFactory.createCategory(name: "식비")
+        try await repository.insertCategory(category)
+
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
+        try await repository.insertSubCategory(subCategory)
+
+        // When: Category 삭제
+        try await repository.deleteCategory(category.id)
+
+        // Then: Category와 SubCategory가 물리적으로 삭제됨
+        let categories = try await repository.fetchCategories()
+        XCTAssertTrue(categories.isEmpty)
+    }
+
+    func testDeleteCategory_WithTransactions_ShouldSoftDelete() async throws {
+        // Given: Transaction이 있는 Category와 SubCategory
+        let category = TestDataFactory.createCategory(name: "식비")
+        try await repository.insertCategory(category)
+
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
+        try await repository.insertSubCategory(subCategory)
+
+        let paymentMethod = TestDataFactory.createPaymentMethod()
+        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
+        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
+
+        let transaction = TestDataFactory.createTransaction(
+            amount: 10000,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+        let transactionRepository = TransactionRepositoryImpl(database: database)
+        try await transactionRepository.insertTransaction(transaction)
+
+        // When: Category 삭제
+        try await repository.deleteCategory(category.id)
+
+        // Then: Category와 SubCategory의 isActive가 false로 변경됨
+        let categories = try await repository.fetchCategories()
+        XCTAssertEqual(categories.count, 1)
+        XCTAssertFalse(categories[0].isActive)
+
+        let subCategories = try await database.withModelContext { context in
+            let descriptor = FetchDescriptor<SubCategory>()
+            return try context.fetch(descriptor).toDTOs()
+        }
+        XCTAssertEqual(subCategories.count, 1)
+        XCTAssertFalse(subCategories[0].isActive)
+    }
+
+    func testDeleteCategory_NotFound_ShouldThrowError() async throws {
+        // Given: 존재하지 않는 Category ID
+        let nonExistentId = UUID()
+
+        // When/Then: 에러 발생
+        do {
+            try await repository.deleteCategory(nonExistentId)
+            XCTFail("Should throw categoryNotFound error")
+        } catch let error as RepositoryError {
+            switch error {
+            case .categoryNotFound:
+                break // Expected error
+            default:
+                XCTFail("Unexpected error: \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    func testDeleteSubCategory_WithoutTransactions_ShouldHardDelete() async throws {
+        // Given: Transaction이 없는 SubCategory
+        let category = TestDataFactory.createCategory(name: "식비")
+        try await repository.insertCategory(category)
+
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
+        try await repository.insertSubCategory(subCategory)
+
+        // When: SubCategory 삭제
+        try await repository.deleteSubCategory(subCategory.id)
+
+        // Then: SubCategory가 물리적으로 삭제됨
+        let subCategories = try await repository.fetchSubCategories(categoryId: category.id)
+        XCTAssertTrue(subCategories.isEmpty)
+    }
+
+    func testDeleteSubCategory_WithTransactions_ShouldSoftDelete() async throws {
+        // Given: Transaction이 있는 SubCategory
+        let category = TestDataFactory.createCategory(name: "식비")
+        try await repository.insertCategory(category)
+
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
+        try await repository.insertSubCategory(subCategory)
+
+        let paymentMethod = TestDataFactory.createPaymentMethod()
+        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
+        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
+
+        let transaction = TestDataFactory.createTransaction(
+            amount: 10000,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+        let transactionRepository = TransactionRepositoryImpl(database: database)
+        try await transactionRepository.insertTransaction(transaction)
+
+        // When: SubCategory 삭제
+        try await repository.deleteSubCategory(subCategory.id)
+
+        // Then: SubCategory의 isActive가 false로 변경됨
+        let subCategories = try await database.withModelContext { context in
+            let descriptor = FetchDescriptor<SubCategory>()
+            return try context.fetch(descriptor).toDTOs()
+        }
+        XCTAssertEqual(subCategories.count, 1)
+        XCTAssertFalse(subCategories[0].isActive)
+    }
+
+    func testDeleteSubCategory_NotFound_ShouldThrowError() async throws {
+        // Given: 존재하지 않는 SubCategory ID
+        let nonExistentId = UUID()
+
+        // When/Then: 에러 발생
+        do {
+            try await repository.deleteSubCategory(nonExistentId)
+            XCTFail("Should throw subCategoryNotFound error")
+        } catch let error as RepositoryError {
+            switch error {
+            case .subCategoryNotFound:
+                break // Expected error
+            default:
+                XCTFail("Unexpected error: \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    func testDeleteCategory_WithMultipleSubCategories_OnlyOneHasTransactions() async throws {
+        // Given: 여러 SubCategory 중 하나만 Transaction을 가진 경우
+        let category = TestDataFactory.createCategory(name: "식비")
+        try await repository.insertCategory(category)
+
+        let subCategory1 = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
+        let subCategory2 = TestDataFactory.createSubCategory(name: "마트", categoryId: category.id)
+        try await repository.insertSubCategory(subCategory1)
+        try await repository.insertSubCategory(subCategory2)
+
+        let paymentMethod = TestDataFactory.createPaymentMethod()
+        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
+        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
+
+        // subCategory1에만 Transaction 추가
+        let transaction = TestDataFactory.createTransaction(
+            amount: 10000,
+            subCategory: subCategory1,
+            paymentMethod: paymentMethod
+        )
+        let transactionRepository = TransactionRepositoryImpl(database: database)
+        try await transactionRepository.insertTransaction(transaction)
+
+        // When: Category 삭제
+        try await repository.deleteCategory(category.id)
+
+        // Then: Category와 모든 SubCategory가 soft delete됨
+        let categories = try await repository.fetchCategories()
+        XCTAssertEqual(categories.count, 1)
+        XCTAssertFalse(categories[0].isActive)
+
+        let allSubCategories = try await database.withModelContext { context in
+            let descriptor = FetchDescriptor<SubCategory>()
+            return try context.fetch(descriptor).toDTOs()
+        }
+        XCTAssertEqual(allSubCategories.count, 2)
+        XCTAssertTrue(allSubCategories.allSatisfy { !$0.isActive })
     }
 }

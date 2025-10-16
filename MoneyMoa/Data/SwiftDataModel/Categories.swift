@@ -59,15 +59,15 @@ final class SubCategory {
     var isActive: Bool
     
     @Relationship
-    var category: Category
+    var category: Category?
     @Relationship(deleteRule: .cascade, inverse: \Transaction.subCategory)
     var transactions: [Transaction]
-    
+
     init(id: UUID = UUID(),
          name: String,
          transactionType: TransactionType,
          orderIndex: Int = 0,
-         category: Category,
+         category: Category?,
          isActive: Bool = true,
          transactions: [Transaction] = []
     ) {
@@ -104,15 +104,19 @@ extension Category {
 extension SubCategory {
     /// SubCategory를 SubCategoryDTO로 변환
     public func toDTO() -> SubCategoryDTO {
+        guard let category = self.category else {
+            fatalError("SubCategory must have a parent Category")
+        }
+
         return SubCategoryDTO(
             id: self.id,
             name: self.name,
             transactionType: self.transactionType,
             isActive: self.isActive,
             orderIndex: self.orderIndex,
-            categoryId: self.category.id,
-            categoryName: self.category.name,
-            categoryIconName: self.category.iconName
+            categoryId: category.id,
+            categoryName: category.name,
+            categoryIconName: category.iconName
         )
     }
 }
