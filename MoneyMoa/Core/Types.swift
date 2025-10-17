@@ -154,6 +154,7 @@ public enum RepositoryError: Error, Sendable {
     case cannotDeleteActiveCategory
     case cannotDeleteActiveSubCategory
     case cannotDeleteActivePaymentMethod
+    case hasActiveTemplates
     case databaseError(Error)
     case custom(String)
 }

@@ -214,23 +214,28 @@ public class CategoryRepositoryImpl: CategoryRepository {
                 throw RepositoryError.categoryNotFound
             }
 
-            // 모든 SubCategory의 Transaction 확인
+            // TransactionTemplate 확인
+            let hasTemplates = category.subCategories.contains { subCategory in
+                !subCategory.transactionTemplates.isEmpty
+            }
+
+            if hasTemplates {
+                throw RepositoryError.hasActiveTemplates
+            }
+
+            // Transaction 확인
             let hasTransactions = category.subCategories.contains { subCategory in
                 !subCategory.transactions.isEmpty
             }
 
             if hasTransactions {
-                // Transaction이 있으면 soft delete: Category와 모든 SubCategory를 비활성화
+                // Transaction이 있으면 soft delete
                 category.isActive = false
                 for subCategory in category.subCategories {
                     subCategory.isActive = false
                 }
             } else {
-                // Transaction이 없으면 hard delete: SubCategory들 먼저 삭제 후 Category 삭제
-//                let subCategoriesToDelete = category.subCategories
-//                for subCategory in subCategoriesToDelete {
-//                    context.delete(subCategory)
-//                }
+                // 참조가 없으면 hard delete
                 context.delete(category)
             }
 
@@ -244,12 +249,18 @@ public class CategoryRepositoryImpl: CategoryRepository {
                 throw RepositoryError.subCategoryNotFound
             }
 
-            if subCategory.transactions.isEmpty {
-                // Transaction이 없으면 hard delete
-                context.delete(subCategory)
-            } else {
+            // TransactionTemplate 확인
+            if !subCategory.transactionTemplates.isEmpty {
+                throw RepositoryError.hasActiveTemplates
+            }
+
+            // Transaction 확인
+            if !subCategory.transactions.isEmpty {
                 // Transaction이 있으면 soft delete
                 subCategory.isActive = false
+            } else {
+                // 참조가 없으면 hard delete
+                context.delete(subCategory)
             }
 
             try context.save()

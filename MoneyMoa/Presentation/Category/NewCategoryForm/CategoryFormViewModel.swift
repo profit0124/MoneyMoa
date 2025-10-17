@@ -30,8 +30,18 @@ final class CategoryFormViewModel {
     
     // Alert 관련 상태
     var showingAddSubCategoryAlert: Bool = false
-    var showingDeleteConfirmation: Bool = false
     var alertErrorMessage: String?
+
+    var showingDeleteConfirmation: Bool = false
+
+    var showingErrorAlert: Bool = false {
+        didSet {
+            if !showingErrorAlert {
+                errorMessage = nil
+            }
+        }
+    }
+    var errorMessage: String?
 
     var isChanged: Bool = false
 
@@ -350,6 +360,16 @@ final class CategoryFormViewModel {
     }
 
     private func handleError(_ error: Error) {
-        print(error.localizedDescription)
+        if let repositoryError = error as? RepositoryError {
+            switch repositoryError {
+            case .hasActiveTemplates:
+                errorMessage = "현재 해당 항목을 사용 중인 거래 템플릿이 있습니다.\n템플릿을 먼저 삭제한 후 다시 시도해주세요."
+            default:
+                errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+            }
+        } else {
+            errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+        }
+        showingErrorAlert = true
     }
 }

@@ -21,6 +21,14 @@ final class SubCategoryFormViewModel {
     var selectedSubCategoryDTO: SubCategoryDTO?
     var subCategoryName: String = ""
     var showingDeleteConfirmation: Bool = false
+    var showingErrorAlert: Bool = false {
+        didSet {
+            if !showingErrorAlert {
+                errorMessage = nil
+            }
+        }
+    }
+    var errorMessage: String?
 
     var cancellables: Set<AnyCancellable> = []
 
@@ -53,6 +61,7 @@ final class SubCategoryFormViewModel {
         case showDeleteConfirmation
         case deleteSubCategory(AppRouter)
         case unsubscribe
+        case handleError(Error)
     }
 
     func send(_ action: Action) {
@@ -77,6 +86,9 @@ final class SubCategoryFormViewModel {
 
         case .unsubscribe:
             self.cancellables.removeAll()
+
+        case .handleError(let error):
+            handleError(error)
         }
     }
 
@@ -141,8 +153,22 @@ final class SubCategoryFormViewModel {
 
                 await router.dismissModal()
             } catch {
-                print("서브카테고리 삭제 실패: \(error.localizedDescription)")
+                self.send(.handleError(error))
             }
         }
+    }
+
+    private func handleError(_ error: Error) {
+        if let repositoryError = error as? RepositoryError {
+            switch repositoryError {
+            case .hasActiveTemplates:
+                errorMessage = "현재 해당 항목을 사용 중인 거래 템플릿이 있습니다.\n템플릿을 먼저 삭제한 후 다시 시도해주세요."
+            default:
+                errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+            }
+        } else {
+            errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+        }
+        showingErrorAlert = true
     }
 }

@@ -236,45 +236,25 @@ final class CategoryRepositoryTests: XCTestCase {
     // MARK: - 삭제 테스트 (Delete Operations)
 
     func testDeleteCategory_WithoutTransactions_ShouldHardDelete() async throws {
-        // Given: Transaction이 없는 Category와 SubCategory
-        let category = TestDataFactory.createCategory(name: "식비")
-        try await repository.insertCategory(category)
+        // Given
+        let (category, _) = try await setupCategoryAndSubCategory()
 
-        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
-        try await repository.insertSubCategory(subCategory)
-
-        // When: Category 삭제
+        // When
         try await repository.deleteCategory(category.id)
 
-        // Then: Category와 SubCategory가 물리적으로 삭제됨
+        // Then
         let categories = try await repository.fetchCategories()
         XCTAssertTrue(categories.isEmpty)
     }
 
     func testDeleteCategory_WithTransactions_ShouldSoftDelete() async throws {
-        // Given: Transaction이 있는 Category와 SubCategory
-        let category = TestDataFactory.createCategory(name: "식비")
-        try await repository.insertCategory(category)
+        // Given
+        let (category, _) = try await setupCategoryWithTransaction()
 
-        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
-        try await repository.insertSubCategory(subCategory)
-
-        let paymentMethod = TestDataFactory.createPaymentMethod()
-        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
-        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
-
-        let transaction = TestDataFactory.createTransaction(
-            amount: 10000,
-            subCategory: subCategory,
-            paymentMethod: paymentMethod
-        )
-        let transactionRepository = TransactionRepositoryImpl(database: database)
-        try await transactionRepository.insertTransaction(transaction)
-
-        // When: Category 삭제
+        // When
         try await repository.deleteCategory(category.id)
 
-        // Then: Category와 SubCategory의 isActive가 false로 변경됨
+        // Then
         let categories = try await repository.fetchCategories()
         XCTAssertEqual(categories.count, 1)
         XCTAssertFalse(categories[0].isActive)
@@ -310,51 +290,30 @@ final class CategoryRepositoryTests: XCTestCase {
     }
 
     func testDeleteSubCategory_WithoutTransactions_ShouldHardDelete() async throws {
-        // Given: Transaction이 없는 SubCategory
-        let category = TestDataFactory.createCategory(name: "식비")
-        try await repository.insertCategory(category)
+        // Given
+        let (category, subCategory) = try await setupCategoryAndSubCategory()
 
-        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
-        try await repository.insertSubCategory(subCategory)
-
-        // When: SubCategory 삭제
+        // When
         try await repository.deleteSubCategory(subCategory.id)
 
-        // Then: SubCategory가 물리적으로 삭제됨
+        // Then
         let subCategories = try await repository.fetchSubCategories(categoryId: category.id)
         XCTAssertTrue(subCategories.isEmpty)
     }
 
     func testDeleteSubCategory_WithTransactions_ShouldSoftDelete() async throws {
-        // Given: Transaction이 있는 SubCategory
-        let category = TestDataFactory.createCategory(name: "식비")
-        try await repository.insertCategory(category)
+        // Given
+        let (_, subCategory) = try await setupCategoryWithTransaction()
 
-        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
-        try await repository.insertSubCategory(subCategory)
-
-        let paymentMethod = TestDataFactory.createPaymentMethod()
-        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
-        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
-
-        let transaction = TestDataFactory.createTransaction(
-            amount: 10000,
-            subCategory: subCategory,
-            paymentMethod: paymentMethod
-        )
-        let transactionRepository = TransactionRepositoryImpl(database: database)
-        try await transactionRepository.insertTransaction(transaction)
-
-        // When: SubCategory 삭제
+        // When
         try await repository.deleteSubCategory(subCategory.id)
 
-        // Then: SubCategory의 isActive가 false로 변경됨
+        // Then
         let subCategories = try await database.withModelContext { context in
             let descriptor = FetchDescriptor<SubCategory>()
             let subCategories = try context.fetch(descriptor)
             XCTAssertEqual(subCategories.count, 1)
             XCTAssertFalse(subCategories[0].isActive)
-
             return subCategories.toDTOs()
         }
 
@@ -414,9 +373,123 @@ final class CategoryRepositoryTests: XCTestCase {
 
         let allSubCategories = try await database.withModelContext { context in
             let descriptor = FetchDescriptor<SubCategory>()
-            return try context.fetch(descriptor).toDTOs()
+            let allSubCategories = try context.fetch(descriptor)
+            XCTAssertEqual(allSubCategories.count, 2)
+            XCTAssertTrue(allSubCategories.allSatisfy { !$0.isActive })
+            return allSubCategories.toDTOs()
         }
-        XCTAssertEqual(allSubCategories.count, 2)
-        XCTAssertTrue(allSubCategories.allSatisfy { !$0.isActive })
+
+        XCTAssertTrue(allSubCategories.isEmpty)
+    }
+
+    // MARK: - Delete Category with TransactionTemplate Tests
+
+    func test_deleteCategory_withTransactionTemplate_throwsHasActiveTemplatesError() async throws {
+        // Given
+        let (category, _) = try await setupCategoryWithTemplate()
+
+        // When/Then
+        await assertThrowsHasActiveTemplatesError {
+            try await self.repository.deleteCategory(category.id)
+        }
+
+        // Category와 SubCategory는 여전히 active
+        let categories = try await repository.fetchCategories()
+        XCTAssertEqual(categories.count, 1)
+        XCTAssertTrue(categories[0].isActive)
+
+        let subCategories = try await repository.fetchSubCategories(categoryId: category.id)
+        XCTAssertEqual(subCategories.count, 1)
+        XCTAssertTrue(subCategories[0].isActive)
+    }
+
+    func test_deleteSubCategory_withTransactionTemplate_throwsHasActiveTemplatesError() async throws {
+        // Given
+        let (category, subCategory) = try await setupCategoryWithTemplate()
+
+        // When/Then
+        await assertThrowsHasActiveTemplatesError {
+            try await self.repository.deleteSubCategory(subCategory.id)
+        }
+
+        // SubCategory는 여전히 active
+        let subCategories = try await repository.fetchSubCategories(categoryId: category.id)
+        XCTAssertEqual(subCategories.count, 1)
+        XCTAssertTrue(subCategories[0].isActive)
+    }
+
+    // MARK: - Helper Methods
+
+    private func setupCategoryAndSubCategory() async throws -> (CategoryDTO, SubCategoryDTO) {
+        let category = TestDataFactory.createCategory(name: "식비")
+        try await repository.insertCategory(category)
+
+        let subCategory = TestDataFactory.createSubCategory(name: "외식비", categoryId: category.id)
+        try await repository.insertSubCategory(subCategory)
+
+        return (category, subCategory)
+    }
+
+    private func setupCategoryWithTransaction() async throws -> (CategoryDTO, SubCategoryDTO) {
+        let (category, subCategory) = try await setupCategoryAndSubCategory()
+
+        let paymentMethod = TestDataFactory.createPaymentMethod()
+        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
+        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
+
+        let transaction = TestDataFactory.createTransaction(amount: 10000, subCategory: subCategory, paymentMethod: paymentMethod)
+        let transactionRepository = TransactionRepositoryImpl(database: database)
+        try await transactionRepository.insertTransaction(transaction)
+
+        return (category, subCategory)
+    }
+
+    private func setupCategoryWithTemplate() async throws -> (CategoryDTO, SubCategoryDTO) {
+        let (category, subCategory) = try await setupCategoryAndSubCategory()
+
+        let paymentMethod = TestDataFactory.createPaymentMethod()
+        let paymentMethodRepository = PaymentMethodRepositoryImpl(database: database)
+        try await paymentMethodRepository.insertPaymentMethod(paymentMethod)
+
+        try await createTransactionTemplate(subCategory: subCategory, paymentMethod: paymentMethod)
+
+        return (category, subCategory)
+    }
+
+    private func createTransactionTemplate(subCategory: SubCategoryDTO, paymentMethod: PaymentMethodDTO) async throws {
+        let template = TransactionTemplateDTO(amount: 10000, transactionType: .variableExpense, subCategory: subCategory, paymentMethod: paymentMethod, recurrencePattern: .init(from: Date(), period: .none, calendar: Calendar.current))
+        try await database.withModelContext { context in
+            let subCategoryModel = try self.fetchSubCategoryModel(id: subCategory.id, context: context)!
+            let paymentMethodModel = try self.fetchPaymentMethodModel(id: paymentMethod.id, context: context)!
+            let template = template.toModel(subCategory: subCategoryModel, paymentMethod: paymentMethodModel)
+            context.insert(template)
+            try context.save()
+        }
+    }
+
+    private func assertThrowsHasActiveTemplatesError(_ block: () async throws -> Void) async {
+        do {
+            try await block()
+            XCTFail("Should throw hasActiveTemplates error")
+        } catch let error as RepositoryError {
+            switch error {
+            case .hasActiveTemplates:
+                break // Expected
+            default:
+                XCTFail("Unexpected error: \(error)")
+            }
+        } catch {
+            XCTFail("Unexpected error type: \(error)")
+        }
+    }
+
+    private func fetchPaymentMethodModel(id: UUID, context: ModelContext) throws -> PaymentMethod? {
+        let descriptor = FetchDescriptor<PaymentMethod>(predicate: #Predicate { $0.id == id })
+        return try context.fetch(descriptor).first
+    }
+
+    private func fetchSubCategoryModel(id: UUID, context: ModelContext) throws -> SubCategory? {
+        let descriptor = FetchDescriptor<SubCategory>(predicate: #Predicate { $0.id == id })
+        return try context.fetch(descriptor).first
     }
 }

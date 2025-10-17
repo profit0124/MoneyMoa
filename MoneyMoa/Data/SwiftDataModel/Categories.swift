@@ -62,6 +62,8 @@ final class SubCategory {
     var category: Category?
     @Relationship(deleteRule: .cascade, inverse: \Transaction.subCategory)
     var transactions: [Transaction]
+    @Relationship(deleteRule: .cascade, inverse: \TransactionTemplate.subCategory)
+    var transactionTemplates: [TransactionTemplate] = []
 
     init(id: UUID = UUID(),
          name: String,
