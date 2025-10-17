@@ -59,15 +59,17 @@ final class SubCategory {
     var isActive: Bool
     
     @Relationship
-    var category: Category
+    var category: Category?
     @Relationship(deleteRule: .cascade, inverse: \Transaction.subCategory)
     var transactions: [Transaction]
-    
+    @Relationship(deleteRule: .cascade, inverse: \TransactionTemplate.subCategory)
+    var transactionTemplates: [TransactionTemplate] = []
+
     init(id: UUID = UUID(),
          name: String,
          transactionType: TransactionType,
          orderIndex: Int = 0,
-         category: Category,
+         category: Category?,
          isActive: Bool = true,
          transactions: [Transaction] = []
     ) {
@@ -104,15 +106,19 @@ extension Category {
 extension SubCategory {
     /// SubCategory를 SubCategoryDTO로 변환
     public func toDTO() -> SubCategoryDTO {
+        guard let category = self.category else {
+            fatalError("SubCategory must have a parent Category")
+        }
+
         return SubCategoryDTO(
             id: self.id,
             name: self.name,
             transactionType: self.transactionType,
             isActive: self.isActive,
             orderIndex: self.orderIndex,
-            categoryId: self.category.id,
-            categoryName: self.category.name,
-            categoryIconName: self.category.iconName
+            categoryId: category.id,
+            categoryName: category.name,
+            categoryIconName: category.iconName
         )
     }
 }
@@ -129,7 +135,7 @@ extension Collection where Element == Category {
 extension Collection where Element == SubCategory {
     /// SubCategory 배열을 SubCategoryDTO 배열로 변환
     func toDTOs() -> [SubCategoryDTO] {
-        return self.map { $0.toDTO() }.sorted(by: { $0.orderIndex < $1.orderIndex })
+        return self.compactMap { $0.isActive ? $0.toDTO() : nil }.sorted(by: { $0.orderIndex < $1.orderIndex })
     }
 }
 

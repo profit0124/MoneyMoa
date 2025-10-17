@@ -107,9 +107,9 @@ enum SettingsItem: Hashable {
         case .monthlyBudget:
             router.push(.settingsBudget(YearMonth.current))
         case .transactionTemplate:
-            router.push(.settings(.transactionTemplate))
-        case .categoryManagement:
             router.push(.settingTransactionTemplate)
+        case .categoryManagement:
+            router.push(.categorySetup)
         case .versionInfo, .developerInfo:
             break // No action for info items
         }

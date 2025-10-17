@@ -14,11 +14,21 @@ final class SubCategoryFormViewModel {
 
     private var createSubCategoryUseCase: CreateSubCategoryUseCase
     private var updateSubCategoryUseCase: UpdateSubCategoryUseCase
+    private var deleteSubCategoryUseCase: DeleteSubCategoryUseCase
     private var subCategoryEventPublisher: any SubCategoryEventPublisher
 
     var selectedCategory: CategoryDTO
     var selectedSubCategoryDTO: SubCategoryDTO?
     var subCategoryName: String = ""
+    var showingDeleteConfirmation: Bool = false
+    var showingErrorAlert: Bool = false {
+        didSet {
+            if !showingErrorAlert {
+                errorMessage = nil
+            }
+        }
+    }
+    var errorMessage: String?
 
     var cancellables: Set<AnyCancellable> = []
 
@@ -30,12 +40,14 @@ final class SubCategoryFormViewModel {
 
     init(createSubCategoryUseCase: CreateSubCategoryUseCase,
          updateSubCategoryUseCase: UpdateSubCategoryUseCase,
+         deleteSubCategoryUseCase: DeleteSubCategoryUseCase,
          subCategoryEventPublisher: any SubCategoryEventPublisher,
          selectedCategory: CategoryDTO,
          selectedSubCategory: SubCategoryDTO? = nil
     ) {
         self.createSubCategoryUseCase = createSubCategoryUseCase
         self.updateSubCategoryUseCase = updateSubCategoryUseCase
+        self.deleteSubCategoryUseCase = deleteSubCategoryUseCase
         self.subCategoryEventPublisher = subCategoryEventPublisher
         self.selectedCategory = selectedCategory
         self.selectedSubCategoryDTO = selectedSubCategory
@@ -46,23 +58,37 @@ final class SubCategoryFormViewModel {
         case submit(AppRouter)
         case showCategorySelector(AppRouter)
         case selectCategory(CategoryDTO)
+        case showDeleteConfirmation
+        case deleteSubCategory(AppRouter)
         case unsubscribe
+        case handleError(Error)
     }
 
     func send(_ action: Action) {
         switch action {
         case .submit(let router):
             submit(router)
+
         case .showCategorySelector(let router):
             Task {
                 subscribeSelectCategoryEventPublisher()
                 await router.present(.settings(.categorySelector(selectedCategory)), as: .sheet)
             }
+
         case .selectCategory(let category):
             self.selectedCategory = category
 
+        case .showDeleteConfirmation:
+            showingDeleteConfirmation = true
+
+        case .deleteSubCategory(let router):
+            deleteSubCategory(router)
+
         case .unsubscribe:
             self.cancellables.removeAll()
+
+        case .handleError(let error):
+            handleError(error)
         }
     }
 
@@ -81,7 +107,7 @@ final class SubCategoryFormViewModel {
         Task {
             do {
                 let trimmedName = subCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
-                
+
                 if let existingSubCategory = selectedSubCategoryDTO {
                     // 수정 모드
                     let updatedSubCategory = SubCategoryDTO(
@@ -92,7 +118,7 @@ final class SubCategoryFormViewModel {
                         categoryName: selectedCategory.name,
                         categoryIconName: selectedCategory.iconName
                     )
-                    
+
                     try await updateSubCategoryUseCase.execute(updatedSubCategory)
                     subCategoryEventPublisher.publish(.init(type: .updated, subCategory: updatedSubCategory))
                 } else {
@@ -105,7 +131,7 @@ final class SubCategoryFormViewModel {
                         categoryName: selectedCategory.name,
                         categoryIconName: selectedCategory.iconName
                     )
-                    
+
                     try await createSubCategoryUseCase.execute(newSubCategory)
                     subCategoryEventPublisher.publish(.init(type: .created, subCategory: newSubCategory))
                 }
@@ -115,5 +141,34 @@ final class SubCategoryFormViewModel {
                 print("서브카테고리 처리 실패: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func deleteSubCategory(_ router: AppRouter) {
+        Task {
+            do {
+                guard let selectedSubCategory = selectedSubCategoryDTO else { return }
+
+                try await deleteSubCategoryUseCase.execute(selectedSubCategory.id)
+                subCategoryEventPublisher.publish(.init(type: .deleted, subCategory: selectedSubCategory))
+
+                await router.dismissModal()
+            } catch {
+                self.send(.handleError(error))
+            }
+        }
+    }
+
+    private func handleError(_ error: Error) {
+        if let repositoryError = error as? RepositoryError {
+            switch repositoryError {
+            case .hasActiveTemplates:
+                errorMessage = "현재 해당 항목을 사용 중인 거래 템플릿이 있습니다.\n템플릿을 먼저 삭제한 후 다시 시도해주세요."
+            default:
+                errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+            }
+        } else {
+            errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+        }
+        showingErrorAlert = true
     }
 }

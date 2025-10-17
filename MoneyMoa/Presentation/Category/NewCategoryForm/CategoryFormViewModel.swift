@@ -15,6 +15,7 @@ final class CategoryFormViewModel {
     private var createCategoryUseCase: CreateCategoryUseCase
     private var createSubCategoryUseCase: CreateSubCategoryUseCase
     private var updateCategoryUseCase: UpdateCategoryUseCase
+    private var deleteCategoryUseCase: DeleteCategoryUseCase
     private var categoryEventPublisher: any CategoryEventPublisher
 
     let mode: CategoryListMode
@@ -30,6 +31,17 @@ final class CategoryFormViewModel {
     // Alert 관련 상태
     var showingAddSubCategoryAlert: Bool = false
     var alertErrorMessage: String?
+
+    var showingDeleteConfirmation: Bool = false
+
+    var showingErrorAlert: Bool = false {
+        didSet {
+            if !showingErrorAlert {
+                errorMessage = nil
+            }
+        }
+    }
+    var errorMessage: String?
 
     var isChanged: Bool = false
 
@@ -63,6 +75,7 @@ final class CategoryFormViewModel {
     init(createCategoryUseCase: CreateCategoryUseCase,
          createSubCategoryUseCase: CreateSubCategoryUseCase,
          updateCategoryUseCase: UpdateCategoryUseCase,
+         deleteCategoryUseCase: DeleteCategoryUseCase,
          categoryEventPublisher: any CategoryEventPublisher,
          mode: CategoryListMode,
          selectedTransactionType: TransactionType = .income,
@@ -71,6 +84,7 @@ final class CategoryFormViewModel {
         self.createCategoryUseCase = createCategoryUseCase
         self.createSubCategoryUseCase = createSubCategoryUseCase
         self.updateCategoryUseCase = updateCategoryUseCase
+        self.deleteCategoryUseCase = deleteCategoryUseCase
         self.categoryEventPublisher = categoryEventPublisher
         self.mode = mode
         self.id = selectedCategory?.id ?? UUID()
@@ -88,6 +102,8 @@ final class CategoryFormViewModel {
         case showAddSubCategoryAlert
         case addSubCategory
         case cancelAddSubCategory
+        case showDeleteConfirmation
+        case deleteCategory(AppRouter)
         case handleError(Error)
     }
 
@@ -98,12 +114,18 @@ final class CategoryFormViewModel {
 
         case .showAddSubCategoryAlert:
             showingAddSubCategoryAlert = true
-            
+
         case .addSubCategory:
             addSubCategory()
 
         case .cancelAddSubCategory:
             cancelAddSubCategory()
+
+        case .showDeleteConfirmation:
+            showingDeleteConfirmation = true
+
+        case .deleteCategory(let router):
+            handleDeleteCategory(router)
 
         case .handleError(let error):
             handleError(error)
@@ -320,7 +342,34 @@ final class CategoryFormViewModel {
         alertErrorMessage = nil
     }
 
+    private func handleDeleteCategory(_ router: AppRouter) {
+        Task {
+            do {
+                guard let selectedCategory = selectedCategory else { return }
+
+                try await deleteCategoryUseCase.execute(selectedCategory.id)
+
+                // 삭제 이벤트 발행
+                categoryEventPublisher.publish(.init(type: .deleted, category: selectedCategory))
+
+                await router.dismissModal()
+            } catch {
+                self.send(.handleError(error))
+            }
+        }
+    }
+
     private func handleError(_ error: Error) {
-        print(error.localizedDescription)
+        if let repositoryError = error as? RepositoryError {
+            switch repositoryError {
+            case .hasActiveTemplates:
+                errorMessage = "현재 해당 항목을 사용 중인 거래 템플릿이 있습니다.\n템플릿을 먼저 삭제한 후 다시 시도해주세요."
+            default:
+                errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+            }
+        } else {
+            errorMessage = "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요."
+        }
+        showingErrorAlert = true
     }
 }

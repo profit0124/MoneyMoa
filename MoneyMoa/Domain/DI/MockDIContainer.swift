@@ -274,6 +274,18 @@ final class MockDIContainer: DIContainer {
         let categoryRepository = makeCategoryRepository()
         return CreateSubCategoryUseCaseImpl(categoryRepository: categoryRepository)
     }
+
+    /// Mock Repository 기반 DeleteCategoryUseCase를 생성합니다
+    func makeDeleteCategoryUseCase() -> DeleteCategoryUseCase {
+        let categoryRepository = makeCategoryRepository()
+        return DeleteCategoryUseCaseImpl(categoryRepository: categoryRepository)
+    }
+
+    /// Mock Repository 기반 DeleteSubCategoryUseCase를 생성합니다
+    func makeDeleteSubCategoryUseCase() -> DeleteSubCategoryUseCase {
+        let categoryRepository = makeCategoryRepository()
+        return DeleteSubCategoryUseCaseImpl(categoryRepository: categoryRepository)
+    }
     
     /// Mock ImportRecommendedCategoriesUseCase를 생성합니다
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase {

@@ -31,11 +31,16 @@ class MockUpdateSubCategoryUseCase: UpdateSubCategoryUseCase {
 class MockCategoryEventPublisher: CategoryEventPublisher {
     private let subject = PassthroughSubject<CategoryEvent, Never>()
 
+    var publishCallCount = 0
+    var lastEvent: CategoryEvent?
+
     var categoryEvents: AnyPublisher<CategoryEvent, Never> {
         subject.eraseToAnyPublisher()
     }
 
     func publish(_ event: CategoryEvent) {
+        publishCallCount += 1
+        lastEvent = event
         subject.send(event)
     }
 }
@@ -80,6 +85,40 @@ class MockUpdateCategoryUseCase: UpdateCategoryUseCase {
     func execute(_ category: CategoryDTO) async throws {
         executeCallCount += 1
         lastCategory = category
+
+        if let error = executeError {
+            throw error
+        }
+    }
+}
+
+// MARK: - Mock DeleteCategoryUseCase
+
+class MockDeleteCategoryUseCase: DeleteCategoryUseCase {
+    var executeCallCount = 0
+    var lastDeletedCategoryId: UUID?
+    var executeError: Error?
+
+    func execute(_ id: UUID) async throws {
+        executeCallCount += 1
+        lastDeletedCategoryId = id
+
+        if let error = executeError {
+            throw error
+        }
+    }
+}
+
+// MARK: - Mock DeleteSubCategoryUseCase
+
+class MockDeleteSubCategoryUseCase: DeleteSubCategoryUseCase {
+    var executeCallCount = 0
+    var lastDeletedSubCategoryId: UUID?
+    var executeError: Error?
+
+    func execute(_ id: UUID) async throws {
+        executeCallCount += 1
+        lastDeletedSubCategoryId = id
 
         if let error = executeError {
             throw error

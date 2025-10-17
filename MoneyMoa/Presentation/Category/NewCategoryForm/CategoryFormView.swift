@@ -44,6 +44,16 @@ struct CategoryFormView: View {
                 }
                 .disabled(!viewModel.isValid)
             }
+
+            if viewModel.selectedCategory != nil {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(role: .destructive) {
+                        viewModel.send(.showDeleteConfirmation)
+                    } label: {
+                        Text("삭제")
+                    }
+                }
+            }
         }
         .alert("서브카테고리 추가", isPresented: $viewModel.showingAddSubCategoryAlert) {
             TextField("서브카테고리 이름", text: $viewModel.newSubCategoryName)
@@ -59,6 +69,19 @@ struct CategoryFormView: View {
             } else {
                 Text("새로운 서브카테고리를 추가하세요.")
             }
+        }
+        .alert("카테고리 삭제", isPresented: $viewModel.showingDeleteConfirmation) {
+            Button("삭제", role: .destructive) {
+                viewModel.send(.deleteCategory(router))
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("이 카테고리를 삭제하시겠습니까?\n연결된 모든 서브카테고리도 함께 삭제됩니다.")
+        }
+        .alert("오류", isPresented: $viewModel.showingErrorAlert) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text(viewModel.errorMessage ?? "알 수 없는 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.")
         }
     }
 
