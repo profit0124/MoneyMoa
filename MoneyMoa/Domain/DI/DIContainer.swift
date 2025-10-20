@@ -105,13 +105,16 @@ protocol DIContainer {
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase
     
     // MARK: - PaymentMethod UseCase Factory Methods
-    
+
     /// GetActivePaymentMethodsUseCase를 생성합니다
     func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase
-    
+
     /// CreatePaymentMethodUseCase를 생성합니다
     func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase
-    
+
+    /// DeletePaymentMethodUseCase를 생성합니다
+    func makeDeletePaymentMethodUseCase() -> DeletePaymentMethodUseCase
+
     // MARK: - ViewModel Factory Methods
     
     /// AddTransactionViewModel을 생성합니다

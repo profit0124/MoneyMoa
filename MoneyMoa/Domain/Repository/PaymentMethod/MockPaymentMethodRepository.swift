@@ -294,25 +294,24 @@ public final class MockPaymentMethodRepository: @unchecked Sendable, PaymentMeth
         }
     }
     
+    public var deletePaymentMethodCalled = false
+    public var lastDeletedPaymentMethodId: UUID?
+
     public func deletePaymentMethod(id: UUID) async throws {
         try await simulateDelay()
         try checkFailure()
-        
+
         return try await withCheckedThrowingContinuation { continuation in
             serialQueue.async {
+                self.deletePaymentMethodCalled = true
+                self.lastDeletedPaymentMethodId = id
+
                 if let index = self.paymentMethods.firstIndex(where: { $0.id == id }) {
-                    let paymentMethod = self.paymentMethods[index]
-                    
-                    // 활성 결제수단 삭제 방지
-                    if paymentMethod.isActive {
-                        continuation.resume(throwing: RepositoryError.cannotDeleteActivePaymentMethod)
-                        return
-                    }
-                    
+                    // Mock: 단순 삭제 (soft delete 로직은 실제 Repository에서 테스트)
                     self.paymentMethods.remove(at: index)
                     continuation.resume()
                 } else {
-                    continuation.resume(throwing: MockError.paymentMethodNotFound)
+                    continuation.resume(throwing: RepositoryError.paymentMethodNotFound)
                 }
             }
         }

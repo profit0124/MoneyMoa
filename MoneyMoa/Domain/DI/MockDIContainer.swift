@@ -307,6 +307,12 @@ final class MockDIContainer: DIContainer {
         return CreatePaymentMethodUseCaseImpl(paymentMethodRepository: repository)
     }
 
+    /// DeletePaymentMethodUseCase를 생성합니다 (Mock Repository 기반)
+    func makeDeletePaymentMethodUseCase() -> DeletePaymentMethodUseCase {
+        let repository = makePaymentMethodRepository()
+        return DeletePaymentMethodUseCaseImpl(paymentMethodRepository: repository)
+    }
+
     func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase {
         let repo = makeStatisticsRepository()
         return GetStatisticsDashboardUseCaseImpl(repo: repo)
