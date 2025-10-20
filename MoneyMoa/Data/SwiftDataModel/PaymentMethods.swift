@@ -24,7 +24,9 @@ final class PaymentMethod {
     
     @Relationship(deleteRule: .cascade, inverse: \Transaction.paymentMethod)
     var transactions: [Transaction]
-    
+    @Relationship(deleteRule: .cascade, inverse: \TransactionTemplate.paymentMethod)
+    var transactionTemplates: [TransactionTemplate]
+
     // Detailed information(추후 추가)
     var institutionName: String?
     var accountNumber: String?
@@ -39,6 +41,7 @@ final class PaymentMethod {
         orderIndex: Int = 0,
         isActive: Bool = true,
         transactions: [Transaction] = [],
+        transactionTemplates: [TransactionTemplate] = [],
         institutionName: String? = nil,
         accountNumber: String? = nil,
         cardNumber: String? = nil,
@@ -51,6 +54,7 @@ final class PaymentMethod {
         self.orderIndex = orderIndex
         self.isActive = isActive
         self.transactions = transactions
+        self.transactionTemplates = transactionTemplates
         self.institutionName = institutionName
         self.accountNumber = accountNumber
         self.cardNumber = cardNumber

@@ -28,12 +28,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     // MARK: - 조회 테스트 (Fetch Operations)
     
     func testFetchPaymentMethods_EmptyDatabase() async throws {
-        // Given: 빈 데이터베이스
-        
-        // When: 모든 결제수단 조회
         let paymentMethods = try await repository.fetchPaymentMethods()
-        
-        // Then: 빈 배열 반환
         XCTAssertTrue(paymentMethods.isEmpty)
     }
     
@@ -74,13 +69,7 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testFetchPaymentMethod_NonExistingId() async throws {
-        // Given: 존재하지 않는 ID
-        let nonExistentId = UUID()
-        
-        // When: 조회 시도
-        let paymentMethod = try await repository.fetchPaymentMethod(id: nonExistentId)
-        
-        // Then: nil 반환
+        let paymentMethod = try await repository.fetchPaymentMethod(id: UUID())
         XCTAssertNil(paymentMethod)
     }
     
@@ -221,12 +210,8 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     func testDeactivatePaymentMethod_NonExistingPaymentMethod() async throws {
-        // Given: 존재하지 않는 결제수단 ID
-        let nonExistingId = UUID()
-        
-        // When & Then: 에러 발생
         do {
-            try await repository.deactivatePaymentMethod(id: nonExistingId)
+            try await repository.deactivatePaymentMethod(id: UUID())
             XCTFail("Expected error to be thrown")
         } catch RepositoryError.paymentMethodNotFound {
             // Expected error
@@ -253,42 +238,149 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     }
     
     // MARK: - 삭제 테스트 (Delete Operations)
-    
-    func testDeletePaymentMethod_InactivePaymentMethod_Success() async throws {
-        // Given: 비활성 결제수단 생성
-        let paymentMethod = PaymentMethodFactory.inactiveCard()
-        try await repository.insertPaymentMethod(paymentMethod)
-        
-        // When: 결제수단 삭제
-        try await repository.deletePaymentMethod(id: paymentMethod.id)
-        
-        // Then: 데이터베이스에서 삭제됨
-        let paymentMethods = try await repository.fetchPaymentMethods()
-        XCTAssertTrue(paymentMethods.isEmpty)
-    }
-    
-    func testDeletePaymentMethod_ActivePaymentMethod_ThrowsError() async throws {
-        // Given: 활성 결제수단 생성
-        let paymentMethod = PaymentMethodFactory.create(
-            name: "활성카드",
-            kind: .credit,
-            isActive: true
+
+    // MARK: - Test Helpers
+
+    private func createTestSubCategory(
+        name: String,
+        transactionType: TransactionType
+    ) async throws -> SubCategoryDTO {
+        let category = TestDataFactory.createCategory(
+            name: "\(name) 카테고리",
+            iconName: "folder.fill",
+            type: transactionType,
+            orderIndex: 0
         )
+        let categoryRepository = CategoryRepositoryImpl(database: database)
+        try await categoryRepository.insertCategory(category)
+
+        let subCategory = TestDataFactory.createSubCategory(
+            name: name,
+            categoryId: category.id,
+            categoryName: category.name,
+            categoryIconName: category.iconName,
+            type: transactionType,
+            orderIndex: 0
+        )
+        try await categoryRepository.insertSubCategory(subCategory)
+
+        return subCategory
+    }
+
+    private func createTestTransaction(
+        paymentMethod: PaymentMethodDTO,
+        subCategory: SubCategoryDTO,
+        amount: Decimal = 10000
+    ) async throws {
+        let transactionRepository = TransactionRepositoryImpl(database: database)
+        let transaction = TestDataFactory.createTransaction(
+            amount: amount,
+            transactionType: subCategory.transactionType,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+        try await transactionRepository.insertTransaction(transaction)
+    }
+
+    private func createTestTemplate(
+        paymentMethod: PaymentMethodDTO,
+        subCategory: SubCategoryDTO,
+        amount: Decimal = 50000,
+        recurrencePeriod: RecurrencePeriod = .monthly
+    ) async throws {
+        let templateRepository = TransactionTemplateRepositoryImpl(database: database)
+        let template = TestDataFactory.createTransactionTemplate(
+            amount: amount,
+            transactionType: subCategory.transactionType,
+            recurrencePeriod: recurrencePeriod,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+        try await templateRepository.insertTemplate(template)
+    }
+
+    func testDeletePaymentMethod_NoReferences_HardDelete() async throws {
+        // Given: 참조가 없는 결제수단
+        let paymentMethod = TestDataFactory.createPaymentMethod(name: "테스트카드", kind: .credit)
         try await repository.insertPaymentMethod(paymentMethod)
-        
+
+        // When: 삭제
+        try await repository.deletePaymentMethod(id: paymentMethod.id)
+
+        // Then: Hard delete
+        let result = try await repository.fetchPaymentMethods()
+        XCTAssertTrue(result.isEmpty)
+    }
+
+    func testDeletePaymentMethod_WithTransactions_SoftDelete() async throws {
+        // Given: Transaction이 있는 결제수단
+        let paymentMethod = TestDataFactory.createPaymentMethod(name: "신한카드", kind: .credit)
+        try await repository.insertPaymentMethod(paymentMethod)
+
+        let subCategory = try await createTestSubCategory(name: "외식", transactionType: .variableExpense)
+        try await createTestTransaction(paymentMethod: paymentMethod, subCategory: subCategory)
+
+        // When: 삭제
+        try await repository.deletePaymentMethod(id: paymentMethod.id)
+
+        // Then: Soft delete
+        let result = try await repository.fetchPaymentMethod(id: paymentMethod.id)
+        XCTAssertNotNil(result)
+        XCTAssertFalse(result?.isActive ?? true)
+        let allPaymentMethods = try await repository.fetchPaymentMethods()
+        XCTAssertEqual(allPaymentMethods.count, 1)
+    }
+
+    func testDeletePaymentMethod_WithTemplates_ThrowsError() async throws {
+        // Given: Template이 있는 결제수단
+        let paymentMethod = TestDataFactory.createPaymentMethod(name: "국민카드", kind: .credit)
+        try await repository.insertPaymentMethod(paymentMethod)
+
+        let subCategory = try await createTestSubCategory(name: "월세", transactionType: .fixedExpense)
+        try await createTestTemplate(paymentMethod: paymentMethod, subCategory: subCategory)
+
         // When & Then: 에러 발생
         do {
             try await repository.deletePaymentMethod(id: paymentMethod.id)
-            XCTFail("Expected error to be thrown")
-        } catch RepositoryError.cannotDeleteActivePaymentMethod {
-            // Expected error
-        } catch {
-            XCTFail("Unexpected error: \(error)")
+            XCTFail("Expected hasActiveTemplates error")
+        } catch RepositoryError.hasActiveTemplates {
+            // Expected
         }
-        
-        // 결제수단이 여전히 존재함
-        let paymentMethods = try await repository.fetchPaymentMethods()
-        XCTAssertEqual(paymentMethods.count, 1)
+
+        // 여전히 활성 상태
+        let result = try await repository.fetchPaymentMethod(id: paymentMethod.id)
+        XCTAssertTrue(result?.isActive ?? false)
+    }
+
+    func testDeletePaymentMethod_WithBothTransactionsAndTemplates_ThrowsError() async throws {
+        // Given: Transaction과 Template 모두 있음
+        let paymentMethod = TestDataFactory.createPaymentMethod(name: "우리카드", kind: .credit)
+        try await repository.insertPaymentMethod(paymentMethod)
+
+        let subCategory = try await createTestSubCategory(name: "지하철", transactionType: .variableExpense)
+        try await createTestTransaction(paymentMethod: paymentMethod, subCategory: subCategory, amount: 5000)
+        try await createTestTemplate(paymentMethod: paymentMethod, subCategory: subCategory, amount: 10000, recurrencePeriod: .weekly)
+
+        // When & Then: Template 우선 차단
+        do {
+            try await repository.deletePaymentMethod(id: paymentMethod.id)
+            XCTFail("Expected hasActiveTemplates error")
+        } catch RepositoryError.hasActiveTemplates {
+            // Expected
+        }
+
+        let result = try await repository.fetchPaymentMethod(id: paymentMethod.id)
+        XCTAssertTrue(result?.isActive ?? false)
+    }
+
+    func testDeletePaymentMethod_NonExisting_ThrowsError() async throws {
+        // When & Then
+        do {
+            try await repository.deletePaymentMethod(id: UUID())
+            XCTFail("Expected paymentMethodNotFound error")
+        } catch RepositoryError.paymentMethodNotFound {
+            // Expected
+        }
     }
     
     // MARK: - 검증 테스트 (Validation)
@@ -360,41 +452,23 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     // MARK: - 통계 테스트 (Statistics)
     
     func testFetchPaymentMethodUsageStats_WithMixedUsage() async throws {
-        // Given: 여러 결제수단 생성
         let paymentMethods = PaymentMethodFactory.standardSet()
         for paymentMethod in paymentMethods {
             try await repository.insertPaymentMethod(paymentMethod)
         }
-        
-        // 거래 데이터 추가 (실제 구현시)
-        // Note: 실제 테스트에서는 Transaction 데이터를 함께 생성해야 함
-        
-        // When: 사용 통계 조회
         let usageStats = try await repository.fetchPaymentMethodUsageStats(limit: 10)
-        
-        // Then: 결과 검증
         XCTAssertNotNil(usageStats)
-        // 실제 구현시 더 상세한 검증 필요
     }
     
     func testFetchPaymentMethodAmountSummary() async throws {
-        // Given: 결제수단들 생성
         let paymentMethods = PaymentMethodFactory.minimalSet()
         for paymentMethod in paymentMethods {
             try await repository.insertPaymentMethod(paymentMethod)
         }
-        
-        let startDate = YearMonth.current.startOfMonth
-        let endDate = YearMonth.current.endOfMonth
-        
-        // When: 금액 집계 조회
         let amountSummary = try await repository.fetchPaymentMethodAmountSummary(
-            startDate: startDate,
-            endDate: endDate
+            startDate: YearMonth.current.startOfMonth,
+            endDate: YearMonth.current.endOfMonth
         )
-        
-        // Then: 결과 검증
         XCTAssertNotNil(amountSummary)
-        // 실제 구현시 더 상세한 검증 필요
     }
 }

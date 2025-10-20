@@ -168,13 +168,17 @@ public final class PaymentMethodRepositoryImpl: PaymentMethodRepository {
             guard let paymentMethod = try context.fetch(descriptor).first else {
                 throw RepositoryError.paymentMethodNotFound
             }
-            
-            // 활성 결제수단 삭제 방지
-            if paymentMethod.isActive {
-                throw RepositoryError.cannotDeleteActivePaymentMethod
+
+            if !paymentMethod.transactionTemplates.isEmpty {
+                throw RepositoryError.hasActiveTemplates
             }
-            
-            context.delete(paymentMethod)
+
+            if paymentMethod.transactions.isEmpty {
+                context.delete(paymentMethod)
+            } else {
+                paymentMethod.isActive = false
+            }
+
             try context.save()
         }
     }
