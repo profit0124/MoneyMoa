@@ -313,6 +313,18 @@ final class MockDIContainer: DIContainer {
         return DeletePaymentMethodUseCaseImpl(paymentMethodRepository: repository)
     }
 
+    /// UpdatePaymentMethodUseCase를 생성합니다 (Mock Repository 기반)
+    func makeUpdatePaymentMethodUseCase() -> UpdatePaymentMethodUseCase {
+        let repository = makePaymentMethodRepository()
+        return UpdatePaymentMethodUseCaseImpl(repository: repository)
+    }
+
+    /// GetAllPaymentMethodsUseCase를 생성합니다 (Mock Repository 기반)
+    func makeGetAllPaymentMethodsUseCase() -> GetAllPaymentMethodsUseCase {
+        let repository = makePaymentMethodRepository()
+        return GetAllPaymentMethodsUseCaseImpl(repository: repository)
+    }
+
     func makeGetStatisticsDashboardUseCase() -> GetStatisticsDashboardUseCase {
         let repo = makeStatisticsRepository()
         return GetStatisticsDashboardUseCaseImpl(repo: repo)
@@ -347,5 +359,38 @@ final class MockDIContainer: DIContainer {
 
     func makeUpdateTransactionTemplateUseCase() -> UpdateTransactionTemplateUseCase {
         UpdateTransactionTemplateUseCaseImpl(templateWriter: makeTransactionTemplateRepository())
+    }
+
+    // MARK: - Event Publisher Factory Methods
+
+    func makePaymentMethodEventPublisher() -> PaymentMethodEventPublisher {
+        return DefaultPaymentMethodEventPublisher.shared
+    }
+
+    func makeTransactionEventPublisher() -> TransactionEventPublisher {
+        return DefaultTransactionEventPublisher.shared
+    }
+
+    func makeCategoryEventPublisher() -> CategoryEventPublisher {
+        return DefaultCategoryEventPublisher.shared
+    }
+
+    func makeTransactionTemplateEventPublisher() -> TransactionTemplateEventPublisher {
+        return DefaultTransactionTemplateEventPublisher.shared
+    }
+
+    // MARK: - ViewModel Factory Methods
+
+    func makeAmountPlacePaymentMethodFormViewModel(
+        amount: Decimal? = nil,
+        place: String = "",
+        paymentMethod: PaymentMethodDTO? = nil) -> AmountPlacePaymentMethodFormViewModel {
+        return AmountPlacePaymentMethodFormViewModel(
+            getActivePaymentMethodsUseCase: makeGetActivePaymentMethodsUseCase(),
+            paymentMethodEventPublisher: makePaymentMethodEventPublisher(),
+            amount: amount,
+            place: place,
+            selectedPaymentMethod: paymentMethod
+        )
     }
 }

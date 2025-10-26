@@ -18,6 +18,8 @@ enum SettingsRoute: Hashable {
     case budget(YearMonth)
     case transactionTemplate
     case category
+    case paymentMethodManagement
+    case paymentMethodForm(PaymentMethodDTO?)
     case categorySelector(CategoryDTO)
     case categoryForm(CategoryListMode, CategoryDTO?, TransactionType?)
     case subCategoryForm(CategoryDTO, SubCategoryDTO?)
@@ -61,6 +63,7 @@ extension AppRoute {
     static let statisticsOverview = AppRoute.statistics(.overview)
     static let categorySetup = AppRoute.settings(.category)
     static let settingTransactionTemplate = AppRoute.settings(.transactionTemplate)
+    static let paymentMethodManagement = AppRoute.settings(.paymentMethodManagement)
 
     static func settingsBudget(_ yearMonth: YearMonth) -> AppRoute {
         return .settings(.budget(yearMonth))
@@ -69,7 +72,7 @@ extension AppRoute {
     static func transactionDetail(_ transaction: TransactionDTO) -> AppRoute {
         return .transactions(.detail(transaction))
     }
-    
+
     static func transactionUpdate(_ transaction: TransactionDTO) -> AppRoute {
         return .transactions(.update(transaction))
     }
@@ -87,6 +90,10 @@ extension AppRoute {
         _ subCategory: SubCategoryDTO?
     ) -> AppRoute {
         return .settings(.subCategoryForm(category, subCategory))
+    }
+
+    static func paymentMethodForm(_ paymentMethod: PaymentMethodDTO?) -> AppRoute {
+        return .settings(.paymentMethodForm(paymentMethod))
     }
 
     static let transactionTemplateAdd = AppRoute.transactionTemplates(.add)

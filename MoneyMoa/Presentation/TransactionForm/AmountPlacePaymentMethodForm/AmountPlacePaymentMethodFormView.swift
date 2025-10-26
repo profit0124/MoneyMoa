@@ -15,6 +15,7 @@ enum AmountPlacePaymentMethodFormField: Hashable {
 
 struct AmountPlacePaymentMethodFormView: View {
 
+    @Environment(AppRouter.self) private var router
     @Bindable var viewModel: AmountPlacePaymentMethodFormViewModel
     @FocusState var focusField: AmountPlacePaymentMethodFormField?
 
@@ -24,11 +25,6 @@ struct AmountPlacePaymentMethodFormView: View {
             placeSection
             paymentMethodSection
         }
-        .sheet(item: $viewModel.paymentMethodFormViewModel, onDismiss: {
-            viewModel.send(.unsubscribe)
-        }, content: { paymentMethodFormViewModel in
-            PaymentMethodFormView(viewModel: paymentMethodFormViewModel)
-        })
         .onAppear {
             viewModel.send(.onAppear)
         }
@@ -115,7 +111,7 @@ struct AmountPlacePaymentMethodFormView: View {
             }
 
             Button("새 결제수단 만들기") {
-                viewModel.send(.presentPaymentMethodForm)
+                viewModel.send(.presentPaymentMethodForm(router))
             }
             .font(.subheadline)
             .foregroundStyle(.blue)
@@ -186,10 +182,7 @@ struct AmountPlacePaymentMethodFormView: View {
 #Preview {
     AmountPlacePaymentMethodFormView(
         viewModel:
-            AmountPlacePaymentMethodFormViewModel(
-                getActivePaymentMethodsUseCase: MockDIContainer().makeGetActivePaymentMethodsUseCase(),
-                createPaymentMethodUseCase: MockDIContainer().makeCreatePaymentMethodUseCase()
-            )
+            MockDIContainer().makeAmountPlacePaymentMethodFormViewModel()
     )
     .padding(.horizontal, 16)
 }
