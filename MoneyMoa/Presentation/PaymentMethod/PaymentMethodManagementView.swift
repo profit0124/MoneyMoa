@@ -24,6 +24,9 @@ struct PaymentMethodManagementView: View {
             .padding(16)
         }
         .scrollIndicators(.hidden)
+        .refreshable {
+            await viewModel.fetchPaymentMethods()
+        }
         .navigationTitle("결제수단 관리")
         .alert("오류", isPresented: $viewModel.showingErrorAlert) {
             Button("확인", role: .cancel) { }
@@ -123,28 +126,12 @@ struct PaymentMethodManagementView: View {
 
                     Spacer()
                 }
-
-                if !paymentMethod.isActive {
-                    HStack {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-
-                        Text("비활성")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(paymentMethod.isActive ? Color.clear : Color.orange.opacity(0.3), lineWidth: 1)
             }
         }
     }

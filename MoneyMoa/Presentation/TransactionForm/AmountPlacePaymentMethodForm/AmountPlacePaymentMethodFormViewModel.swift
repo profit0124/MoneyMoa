@@ -180,8 +180,29 @@ final class AmountPlacePaymentMethodFormViewModel: Identifiable {
                 case .created:
                     self.paymentMethodOptions.append(event.paymentMethod)
                     self.selectedPaymentMethod = event.paymentMethod
-                case .updated, .deleted:
-                    break
+
+                case .updated:
+                    // Remove existing item
+                    self.paymentMethodOptions.removeAll { $0.id == event.paymentMethod.id }
+
+                    // If active, add and sort
+                    if event.paymentMethod.isActive {
+                        self.paymentMethodOptions.append(event.paymentMethod)
+                        self.paymentMethodOptions.sort()
+                    } else {
+                        // Clear selection if selected payment method becomes inactive
+                        if self.selectedPaymentMethod?.id == event.paymentMethod.id {
+                            self.selectedPaymentMethod = nil
+                        }
+                    }
+
+                case .deleted:
+                    self.paymentMethodOptions.removeAll { $0.id == event.paymentMethod.id }
+
+                    // Clear selection if selected payment method is deleted
+                    if self.selectedPaymentMethod?.id == event.paymentMethod.id {
+                        self.selectedPaymentMethod = nil
+                    }
                 }
             })
             .store(in: &cancellables)

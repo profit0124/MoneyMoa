@@ -13,7 +13,7 @@ import Combine
 final class PaymentMethodManagementViewModel {
 
     // MARK: UseCases
-    private let getAllPaymentMethodsUseCase: GetAllPaymentMethodsUseCase
+    private let getActivePaymentMethodsUseCase: GetActivePaymentMethodsUseCase
     private let paymentMethodEventPublisher: any PaymentMethodEventPublisher
 
     // MARK: State
@@ -32,10 +32,10 @@ final class PaymentMethodManagementViewModel {
     private var cancellables: Set<AnyCancellable> = []
 
     init(
-        getAllPaymentMethodsUseCase: GetAllPaymentMethodsUseCase,
+        getActivePaymentMethodsUseCase: GetActivePaymentMethodsUseCase,
         paymentMethodEventPublisher: any PaymentMethodEventPublisher
     ) {
-        self.getAllPaymentMethodsUseCase = getAllPaymentMethodsUseCase
+        self.getActivePaymentMethodsUseCase = getActivePaymentMethodsUseCase
         self.paymentMethodEventPublisher = paymentMethodEventPublisher
 
         setupPaymentMethodEventSubscription()
@@ -68,10 +68,10 @@ final class PaymentMethodManagementViewModel {
         }
     }
 
-    private func fetchPaymentMethods() async {
+    func fetchPaymentMethods() async {
         isLoading = true
         do {
-            self.paymentMethods = try await getAllPaymentMethodsUseCase.execute()
+            self.paymentMethods = try await getActivePaymentMethodsUseCase.execute()
         } catch {
             errorMessage = "결제수단 목록을 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요."
             showingErrorAlert = true
@@ -102,8 +102,13 @@ final class PaymentMethodManagementViewModel {
                     self.paymentMethods.append(paymentMethodEvent.paymentMethod)
 
                 case .updated:
-                    if let index = self.paymentMethods.firstIndex(where: { $0.id == paymentMethodEvent.paymentMethod.id }) {
-                        self.paymentMethods[index] = paymentMethodEvent.paymentMethod
+                    // Remove existing item (if present)
+                    self.paymentMethods.removeAll { $0.id == paymentMethodEvent.paymentMethod.id }
+
+                    // If active, add and sort
+                    if paymentMethodEvent.paymentMethod.isActive {
+                        self.paymentMethods.append(paymentMethodEvent.paymentMethod)
+                        self.paymentMethods.sort()  // PaymentMethodDTO is Comparable
                     }
 
                 case .deleted:
