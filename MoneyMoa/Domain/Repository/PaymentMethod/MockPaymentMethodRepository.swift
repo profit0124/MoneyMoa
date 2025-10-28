@@ -133,13 +133,14 @@ public final class MockPaymentMethodRepository: @unchecked Sendable, PaymentMeth
     public func validatePaymentMethodName(_ name: String, kind: PaymentMethodKind, excludingId: UUID?) async throws -> Bool {
         try await simulateDelay()
         try checkFailure()
-        
+
         return await withCheckedContinuation { continuation in
             serialQueue.async {
                 let exists = self.paymentMethods.contains { paymentMethod in
-                    paymentMethod.name == name && 
-                    paymentMethod.kind == kind && 
-                    paymentMethod.id != excludingId
+                    paymentMethod.name == name &&
+                    paymentMethod.kind == kind &&
+                    paymentMethod.id != excludingId &&
+                    paymentMethod.isActive == true
                 }
                 continuation.resume(returning: !exists)
             }

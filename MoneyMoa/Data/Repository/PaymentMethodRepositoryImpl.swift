@@ -188,22 +188,25 @@ public final class PaymentMethodRepositoryImpl: PaymentMethodRepository {
     public func validatePaymentMethodName(_ name: String, kind: PaymentMethodKind, excludingId: UUID?) async throws -> Bool {
         try await database.withModelContext { context in
             let predicate: Predicate<PaymentMethod>
-            
+
             if let excludingId = excludingId {
                 predicate = #Predicate<PaymentMethod> { paymentMethod in
-                    paymentMethod.name == name && 
+                    paymentMethod.name == name &&
                     paymentMethod.kindRawValue == kind.rawValue &&
-                    paymentMethod.id != excludingId
+                    paymentMethod.id != excludingId &&
+                    paymentMethod.isActive == true
                 }
             } else {
                 predicate = #Predicate<PaymentMethod> { paymentMethod in
-                    paymentMethod.name == name && paymentMethod.kindRawValue == kind.rawValue
+                    paymentMethod.name == name &&
+                    paymentMethod.kindRawValue == kind.rawValue &&
+                    paymentMethod.isActive == true
                 }
             }
-            
+
             let descriptor = FetchDescriptor<PaymentMethod>(predicate: predicate)
             let existingPaymentMethods = try context.fetch(descriptor)
-            
+
             return existingPaymentMethods.isEmpty
         }
     }

@@ -225,12 +225,6 @@ final class AppDIContainer: DIContainer {
         return UpdatePaymentMethodUseCaseImpl(repository: repository)
     }
 
-    /// Production GetAllPaymentMethodsUseCase를 생성합니다
-    func makeGetAllPaymentMethodsUseCase() -> GetAllPaymentMethodsUseCase {
-        let repository = makePaymentMethodRepository()
-        return GetAllPaymentMethodsUseCaseImpl(repository: repository)
-    }
-
     // MARK: - Repository Factory Methods
     
     /// TransactionRepository 구현체를 생성합니다 (통합 인터페이스)

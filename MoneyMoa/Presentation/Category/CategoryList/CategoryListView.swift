@@ -69,7 +69,7 @@ struct CategoryListView: View {
                 .foregroundColor(.secondary)
 
             Button("새 카테고리 만들기") {
-                // 카테고리 만들기 Action
+                router.present(.categoryForm(from: viewModel.mode, category: nil, transactionType: viewModel.selectedTransactionType), as: .sheet)
             }
             .font(.subheadline)
             .foregroundColor(.white)
@@ -151,7 +151,7 @@ struct CategoryListView: View {
     @ViewBuilder
     private var categoryCreationButton: some View {
         Button("새 카테고리 + 서브카테고리 만들기") {
-            router.present(.settings(.categoryForm(viewModel.mode, nil, viewModel.selectedTransactionType)), as: .sheet)
+            router.present(.categoryForm(from: viewModel.mode, category: nil, transactionType: viewModel.selectedTransactionType), as: .sheet)
         }
         .font(.subheadline)
         .foregroundColor(.blue)

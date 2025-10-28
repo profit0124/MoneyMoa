@@ -118,9 +118,6 @@ protocol DIContainer {
     /// UpdatePaymentMethodUseCase를 생성합니다
     func makeUpdatePaymentMethodUseCase() -> UpdatePaymentMethodUseCase
 
-    /// GetAllPaymentMethodsUseCase를 생성합니다
-    func makeGetAllPaymentMethodsUseCase() -> GetAllPaymentMethodsUseCase
-
     // MARK: - ViewModel Factory Methods
     
     /// AddTransactionViewModel을 생성합니다
@@ -407,7 +404,7 @@ extension DIContainer {
 
     func makePaymentMethodManagementViewModel() -> PaymentMethodManagementViewModel {
         return PaymentMethodManagementViewModel(
-            getAllPaymentMethodsUseCase: makeGetAllPaymentMethodsUseCase(),
+            getActivePaymentMethodsUseCase: makeGetActivePaymentMethodsUseCase(),
             paymentMethodEventPublisher: makePaymentMethodEventPublisher()
         )
     }

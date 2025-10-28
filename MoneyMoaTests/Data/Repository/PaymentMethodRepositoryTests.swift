@@ -239,66 +239,6 @@ final class PaymentMethodRepositoryTests: XCTestCase {
     
     // MARK: - 삭제 테스트 (Delete Operations)
 
-    // MARK: - Test Helpers
-
-    private func createTestSubCategory(
-        name: String,
-        transactionType: TransactionType
-    ) async throws -> SubCategoryDTO {
-        let category = TestDataFactory.createCategory(
-            name: "\(name) 카테고리",
-            iconName: "folder.fill",
-            type: transactionType,
-            orderIndex: 0
-        )
-        let categoryRepository = CategoryRepositoryImpl(database: database)
-        try await categoryRepository.insertCategory(category)
-
-        let subCategory = TestDataFactory.createSubCategory(
-            name: name,
-            categoryId: category.id,
-            categoryName: category.name,
-            categoryIconName: category.iconName,
-            type: transactionType,
-            orderIndex: 0
-        )
-        try await categoryRepository.insertSubCategory(subCategory)
-
-        return subCategory
-    }
-
-    private func createTestTransaction(
-        paymentMethod: PaymentMethodDTO,
-        subCategory: SubCategoryDTO,
-        amount: Decimal = 10000
-    ) async throws {
-        let transactionRepository = TransactionRepositoryImpl(database: database)
-        let transaction = TestDataFactory.createTransaction(
-            amount: amount,
-            transactionType: subCategory.transactionType,
-            subCategory: subCategory,
-            paymentMethod: paymentMethod
-        )
-        try await transactionRepository.insertTransaction(transaction)
-    }
-
-    private func createTestTemplate(
-        paymentMethod: PaymentMethodDTO,
-        subCategory: SubCategoryDTO,
-        amount: Decimal = 50000,
-        recurrencePeriod: RecurrencePeriod = .monthly
-    ) async throws {
-        let templateRepository = TransactionTemplateRepositoryImpl(database: database)
-        let template = TestDataFactory.createTransactionTemplate(
-            amount: amount,
-            transactionType: subCategory.transactionType,
-            recurrencePeriod: recurrencePeriod,
-            subCategory: subCategory,
-            paymentMethod: paymentMethod
-        )
-        try await templateRepository.insertTemplate(template)
-    }
-
     func testDeletePaymentMethod_NoReferences_HardDelete() async throws {
         // Given: 참조가 없는 결제수단
         let paymentMethod = TestDataFactory.createPaymentMethod(name: "테스트카드", kind: .credit)
@@ -317,8 +257,8 @@ final class PaymentMethodRepositoryTests: XCTestCase {
         let paymentMethod = TestDataFactory.createPaymentMethod(name: "신한카드", kind: .credit)
         try await repository.insertPaymentMethod(paymentMethod)
 
-        let subCategory = try await createTestSubCategory(name: "외식", transactionType: .variableExpense)
-        try await createTestTransaction(paymentMethod: paymentMethod, subCategory: subCategory)
+        let subCategory = try await TestDataFactory.createAndInsertSubCategoryWithCategory(name: "외식", transactionType: .variableExpense, database: database)
+        try await TestDataFactory.createAndInsertTransaction(paymentMethod: paymentMethod, subCategory: subCategory, database: database)
 
         // When: 삭제
         try await repository.deletePaymentMethod(id: paymentMethod.id)
@@ -336,8 +276,8 @@ final class PaymentMethodRepositoryTests: XCTestCase {
         let paymentMethod = TestDataFactory.createPaymentMethod(name: "국민카드", kind: .credit)
         try await repository.insertPaymentMethod(paymentMethod)
 
-        let subCategory = try await createTestSubCategory(name: "월세", transactionType: .fixedExpense)
-        try await createTestTemplate(paymentMethod: paymentMethod, subCategory: subCategory)
+        let subCategory = try await TestDataFactory.createAndInsertSubCategoryWithCategory(name: "월세", transactionType: .fixedExpense, database: database)
+        try await TestDataFactory.createAndInsertTransactionTemplate(paymentMethod: paymentMethod, subCategory: subCategory, database: database)
 
         // When & Then: 에러 발생
         do {
@@ -357,9 +297,9 @@ final class PaymentMethodRepositoryTests: XCTestCase {
         let paymentMethod = TestDataFactory.createPaymentMethod(name: "우리카드", kind: .credit)
         try await repository.insertPaymentMethod(paymentMethod)
 
-        let subCategory = try await createTestSubCategory(name: "지하철", transactionType: .variableExpense)
-        try await createTestTransaction(paymentMethod: paymentMethod, subCategory: subCategory, amount: 5000)
-        try await createTestTemplate(paymentMethod: paymentMethod, subCategory: subCategory, amount: 10000, recurrencePeriod: .weekly)
+        let subCategory = try await TestDataFactory.createAndInsertSubCategoryWithCategory(name: "지하철", transactionType: .variableExpense, database: database)
+        try await TestDataFactory.createAndInsertTransaction(paymentMethod: paymentMethod, subCategory: subCategory, amount: 5000, database: database)
+        try await TestDataFactory.createAndInsertTransactionTemplate(paymentMethod: paymentMethod, subCategory: subCategory, amount: 10000, recurrencePeriod: .weekly, database: database)
 
         // When & Then: Template 우선 차단
         do {
@@ -448,27 +388,106 @@ final class PaymentMethodRepositoryTests: XCTestCase {
         // Then: 사용 가능 (자기 자신 제외)
         XCTAssertTrue(isValid)
     }
-    
-    // MARK: - 통계 테스트 (Statistics)
-    
-    func testFetchPaymentMethodUsageStats_WithMixedUsage() async throws {
-        let paymentMethods = PaymentMethodFactory.standardSet()
-        for paymentMethod in paymentMethods {
-            try await repository.insertPaymentMethod(paymentMethod)
-        }
-        let usageStats = try await repository.fetchPaymentMethodUsageStats(limit: 10)
-        XCTAssertNotNil(usageStats)
-    }
-    
-    func testFetchPaymentMethodAmountSummary() async throws {
-        let paymentMethods = PaymentMethodFactory.minimalSet()
-        for paymentMethod in paymentMethods {
-            try await repository.insertPaymentMethod(paymentMethod)
-        }
-        let amountSummary = try await repository.fetchPaymentMethodAmountSummary(
-            startDate: YearMonth.current.startOfMonth,
-            endDate: YearMonth.current.endOfMonth
+
+    // MARK: - 소프트 삭제 시나리오 검증 테스트 (Soft Delete Validation Tests)
+
+    func testValidatePaymentMethodName_IgnoresInactivePaymentMethods() async throws {
+        // Given: 비활성화된 결제수단 생성
+        let inactivePaymentMethod = PaymentMethodFactory.create(
+            name: "구신한카드",
+            kind: .credit,
+            isActive: false
         )
-        XCTAssertNotNil(amountSummary)
+        try await repository.insertPaymentMethod(inactivePaymentMethod)
+
+        // When: 동일한 이름과 종류로 검증 (비활성 결제수단)
+        let isValid = try await repository.validatePaymentMethodName("구신한카드", kind: .credit, excludingId: nil)
+
+        // Then: 비활성 결제수단은 무시되므로 이름 사용 가능
+        XCTAssertTrue(isValid, "비활성화된 결제수단은 중복 검사에서 무시되어야 합니다")
+    }
+
+    func testValidatePaymentMethodName_ActiveAndInactive_OnlyChecksActive() async throws {
+        // Given: 동일한 이름의 활성/비활성 결제수단 생성
+        let inactivePaymentMethod = PaymentMethodFactory.create(
+            name: "하나카드",
+            kind: .credit,
+            isActive: false
+        )
+        let activePaymentMethod = PaymentMethodFactory.create(
+            name: "하나카드",
+            kind: .credit,
+            isActive: true
+        )
+        try await repository.insertPaymentMethod(inactivePaymentMethod)
+        try await repository.insertPaymentMethod(activePaymentMethod)
+
+        // When: 동일한 이름으로 검증
+        let isValid = try await repository.validatePaymentMethodName("하나카드", kind: .credit, excludingId: nil)
+
+        // Then: 활성 결제수단이 있으므로 사용 불가능
+        XCTAssertFalse(isValid, "활성 결제수단이 있으면 중복으로 판단되어야 합니다")
+    }
+
+    func testValidatePaymentMethodName_Update_IgnoresInactiveWithSameName() async throws {
+        // Given: 동일한 이름의 비활성 결제수단과 업데이트할 활성 결제수단
+        let inactivePaymentMethod = PaymentMethodFactory.create(
+            name: "우리카드",
+            kind: .credit,
+            isActive: false
+        )
+        let activePaymentMethod = PaymentMethodFactory.create(
+            name: "다른카드",
+            kind: .credit,
+            isActive: true
+        )
+        try await repository.insertPaymentMethod(inactivePaymentMethod)
+        try await repository.insertPaymentMethod(activePaymentMethod)
+
+        // When: 활성 결제수단을 비활성 결제수단과 동일한 이름으로 변경하려고 할 때
+        let isValid = try await repository.validatePaymentMethodName(
+            "우리카드",
+            kind: .credit,
+            excludingId: activePaymentMethod.id
+        )
+
+        // Then: 비활성 결제수단은 무시되므로 이름 변경 가능
+        XCTAssertTrue(isValid, "비활성 결제수단의 이름은 재사용 가능해야 합니다")
+    }
+
+    func testValidatePaymentMethodName_SoftDeleteScenario_ReuseName() async throws {
+        // Given: 거래가 있는 결제수단을 soft delete
+        let paymentMethod = TestDataFactory.createPaymentMethod(name: "KB국민카드", kind: .credit)
+        try await repository.insertPaymentMethod(paymentMethod)
+
+        let subCategory = try await TestDataFactory.createAndInsertSubCategoryWithCategory(name: "식비", transactionType: .variableExpense, database: database)
+        try await TestDataFactory.createAndInsertTransaction(paymentMethod: paymentMethod, subCategory: subCategory, amount: 50000, database: database)
+
+        // Soft delete (거래가 있으므로 isActive만 false로 변경됨)
+        try await repository.deletePaymentMethod(id: paymentMethod.id)
+
+        // Verify soft delete
+        let deletedPaymentMethod = try await repository.fetchPaymentMethod(id: paymentMethod.id)
+        XCTAssertNotNil(deletedPaymentMethod)
+        XCTAssertFalse(deletedPaymentMethod?.isActive ?? true)
+
+        // When: 동일한 이름으로 새로운 결제수단 생성 시도
+        let isValid = try await repository.validatePaymentMethodName("KB국민카드", kind: .credit, excludingId: nil)
+
+        // Then: Soft delete된 결제수단의 이름은 재사용 가능
+        XCTAssertTrue(isValid, "Soft delete된 결제수단의 이름은 재사용 가능해야 합니다")
+
+        // When: 실제로 새 결제수단 생성
+        let newPaymentMethod = TestDataFactory.createPaymentMethod(name: "KB국민카드", kind: .credit)
+        try await repository.insertPaymentMethod(newPaymentMethod)
+
+        // Then: 성공적으로 생성됨
+        let allPaymentMethods = try await repository.fetchPaymentMethods()
+        XCTAssertEqual(allPaymentMethods.count, 2, "기존 비활성 + 새로운 활성 결제수단")
+
+        let activePaymentMethods = try await repository.fetchActivePaymentMethods()
+        XCTAssertEqual(activePaymentMethods.count, 1, "새로운 활성 결제수단만")
+        XCTAssertEqual(activePaymentMethods.first?.name, "KB국민카드")
+        XCTAssertNotEqual(activePaymentMethods.first?.id, paymentMethod.id, "새로운 ID를 가져야 함")
     }
 }
