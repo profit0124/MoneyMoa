@@ -269,25 +269,43 @@ final class AmountPlacePaymentMethodFormVMTests: XCTestCase {
     
     // MARK: - Test Methods - Payment Method Management
     
-    func test_send_presentPaymentMethodForm_createsFormViewModel() {
+    func test_send_presentPaymentMethodForm_presentsSheet() async {
+        // Given
+        let router = AppRouter()
+
         // When
-        viewModel.send(.presentPaymentMethodForm)
-        
-        // Then
-        XCTAssertNotNil(viewModel.paymentMethodFormViewModel)
+        viewModel.send(.presentPaymentMethodForm(router))
+
+        // Wait for async presentation
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
+        // Then - Router가 sheet를 present 했는지 확인
+        XCTAssertNotNil(router.sheet)
+        if case .settings(.paymentMethodForm(nil)) = router.sheet?.root {
+            // Success: correct sheet is presented
+        } else {
+            XCTFail("Expected payment method form sheet to be presented")
+        }
     }
     
-    func test_send_addPaymentMethod_addsToOptions() {
+    func test_paymentMethodCreatedEvent_addsToOptions() async {
         // Given
+        viewModel.send(.onAppear)
+        try? await Task.sleep(nanoseconds: 100_000_000)
         let initialCount = viewModel.paymentMethodOptions.count
         let newPaymentMethod = PaymentMethodDTO.mockDebitCard
-        
-        // When
-        viewModel.send(.addPaymentMethod(newPaymentMethod))
-        
+
+        // When - 이벤트 퍼블리셔를 통해 created 이벤트 발행
+        let eventPublisher = mockContainer.makePaymentMethodEventPublisher()
+        eventPublisher.publish(PaymentMethodEvent(type: .created, paymentMethod: newPaymentMethod))
+
+        // Wait for event processing
+        try? await Task.sleep(nanoseconds: 100_000_000)
+
         // Then
         XCTAssertEqual(viewModel.paymentMethodOptions.count, initialCount + 1)
         XCTAssertTrue(viewModel.paymentMethodOptions.contains { $0.id == newPaymentMethod.id })
+        XCTAssertEqual(viewModel.selectedPaymentMethod?.id, newPaymentMethod.id)
     }
     
     // MARK: - Test Methods - Data Consistency

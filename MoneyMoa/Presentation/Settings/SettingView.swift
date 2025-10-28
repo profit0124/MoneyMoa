@@ -10,38 +10,38 @@ import SwiftUI
 // MARK: - Settings Data Model
 
 enum SettingsSection: CaseIterable, Hashable {
+    case transaction
     case budget
-    case category
     case about
-    
+
     var title: String {
         switch self {
+        case .transaction: return "거래 설정"
         case .budget: return "예산 관리"
-        case .category: return "카테고리 설정"
         case .about: return "앱 정보"
         }
     }
-    
+
     var icon: String {
         switch self {
+        case .transaction: return "list.bullet.rectangle.fill"
         case .budget: return "chart.pie.fill"
-        case .category: return "folder.fill"
         case .about: return "info.circle.fill"
         }
     }
-    
+
     var iconColor: Color {
         switch self {
+        case .transaction: return .blue
         case .budget: return .green
-        case .category: return .orange
-        case .about: return .blue
+        case .about: return .purple
         }
     }
-    
+
     var items: [SettingsItem] {
         switch self {
-        case .budget: return [.monthlyBudget, .transactionTemplate]
-        case .category: return [.categoryManagement]
+        case .transaction: return [.categoryManagement, .paymentMethodManagement, .transactionTemplate]
+        case .budget: return [.monthlyBudget]
         case .about: return [.versionInfo, .developerInfo]
         }
     }
@@ -51,56 +51,61 @@ enum SettingsItem: Hashable {
     case monthlyBudget
     case transactionTemplate
     case categoryManagement
+    case paymentMethodManagement
     case versionInfo
     case developerInfo
-    
+
     var title: String {
         switch self {
         case .monthlyBudget: return "월별 예산"
         case .transactionTemplate: return "반복 거래 템플릿"
         case .categoryManagement: return "카테고리 관리"
+        case .paymentMethodManagement: return "결제수단 관리"
         case .versionInfo: return "버전 정보"
         case .developerInfo: return "개발자"
         }
     }
-    
+
     var subtitle: String {
         switch self {
         case .monthlyBudget: return "월별 예산을 설정하고 관리하세요"
         case .transactionTemplate: return "정기적으로 발생하는 거래를 관리하세요"
         case .categoryManagement: return "수입과 지출 카테고리를 관리하세요"
+        case .paymentMethodManagement: return "결제수단을 추가하고 관리하세요"
         case .versionInfo: return "MoneyMoa v1.0.0"
         case .developerInfo: return "Profit"
         }
     }
-    
+
     var icon: String {
         switch self {
         case .monthlyBudget: return "dollarsign.circle.fill"
         case .transactionTemplate: return "repeat.circle.fill"
         case .categoryManagement: return "tag.fill"
+        case .paymentMethodManagement: return "creditcard.fill"
         case .versionInfo: return "app.badge.fill"
         case .developerInfo: return "person.fill"
         }
     }
-    
+
     var iconColor: Color {
         switch self {
         case .monthlyBudget: return .green
         case .transactionTemplate: return .indigo
         case .categoryManagement: return .orange
+        case .paymentMethodManagement: return .purple
         case .versionInfo: return .blue
         case .developerInfo: return .purple
         }
     }
-    
+
     var showArrow: Bool {
         switch self {
-        case .monthlyBudget, .transactionTemplate, .categoryManagement: return true
+        case .monthlyBudget, .transactionTemplate, .categoryManagement, .paymentMethodManagement: return true
         case .versionInfo, .developerInfo: return false
         }
     }
-    
+
     @MainActor
     func action(router: AppRouter) {
         switch self {
@@ -110,6 +115,8 @@ enum SettingsItem: Hashable {
             router.push(.settingTransactionTemplate)
         case .categoryManagement:
             router.push(.categorySetup)
+        case .paymentMethodManagement:
+            router.push(.paymentMethodManagement)
         case .versionInfo, .developerInfo:
             break // No action for info items
         }

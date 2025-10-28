@@ -168,13 +168,17 @@ public final class PaymentMethodRepositoryImpl: PaymentMethodRepository {
             guard let paymentMethod = try context.fetch(descriptor).first else {
                 throw RepositoryError.paymentMethodNotFound
             }
-            
-            // 활성 결제수단 삭제 방지
-            if paymentMethod.isActive {
-                throw RepositoryError.cannotDeleteActivePaymentMethod
+
+            if !paymentMethod.transactionTemplates.isEmpty {
+                throw RepositoryError.hasActiveTemplates
             }
-            
-            context.delete(paymentMethod)
+
+            if paymentMethod.transactions.isEmpty {
+                context.delete(paymentMethod)
+            } else {
+                paymentMethod.isActive = false
+            }
+
             try context.save()
         }
     }
@@ -184,22 +188,25 @@ public final class PaymentMethodRepositoryImpl: PaymentMethodRepository {
     public func validatePaymentMethodName(_ name: String, kind: PaymentMethodKind, excludingId: UUID?) async throws -> Bool {
         try await database.withModelContext { context in
             let predicate: Predicate<PaymentMethod>
-            
+
             if let excludingId = excludingId {
                 predicate = #Predicate<PaymentMethod> { paymentMethod in
-                    paymentMethod.name == name && 
+                    paymentMethod.name == name &&
                     paymentMethod.kindRawValue == kind.rawValue &&
-                    paymentMethod.id != excludingId
+                    paymentMethod.id != excludingId &&
+                    paymentMethod.isActive == true
                 }
             } else {
                 predicate = #Predicate<PaymentMethod> { paymentMethod in
-                    paymentMethod.name == name && paymentMethod.kindRawValue == kind.rawValue
+                    paymentMethod.name == name &&
+                    paymentMethod.kindRawValue == kind.rawValue &&
+                    paymentMethod.isActive == true
                 }
             }
-            
+
             let descriptor = FetchDescriptor<PaymentMethod>(predicate: predicate)
             let existingPaymentMethods = try context.fetch(descriptor)
-            
+
             return existingPaymentMethods.isEmpty
         }
     }

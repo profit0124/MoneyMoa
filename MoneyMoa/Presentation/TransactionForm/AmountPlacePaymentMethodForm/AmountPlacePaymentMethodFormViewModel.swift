@@ -26,9 +26,9 @@ final class AmountPlacePaymentMethodFormViewModel: Identifiable {
     
     /// 활성 결제수단 조회 UseCase
     private var getActivePaymentMethodsUseCase: GetActivePaymentMethodsUseCase
-    
-    /// 결제수단 생성 UseCase
-    private var createPaymentMethodUseCase: CreatePaymentMethodUseCase
+
+    /// 결제수단 이벤트 퍼블리셔
+    private var paymentMethodEventPublisher: any PaymentMethodEventPublisher
 
     /// 입력된 거래 금액 (nil이면 미입력 상태)
     var amount: Decimal?
@@ -77,25 +77,24 @@ final class AmountPlacePaymentMethodFormViewModel: Identifiable {
         amount ?? 0 > 0 && selectedPaymentMethod != nil
     }
 
-    /// 결제수단 생성 폼 ViewModel (모달 표시용)
-    var paymentMethodFormViewModel: PaymentMethodFormViewModel? 
-
     /// Combine 구독 관리
     private var cancellables: Set<AnyCancellable> = []
 
     init(getActivePaymentMethodsUseCase: GetActivePaymentMethodsUseCase,
-         createPaymentMethodUseCase: CreatePaymentMethodUseCase,
+         paymentMethodEventPublisher: any PaymentMethodEventPublisher,
          amount: Decimal? = nil,
          place: String = "",
          selectedPaymentMethod: PaymentMethodDTO? = nil,
          paymentMethodOptions: [PaymentMethodDTO] = []) {
         self.getActivePaymentMethodsUseCase = getActivePaymentMethodsUseCase
-        self.createPaymentMethodUseCase = createPaymentMethodUseCase
+        self.paymentMethodEventPublisher = paymentMethodEventPublisher
         self.amount = amount
         self.place = place
         self.selectedPaymentMethod = selectedPaymentMethod
         self.paymentMethodOptions = paymentMethodOptions
         self.focusField = nil
+
+        setupPaymentMethodEventSubscription()
     }
 
     // MARK: - Action Handling
@@ -105,8 +104,7 @@ final class AmountPlacePaymentMethodFormViewModel: Identifiable {
         case onAppear                                    // 뷰 나타남
         case setSelectedPaymentMethod(PaymentMethodDTO)  // 결제수단 선택
         case setFocus(AmountPlacePaymentMethodFormField?) // 포커스 설정
-        case presentPaymentMethodForm                    // 결제수단 추가 폼 표시
-        case addPaymentMethod(PaymentMethodDTO)          // 새 결제수단 추가
+        case presentPaymentMethodForm(AppRouter)         // 결제수단 추가 폼 표시
         case unsubscribe                                // 구독 해제
         case setDecimalAmount(String)                    // 금액 입력
     }
@@ -121,19 +119,14 @@ final class AmountPlacePaymentMethodFormViewModel: Identifiable {
         case .setSelectedPaymentMethod(let paymentMethod):
             self.send(.setFocus(.paymentMethod))
             setPaymentMethod(paymentMethod)
-            
+
         case .setFocus(let field):
             setFocusField(field)
-            
-        case .presentPaymentMethodForm:
-            self.presentPaymentMethodForm()
+
+        case .presentPaymentMethodForm(let router):
+            self.presentPaymentMethodForm(router)
             self.send(.setFocus(.paymentMethod))
-            
-        case .addPaymentMethod(let paymentMethod):
-            addPaymentMethod(paymentMethod)
-            self.send(.setSelectedPaymentMethod(paymentMethod))
-            dismissPaymentMethodForm()
-            
+
         case .unsubscribe:
             cancellables.removeAll()
 
@@ -171,21 +164,48 @@ final class AmountPlacePaymentMethodFormViewModel: Identifiable {
         self.selectedPaymentMethod = paymentMethod
     }
 
-    private func presentPaymentMethodForm() {
-        self.paymentMethodFormViewModel = .init(createPaymentMethodUseCase: createPaymentMethodUseCase)
-        self.paymentMethodFormViewModel?.createPublisher
-            .sink(receiveValue: {
-                self.send(.addPaymentMethod($0))
+    private func presentPaymentMethodForm(_ router: AppRouter) {
+        Task {
+            await router.present(.settings(.paymentMethodForm(nil)), as: .sheet)
+        }
+    }
+
+    private func setupPaymentMethodEventSubscription() {
+        paymentMethodEventPublisher.paymentMethodEvents
+            .receive(on: DispatchQueue.main)
+            .sink(receiveValue: { [weak self] event in
+                guard let self = self else { return }
+
+                switch event.type {
+                case .created:
+                    self.paymentMethodOptions.append(event.paymentMethod)
+                    self.selectedPaymentMethod = event.paymentMethod
+
+                case .updated:
+                    // Remove existing item
+                    self.paymentMethodOptions.removeAll { $0.id == event.paymentMethod.id }
+
+                    // If active, add and sort
+                    if event.paymentMethod.isActive {
+                        self.paymentMethodOptions.append(event.paymentMethod)
+                        self.paymentMethodOptions.sort()
+                    } else {
+                        // Clear selection if selected payment method becomes inactive
+                        if self.selectedPaymentMethod?.id == event.paymentMethod.id {
+                            self.selectedPaymentMethod = nil
+                        }
+                    }
+
+                case .deleted:
+                    self.paymentMethodOptions.removeAll { $0.id == event.paymentMethod.id }
+
+                    // Clear selection if selected payment method is deleted
+                    if self.selectedPaymentMethod?.id == event.paymentMethod.id {
+                        self.selectedPaymentMethod = nil
+                    }
+                }
             })
             .store(in: &cancellables)
-    }
-
-    private func addPaymentMethod(_ paymentMethod: PaymentMethodDTO) {
-        self.paymentMethodOptions.append(paymentMethod)
-    }
-
-    private func dismissPaymentMethodForm() {
-        self.paymentMethodFormViewModel = nil
     }
 
     /// 텍스트 입력을 Decimal로 변환

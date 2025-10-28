@@ -105,13 +105,19 @@ protocol DIContainer {
     func makeImportRecommendedCategoriesUseCase() -> ImportRecommendedCategoriesUseCase
     
     // MARK: - PaymentMethod UseCase Factory Methods
-    
+
     /// GetActivePaymentMethodsUseCase를 생성합니다
     func makeGetActivePaymentMethodsUseCase() -> GetActivePaymentMethodsUseCase
-    
+
     /// CreatePaymentMethodUseCase를 생성합니다
     func makeCreatePaymentMethodUseCase() -> CreatePaymentMethodUseCase
-    
+
+    /// DeletePaymentMethodUseCase를 생성합니다
+    func makeDeletePaymentMethodUseCase() -> DeletePaymentMethodUseCase
+
+    /// UpdatePaymentMethodUseCase를 생성합니다
+    func makeUpdatePaymentMethodUseCase() -> UpdatePaymentMethodUseCase
+
     // MARK: - ViewModel Factory Methods
     
     /// AddTransactionViewModel을 생성합니다
@@ -143,6 +149,12 @@ protocol DIContainer {
     /// UpdateTransactionTemplateViewModel을 생성합니다.
     func makeUpdateTransactionTemplateViewModel(template: TransactionTemplateDTO) -> UpdateTransactionTemplateViewModel
 
+    /// PaymentMethodManagementViewModel을 생성합니다.
+    func makePaymentMethodManagementViewModel() -> PaymentMethodManagementViewModel
+
+    /// PaymentMethodFormViewModel을 생성합니다.
+    func makePaymentMethodFormViewModel(paymentMethod: PaymentMethodDTO?) -> PaymentMethodFormViewModel
+
     // MARK: - TransactionForm ViewModel Factory Methods
     
     /// AmountPlacePaymentMethodFormViewModel을 생성합니다
@@ -158,9 +170,12 @@ protocol DIContainer {
     
     /// TransactionEventPublisher를 생성합니다
     func makeTransactionEventPublisher() -> TransactionEventPublisher
-    
+
     /// CategoryEventPublisher를 생성합니다
     func makeCategoryEventPublisher() -> CategoryEventPublisher
+
+    /// PaymentMethodEventPublisher를 생성합니다
+    func makePaymentMethodEventPublisher() -> PaymentMethodEventPublisher
     
     // MARK: - Statistics Factory Methods
     
@@ -264,7 +279,7 @@ extension DIContainer {
         paymentMethod: PaymentMethodDTO? = nil) -> AmountPlacePaymentMethodFormViewModel {
         return AmountPlacePaymentMethodFormViewModel(
             getActivePaymentMethodsUseCase: makeGetActivePaymentMethodsUseCase(),
-            createPaymentMethodUseCase: makeCreatePaymentMethodUseCase(),
+            paymentMethodEventPublisher: makePaymentMethodEventPublisher(),
             amount: amount,
             place: place,
             selectedPaymentMethod: paymentMethod
@@ -387,6 +402,23 @@ extension DIContainer {
         )
     }
 
+    func makePaymentMethodManagementViewModel() -> PaymentMethodManagementViewModel {
+        return PaymentMethodManagementViewModel(
+            getActivePaymentMethodsUseCase: makeGetActivePaymentMethodsUseCase(),
+            paymentMethodEventPublisher: makePaymentMethodEventPublisher()
+        )
+    }
+
+    func makePaymentMethodFormViewModel(paymentMethod: PaymentMethodDTO?) -> PaymentMethodFormViewModel {
+        return PaymentMethodFormViewModel(
+            createPaymentMethodUseCase: makeCreatePaymentMethodUseCase(),
+            updatePaymentMethodUseCase: makeUpdatePaymentMethodUseCase(),
+            deletePaymentMethodUseCase: makeDeletePaymentMethodUseCase(),
+            paymentMethodEventPublisher: makePaymentMethodEventPublisher(),
+            selectedPaymentMethod: paymentMethod
+        )
+    }
+
     // MARK: - Service Default Implementation
     
     /// TransactionEventPublisher를 생성합니다 (기본 구현)
@@ -400,7 +432,13 @@ extension DIContainer {
     func makeCategoryEventPublisher() -> CategoryEventPublisher {
         return DefaultCategoryEventPublisher.shared
     }
-    
+
+    /// PaymentMethodEventPublisher를 생성합니다 (기본 구현)
+    /// 싱글톤 인스턴스를 반환하여 앱 전체에서 동일한 이벤트 스트림 공유
+    func makePaymentMethodEventPublisher() -> PaymentMethodEventPublisher {
+        return DefaultPaymentMethodEventPublisher.shared
+    }
+
     // MARK: - Statistics Default Implementation
 
     /// StatisticsViewModel을 생성합니다 (기본 구현)

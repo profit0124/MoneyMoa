@@ -16,7 +16,7 @@ struct UpdateTransactionTemplateViewModelTests {
     private func makeAmountViewModel(from template: TransactionTemplateDTO) -> AmountPlacePaymentMethodFormViewModel {
         let vm = AmountPlacePaymentMethodFormViewModel(
             getActivePaymentMethodsUseCase: StubGetActivePaymentMethodsUseCase(),
-            createPaymentMethodUseCase: StubCreatePaymentMethodUseCase(),
+            paymentMethodEventPublisher: TestPaymentMethodEventPublisher(),
             amount: template.amount,
             place: template.place ?? "",
             selectedPaymentMethod: template.paymentMethod
@@ -164,42 +164,5 @@ private final class SpyUpdateTransactionTemplateUseCase: UpdateTransactionTempla
     func execute(_ template: TransactionTemplateDTO) async throws {
         executeCallCount += 1
         lastTemplate = template
-    }
-}
-
-private final class TestTransactionTemplateEventPublisher: TransactionTemplateEventPublisher {
-    private let subject = PassthroughSubject<TransactionTemplateEvent, Never>()
-    private(set) var publishedEvents: [TransactionTemplateEvent] = []
-
-    var transactionTemplateEvents: AnyPublisher<TransactionTemplateEvent, Never> {
-        subject.eraseToAnyPublisher()
-    }
-
-    func publish(_ event: TransactionTemplateEvent) {
-        publishedEvents.append(event)
-        subject.send(event)
-    }
-}
-
-@MainActor
-private final class StubGetActivePaymentMethodsUseCase: GetActivePaymentMethodsUseCase {
-    func execute() async throws -> [PaymentMethodDTO] { [] }
-}
-
-@MainActor
-private final class StubCreatePaymentMethodUseCase: CreatePaymentMethodUseCase {
-    func execute(_ paymentMethod: PaymentMethodDTO) async throws {}
-}
-
-@MainActor
-private final class StubGetCategoriesByTypeUseCase: GetCategoriesByTypeUseCase {
-    var categories: [CategoryDTO]
-
-    init(categories: [CategoryDTO]) {
-        self.categories = categories
-    }
-
-    func execute(_ type: TransactionType) async throws -> [CategoryDTO] {
-        categories
     }
 }

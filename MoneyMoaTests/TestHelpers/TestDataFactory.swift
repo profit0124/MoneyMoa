@@ -360,4 +360,67 @@ struct TestDataFactory {
             budgetUsagePercentage: nil
         )
     }
+
+    // MARK: - Repository Test Helpers
+
+    static func createAndInsertSubCategoryWithCategory(
+        name: String,
+        transactionType: TransactionType,
+        database: Database
+    ) async throws -> SubCategoryDTO {
+        let category = createCategory(
+            name: "\(name) 카테고리",
+            iconName: "folder.fill",
+            type: transactionType,
+            orderIndex: 0
+        )
+        let categoryRepository = CategoryRepositoryImpl(database: database)
+        try await categoryRepository.insertCategory(category)
+
+        let subCategory = createSubCategory(
+            name: name,
+            categoryId: category.id,
+            categoryName: category.name,
+            categoryIconName: category.iconName,
+            type: transactionType,
+            orderIndex: 0
+        )
+        try await categoryRepository.insertSubCategory(subCategory)
+
+        return subCategory
+    }
+
+    static func createAndInsertTransaction(
+        paymentMethod: PaymentMethodDTO,
+        subCategory: SubCategoryDTO,
+        amount: Decimal = 10000,
+        database: Database
+    ) async throws {
+        let transactionRepository = TransactionRepositoryImpl(database: database)
+        let transaction = createTransaction(
+            amount: amount,
+            transactionType: subCategory.transactionType,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+        try await transactionRepository.insertTransaction(transaction)
+    }
+
+    static func createAndInsertTransactionTemplate(
+        paymentMethod: PaymentMethodDTO,
+        subCategory: SubCategoryDTO,
+        amount: Decimal = 50000,
+        recurrencePeriod: RecurrencePeriod = .monthly,
+        database: Database
+    ) async throws {
+        let templateRepository = TransactionTemplateRepositoryImpl(database: database)
+        let template = createTransactionTemplate(
+            amount: amount,
+            transactionType: subCategory.transactionType,
+            recurrencePeriod: recurrencePeriod,
+            subCategory: subCategory,
+            paymentMethod: paymentMethod
+        )
+        try await templateRepository.insertTemplate(template)
+    }
 }

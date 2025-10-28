@@ -58,6 +58,12 @@ struct ViewFactory {
         case .category:
             CategorySetupView(viewModel: container.makeCategoryListViewModel(mode: .configuration))
 
+        case .paymentMethodManagement:
+            PaymentMethodManagementView(viewModel: container.makePaymentMethodManagementViewModel())
+
+        case .paymentMethodForm(let paymentMethod):
+            PaymentMethodFormView(viewModel: container.makePaymentMethodFormViewModel(paymentMethod: paymentMethod))
+
         case .categorySelector(let category):
             CategorySelectorView(viewModel: container.makeCategorySelectorViewModel(selectedCategory: category))
 
